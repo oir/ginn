@@ -43,6 +43,11 @@
         loadSidebar: true,
         subMaxLevel: 2,
         auto2top: true,
+        toc: {
+          scope: '.markdown-section',
+          headings: 'h1, h2, h3, h4, h5, h6',
+          title: 'Table of Contents',
+        },
         markdown: {
           renderer: {
             code: function (code, lang) {
@@ -68,6 +73,7 @@
     <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
 
     <script src="//unpkg.com/docsify/lib/plugins/external-script.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"></script>
     <script src="//unpkg.com/prismjs@1.15.0/components/prism-bash.min.js"></script>
     <script src="//unpkg.com/prismjs@1.15.0/components/prism-python.min.js"></script>
     <script src="//unpkg.com/prismjs@1.15.0/components/prism-clike.min.js"></script>
@@ -90,6 +96,16 @@
     <!-- or <script src="//cdn.jsdelivr.net/gh/upupming/docsify-katex@latest/dist/docsify-katex.js"></script> -->
 
     <script src="https://cdn.jsdelivr.net/npm/docsify-themeable@0"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/js/all.min.js" crossorigin="anonymous">
+    <!-- Load font awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/gh/zignis/docsify-fa/script.min.js"></script>
+
+    <link rel="stylesheet" href="plugins/toc/toc.css">
+    <script src="plugins/toc/toc.js"></script>
+
     <style>
       :root {
         --base-font-family: -apple-system, BlinkMacSystemFont;, "Segoe UI", sans-serif, "Apple Color Emoji",
@@ -130,6 +146,9 @@
         --sidebar-nav-pagelink-background--active: transparent;
         --sidebar-nav-link-before-margin: 0 0 0 0;
         --sidebar-nav-pagelink-padding: 0.25em 0.25em 0 0;
+      }
+      .markdown-section {
+        width: var(--content-max-width);
       }
     </style>
   </body>

@@ -1,7 +1,7 @@
 <img src="logo.png" alt="drawing" width="180"/>
 
 [<i class="fas fa-home"></i> Home](/README.md)
-* [Annotated examples home](examples/)
-* [minGPT](examples/min-gpt.cu.cpp.md)
+* [Namespaces](api/#Namespaces)
+* [Classes](api/#Classes)
 
 [<i class="fab fa-github"></i> GitHub](https://github.com/ginn-org/ginn)
