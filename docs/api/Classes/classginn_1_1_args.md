@@ -5,18 +5,30 @@
 
 ## Public Classes
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | struct | **[ParseError](api/Classes/structginn_1_1_args_1_1_parse_error.md)**  |
 
+
+</span>
+
 ## Public Types
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | enum class| **[Color](api/Classes/classginn_1_1_args.md#enum-color)** { Auto, Always, Never} |
 | using [internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md) | **[ArgBase](api/Classes/classginn_1_1_args.md#using-argbase)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -29,6 +41,9 @@
 | auto & | **[operator()](api/Classes/classginn_1_1_args.md#function-operator())**(const [internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md) & arg) |
 | void | **[add_help](api/Classes/classginn_1_1_args.md#function-add_help)**(bool has_help) |
 | std::string | **[helpstr](api/Classes/classginn_1_1_args.md#function-helpstr)**() const |
+
+
+</span>
 
 ## Public Types Documentation
 
@@ -136,4 +151,4 @@ inline std::string helpstr() const
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -7,11 +7,16 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtrPair< Scalar >)>](api/C
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[CatLayerNode](api/Classes/classginn_1_1_cat_layer_node.md#function-catlayernode)**() =default |
 | LayerPtr< [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >(NodePtrPair< Scalar >)> | **[copy](api/Classes/classginn_1_1_cat_layer_node.md#function-copy)**(Copy ) override |
 | [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[run](api/Classes/classginn_1_1_cat_layer_node.md#function-run)**(const NodePtrPair< Scalar > & xs) override |
+
+
+</span>
 
 ## Detailed Description
 
@@ -49,4 +54,4 @@ inline NodePtr< Scalar > run(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

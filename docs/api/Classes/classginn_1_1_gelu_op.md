@@ -7,21 +7,33 @@ Inherits from [ginn::NonlinOp< Scalar >](api/Classes/classginn_1_1_nonlin_op.md)
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual bool | **[backward_requires_input](api/Classes/classginn_1_1_gelu_op.md#function-backward_requires_input)**() const override |
 | virtual void | **[forward](api/Classes/classginn_1_1_gelu_op.md#function-forward)**([Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & y, const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & x) const override |
 | virtual void | **[backward](api/Classes/classginn_1_1_gelu_op.md#function-backward)**([Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & dx, const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & dy, const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & x, const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & , bool accumulate) const override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::NonlinOp< Scalar >](api/Classes/classginn_1_1_nonlin_op.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual bool | **[is_identity](api/Classes/classginn_1_1_nonlin_op.md#function-is_identity)**() const |
 | virtual | **[~NonlinOp](api/Classes/classginn_1_1_nonlin_op.md#function-~nonlinop)**() =default |
 | virtual std::unique_ptr< [NonlinOp](api/Classes/classginn_1_1_nonlin_op.md)< Scalar > > | **[copy](api/Classes/classginn_1_1_nonlin_op.md#function-copy)**() const =0 |
+
+
+</span>
 
 
 ## Detailed Description
@@ -74,4 +86,4 @@ inline virtual void backward(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

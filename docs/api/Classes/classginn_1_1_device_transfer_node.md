@@ -7,15 +7,24 @@ Inherits from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[DeviceTransferNode](api/Classes/classginn_1_1_device_transfer_node.md#function-devicetransfernode)**([NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > e, DevPtr dev) |
 | virtual bool | **[has_grad](api/Classes/classginn_1_1_device_transfer_node.md#function-has_grad)**() const override |
 | virtual std::string | **[name](api/Classes/classginn_1_1_device_transfer_node.md#function-name)**() const override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -30,13 +39,22 @@ Inherits from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data
 | virtual const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & | **[value](api/Classes/classginn_1_1_base_data_node.md#function-value)**() const override |
 | virtual const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & | **[grad](api/Classes/classginn_1_1_base_data_node.md#function-grad)**() const override |
 
+
+</span>
+
 **Public Types inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using ScalarType | **[Scalar](api/Classes/classginn_1_1_node.md#using-scalar)**  |
 
+</span>
+
 **Public Functions inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -53,7 +71,14 @@ Inherits from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data
 | | **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 | template <typename Container \> <br>| **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const Container & ins) |
 
+
+</span>
+
+</span>
+
 **Public Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -78,17 +103,30 @@ Inherits from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data
 | virtual void | **[reset_grad](api/Classes/classginn_1_1_base_node.md#function-reset_grad)**() |
 | virtual void | **[reset_forwarded](api/Classes/classginn_1_1_base_node.md#function-reset_forwarded)**() |
 
+
+</span>
+
 **Public Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | bool | **[forwarded](api/Classes/classginn_1_1_base_node.md#variable-forwarded)**  |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[ins_](api/Classes/classginn_1_1_base_node.md#variable-ins_)**  |
+
+
+</span>
 
 
 ## Detailed Description
@@ -132,4 +170,4 @@ inline virtual std::string name() const override
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

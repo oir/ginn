@@ -5,6 +5,8 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[CurandGenerator](api/Classes/classginn_1_1_curand_generator.md#function-curandgenerator)**(int dev =0) |
@@ -12,6 +14,9 @@
 | | **[~CurandGenerator](api/Classes/classginn_1_1_curand_generator.md#function-~curandgenerator)**() |
 | void | **[uniform](api/Classes/classginn_1_1_curand_generator.md#function-uniform)**(Real * data, size_t size) |
 | void | **[uniform](api/Classes/classginn_1_1_curand_generator.md#function-uniform)**(Int * data, size_t size) |
+
+
+</span>
 
 ## Public Functions Documentation
 
@@ -62,4 +67,4 @@ inline void uniform(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

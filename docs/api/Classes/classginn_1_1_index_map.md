@@ -5,6 +5,8 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[IndexMap](api/Classes/classginn_1_1_index_map.md#function-indexmap)**() =default |
@@ -19,6 +21,9 @@
 | size_t | **[operator[]](api/Classes/classginn_1_1_index_map.md#function-operator[])**(const Key & key) const |
 | const Key & | **[reverse_lookup](api/Classes/classginn_1_1_index_map.md#function-reverse_lookup)**(size_t i) const |
 | const Key & | **[operator()](api/Classes/classginn_1_1_index_map.md#function-operator())**(size_t i) const |
+
+
+</span>
 
 ## Detailed Description
 
@@ -132,4 +137,4 @@ inline const Key & operator()(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

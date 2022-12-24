@@ -7,11 +7,18 @@ Inherits from [ginn::LayerNode< NodePtrs< Scalar >(NodePtrs< Scalar >)>](api/Cla
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using typename [Lstm](api/Classes/classginn_1_1_lstm.md)< Scalar >::State | **[State](api/Classes/classginn_1_1_lstm_layer_node.md#using-state)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -21,6 +28,9 @@ Inherits from [ginn::LayerNode< NodePtrs< Scalar >(NodePtrs< Scalar >)>](api/Cla
 | NodePtrs< Scalar > | **[run](api/Classes/classginn_1_1_lstm_layer_node.md#function-run)**(const NodePtrs< Scalar > & x) override |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_lstm_layer_node.md#function-weights_)**() override |
 | LayerPtr< NodePtrs< Scalar >(NodePtrs< Scalar >)> | **[copy](api/Classes/classginn_1_1_lstm_layer_node.md#function-copy)**(Copy mode) override |
+
+
+</span>
 
 ## Detailed Description
 
@@ -98,4 +108,4 @@ inline LayerPtr< NodePtrs< Scalar >(NodePtrs< Scalar >)> copy(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

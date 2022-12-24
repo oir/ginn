@@ -9,26 +9,45 @@ Inherited by [ginn::PickNegLogSoftmaxNode< Scalar >](api/Classes/classginn_1_1_p
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual std::string | **[name](api/Classes/classginn_1_1_pick_softmax_node.md#function-name)**() const override |
 
+
+</span>
+
 ## Protected Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[forward_](api/Classes/classginn_1_1_pick_softmax_node.md#function-forward_)**() override |
 | virtual void | **[backward_](api/Classes/classginn_1_1_pick_softmax_node.md#function-backward_)**() override |
 
+
+</span>
+
 ## Protected Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > | **[smax_](api/Classes/classginn_1_1_pick_softmax_node.md#variable-smax_)**  |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::PickNode< Scalar >](api/Classes/classginn_1_1_pick_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -36,7 +55,12 @@ Inherited by [ginn::PickNegLogSoftmaxNode< Scalar >](api/Classes/classginn_1_1_p
 | | **[PickNode](api/Classes/classginn_1_1_pick_node.md#function-picknode)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & in, const std::vector< Int > & index) |
 | | **[PickNode](api/Classes/classginn_1_1_pick_node.md#function-picknode)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & in, Int index) |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::PickNode< Scalar >](api/Classes/classginn_1_1_pick_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -44,14 +68,26 @@ Inherited by [ginn::PickNegLogSoftmaxNode< Scalar >](api/Classes/classginn_1_1_p
 | void | **[pick_grad](api/Classes/classginn_1_1_pick_node.md#function-pick_grad)**([Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & grad_in, bool negate =false) |
 | void | **[check_range](api/Classes/classginn_1_1_pick_node.md#function-check_range)**() |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::PickNode< Scalar >](api/Classes/classginn_1_1_pick_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[in_](api/Classes/classginn_1_1_pick_node.md#variable-in_)**  |
 | [DataPtr](api/Classes/classginn_1_1_ptr.md)< Int > | **[index_](api/Classes/classginn_1_1_pick_node.md#variable-index_)**  |
 
+
+</span>
+
+</span>
+
 **Public Functions inherited from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -68,13 +104,22 @@ Inherited by [ginn::PickNegLogSoftmaxNode< Scalar >](api/Classes/classginn_1_1_p
 | virtual bool | **[has_grad](api/Classes/classginn_1_1_base_data_node.md#function-has_grad)**() const override |
 | virtual void | **[has_grad](api/Classes/classginn_1_1_base_data_node.md#function-has_grad)**(bool hg) |
 
+
+</span>
+
 **Public Types inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using ScalarType | **[Scalar](api/Classes/classginn_1_1_node.md#using-scalar)**  |
 
+</span>
+
 **Public Functions inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -91,7 +136,14 @@ Inherited by [ginn::PickNegLogSoftmaxNode< Scalar >](api/Classes/classginn_1_1_p
 | | **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 | template <typename Container \> <br>| **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const Container & ins) |
 
+
+</span>
+
+</span>
+
 **Public Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -117,17 +169,30 @@ Inherited by [ginn::PickNegLogSoftmaxNode< Scalar >](api/Classes/classginn_1_1_p
 | virtual void | **[reset_grad](api/Classes/classginn_1_1_base_node.md#function-reset_grad)**() |
 | virtual void | **[reset_forwarded](api/Classes/classginn_1_1_base_node.md#function-reset_forwarded)**() |
 
+
+</span>
+
 **Public Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | bool | **[forwarded](api/Classes/classginn_1_1_base_node.md#variable-forwarded)**  |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[ins_](api/Classes/classginn_1_1_base_node.md#variable-ins_)**  |
+
+
+</span>
 
 
 ## Detailed Description
@@ -191,4 +256,4 @@ Tensor< Scalar > smax_;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

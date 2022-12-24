@@ -3,6 +3,8 @@
 
 ## Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | Real | **[operator""_r](api/Namespaces/namespaceginn_1_1literals.md#function-operator""_r)**(long double x) |
@@ -10,6 +12,9 @@
 | Half | **[operator""_h](api/Namespaces/namespaceginn_1_1literals.md#function-operator""_h)**(long double x) |
 | Half | **[operator""_h](api/Namespaces/namespaceginn_1_1literals.md#function-operator""_h)**(unsigned long long x) |
 | auto | **[operator""_f](api/Namespaces/namespaceginn_1_1literals.md#function-operator""_f)**(const char * s, size_t ) |
+
+
+</span>
 
 
 ## Functions Documentation
@@ -66,4 +71,4 @@ inline auto operator""_f(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

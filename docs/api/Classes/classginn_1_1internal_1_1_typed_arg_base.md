@@ -9,11 +9,18 @@ Inherited by [ginn::Arg< T >](api/Classes/classginn_1_1_arg.md)
 
 ## Protected Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using typename [MaybeValueType](api/Classes/structginn_1_1internal_1_1_maybe_value_type.md)< T >::type | **[value_t](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#using-value_t)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -28,42 +35,74 @@ Inherited by [ginn::Arg< T >](api/Classes/classginn_1_1_arg.md)
 | template <typename Container \> <br>auto & | **[require_choices](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-require_choices)**(const Container & vals) |
 | auto & | **[require_choices](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-require_choices)**(std::initializer_list< value_t > vals) |
 
+
+</span>
+
 ## Protected Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | | **[TypedArgBase](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-typedargbase)**(T & dest) |
 | virtual std::string | **[help](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-help)**() const override |
 
+
+</span>
+
 ## Protected Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | T & | **[dest_](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#variable-dest_)**  |
 | std::vector< [Validator](api/Classes/classginn_1_1internal_1_1_validator.md)< value_t > > | **[validators_](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#variable-validators_)**  |
 
+
+</span>
+
 ## Friends
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::Args](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#friend-ginnargs)**  |
 
+
+</span>
+
 ## Additional inherited members
 
 **Public Classes inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | struct | **[DefinitionError](api/Classes/structginn_1_1internal_1_1_arg_base_1_1_definition_error.md)**  |
 
+
+</span>
+
+</span>
+
 **Protected Types inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using fmt::terminal_color | **[Color](api/Classes/classginn_1_1internal_1_1_arg_base.md#using-color)**  |
 | using fmt::emphasis | **[Emphasis](api/Classes/classginn_1_1internal_1_1_arg_base.md#using-emphasis)**  |
 
+
+</span>
+
 **Public Functions inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -71,7 +110,12 @@ Inherited by [ginn::Arg< T >](api/Classes/classginn_1_1_arg.md)
 | | **[ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-argbase)**() =default |
 | void | **[ensure](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-ensure)**(bool predicate, const std::string & msg) |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -86,7 +130,12 @@ Inherited by [ginn::Arg< T >](api/Classes/classginn_1_1_arg.md)
 | virtual std::unique_ptr< [ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md) > | **[clone](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-clone)**() const =0 |
 | virtual void | **[parse_](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-parse_)**(const std::string & value) =0 |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -97,6 +146,9 @@ Inherited by [ginn::Arg< T >](api/Classes/classginn_1_1_arg.md)
 | bool | **[required_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-required_)**  |
 | bool | **[parsed_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-parsed_)**  |
 | bool | **[color_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-color_)**  |
+
+
+</span>
 
 
 ## Detailed Description
@@ -261,4 +313,4 @@ friend class ginn::Args(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

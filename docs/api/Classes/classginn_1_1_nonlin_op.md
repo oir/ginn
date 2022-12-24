@@ -7,6 +7,8 @@ Inherited by [ginn::Gelu2Op< Scalar >](api/Classes/classginn_1_1_gelu2_op.md), [
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual bool | **[backward_requires_input](api/Classes/classginn_1_1_nonlin_op.md#function-backward_requires_input)**() const |
@@ -15,6 +17,9 @@ Inherited by [ginn::Gelu2Op< Scalar >](api/Classes/classginn_1_1_gelu2_op.md), [
 | virtual void | **[backward](api/Classes/classginn_1_1_nonlin_op.md#function-backward)**([Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & , const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & , const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & , const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & , bool ) const =0 |
 | virtual | **[~NonlinOp](api/Classes/classginn_1_1_nonlin_op.md#function-~nonlinop)**() =default |
 | virtual std::unique_ptr< [NonlinOp](api/Classes/classginn_1_1_nonlin_op.md)< Scalar > > | **[copy](api/Classes/classginn_1_1_nonlin_op.md#function-copy)**() const =0 |
+
+
+</span>
 
 ## Detailed Description
 
@@ -87,4 +92,4 @@ virtual std::unique_ptr< NonlinOp< Scalar > > copy() const =0
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

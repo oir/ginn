@@ -5,6 +5,8 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using std::forward_iterator_tag | **[iterator_category](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md#using-iterator_category)**  |
@@ -13,7 +15,12 @@
 | using value_type * | **[pointer](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md#using-pointer)**  |
 | using value_type & | **[reference](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md#using-reference)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -25,6 +32,9 @@
 | auto | **[operator++](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md#function-operator++)**(int ) |
 | bool | **[operator==](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md#function-operator==)**(const [DereferencingIterator](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md) & other) |
 | bool | **[operator!=](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md#function-operator!=)**(const [DereferencingIterator](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md) & other) |
+
+
+</span>
 
 ## Detailed Description
 
@@ -140,4 +150,4 @@ inline bool operator!=(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -5,16 +5,26 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[LhsExpr](api/Classes/classginn_1_1_lhs_expr.md#function-lhsexpr)**(InnerExpr a_e, DevPtr a_dev) |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | InnerExpr | **[e](api/Classes/classginn_1_1_lhs_expr.md#variable-e)**  |
 | DevPtr | **[dev](api/Classes/classginn_1_1_lhs_expr.md#variable-dev)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -53,4 +63,4 @@ DevPtr dev;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

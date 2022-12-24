@@ -8,11 +8,18 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using size_t | **[Index](api/Classes/classginn_1_1_alias_sampler.md#using-index)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -21,6 +28,9 @@
 | Index | **[sample](api/Classes/classginn_1_1_alias_sampler.md#function-sample)**() |
 | size_t | **[num_classes](api/Classes/classginn_1_1_alias_sampler.md#function-num_classes)**() |
 | Index | **[operator()](api/Classes/classginn_1_1_alias_sampler.md#function-operator())**() |
+
+
+</span>
 
 ## Detailed Description
 
@@ -83,4 +93,4 @@ inline Index operator()()
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

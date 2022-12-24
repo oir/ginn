@@ -5,6 +5,8 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[LookupTable](api/Classes/classginn_1_1_lookup_table.md#function-lookuptable)**(bool has_unk =true) |
@@ -24,6 +26,9 @@
 | void | **[clear](api/Classes/classginn_1_1_lookup_table.md#function-clear)**() |
 | auto | **[size](api/Classes/classginn_1_1_lookup_table.md#function-size)**() const |
 | const auto & | **[keys](api/Classes/classginn_1_1_lookup_table.md#function-keys)**() const |
+
+
+</span>
 
 ## Detailed Description
 
@@ -186,4 +191,4 @@ inline const auto & keys() const
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

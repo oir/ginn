@@ -7,6 +7,8 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtr< Scalar >)>](api/Class
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[run](api/Classes/classginn_1_1_dropout_layer_node.md#function-run)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & x) override |
@@ -14,6 +16,9 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtr< Scalar >)>](api/Class
 | | **[DropoutLayerNode](api/Classes/classginn_1_1_dropout_layer_node.md#function-dropoutlayernode)**(Real drop_p, bool inplace =false) |
 | | **[DropoutLayerNode](api/Classes/classginn_1_1_dropout_layer_node.md#function-dropoutlayernode)**(const [DropoutLayerNode](api/Classes/classginn_1_1_dropout_layer_node.md) & other) =default |
 | LayerPtr< [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >([NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >)> | **[copy](api/Classes/classginn_1_1_dropout_layer_node.md#function-copy)**(Copy ) override |
+
+
+</span>
 
 ## Detailed Description
 
@@ -70,4 +75,4 @@ inline LayerPtr< NodePtr< Scalar >(NodePtr< Scalar >)> copy(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

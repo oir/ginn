@@ -3,11 +3,18 @@
 
 ## Namespaces
 
+<span class="api-table">
+
 | Name           |
 | -------------- |
 | **[ginn::timer::internal](api/Namespaces/namespaceginn_1_1timer_1_1internal.md)**  |
 
+
+</span>
+
 ## Types
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -18,7 +25,12 @@
 | using std::chrono::system_clock | **[Clock](api/Namespaces/namespaceginn_1_1timer.md#using-clock)**  |
 | using std::chrono::time_point< Clock > | **[TimePoint](api/Namespaces/namespaceginn_1_1timer.md#using-timepoint)**  |
 
+
+</span>
+
 ## Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -32,6 +44,9 @@
 | void | **[reset](api/Namespaces/namespaceginn_1_1timer.md#function-reset)**() |
 | const std::string | **[date_time](api/Namespaces/namespaceginn_1_1timer.md#function-date_time)**(const std::string format ="%Y-%m-%d_%H.%M.%S") |
 | template <typename Func \> <br>void | **[time](api/Namespaces/namespaceginn_1_1timer.md#function-time)**(const std::string & name, Func f) |
+
+
+</span>
 
 ## Types Documentation
 
@@ -187,4 +202,4 @@ void time(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

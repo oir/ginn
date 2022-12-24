@@ -5,11 +5,16 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[ExtendedGraph](api/Classes/classginn_1_1_extended_graph.md#function-extendedgraph)**(const [Graph](api/Classes/classginn_1_1_graph.md) & g) |
 | auto & | **[autobatch](api/Classes/classginn_1_1_extended_graph.md#function-autobatch)**() |
 | [Graph](api/Classes/classginn_1_1_graph.md) | **[graph](api/Classes/classginn_1_1_extended_graph.md#function-graph)**() |
+
+
+</span>
 
 ## Public Functions Documentation
 
@@ -38,4 +43,4 @@ inline Graph graph()
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

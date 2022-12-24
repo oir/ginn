@@ -3,18 +3,30 @@
 
 ## Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | template <typename Key ,typename Value \> <br>using std::unordered_map< Key, Value > | **[Map](api/Namespaces/namespaceginn_1_1timer_1_1internal.md#using-map)**  |
 
+
+</span>
+
 ## Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::string | **[simplify](api/Namespaces/namespaceginn_1_1timer_1_1internal.md#function-simplify)**(Rep micros) |
 | std::string | **[make_bar](api/Namespaces/namespaceginn_1_1timer_1_1internal.md#function-make_bar)**(float percent, int width =20) |
 
+
+</span>
+
 ## Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -100,4 +112,4 @@ Duration total;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

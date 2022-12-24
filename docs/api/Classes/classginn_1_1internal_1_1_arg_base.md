@@ -7,18 +7,30 @@ Inherited by [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1int
 
 ## Public Classes
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | struct | **[DefinitionError](api/Classes/structginn_1_1internal_1_1_arg_base_1_1_definition_error.md)**  |
 
+
+</span>
+
 ## Protected Types
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using fmt::terminal_color | **[Color](api/Classes/classginn_1_1internal_1_1_arg_base.md#using-color)**  |
 | using fmt::emphasis | **[Emphasis](api/Classes/classginn_1_1internal_1_1_arg_base.md#using-emphasis)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -26,7 +38,12 @@ Inherited by [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1int
 | | **[ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-argbase)**() =default |
 | void | **[ensure](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-ensure)**(bool predicate, const std::string & msg) |
 
+
+</span>
+
 ## Protected Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -42,7 +59,12 @@ Inherited by [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1int
 | virtual std::unique_ptr< [ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md) > | **[clone](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-clone)**() const =0 |
 | virtual void | **[parse_](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-parse_)**(const std::string & value) =0 |
 
+
+</span>
+
 ## Protected Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -54,11 +76,19 @@ Inherited by [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1int
 | bool | **[parsed_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-parsed_)**  |
 | bool | **[color_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-color_)**  |
 
+
+</span>
+
 ## Friends
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::Args](api/Classes/classginn_1_1internal_1_1_arg_base.md#friend-ginnargs)**  |
+
+
+</span>
 
 ## Protected Types Documentation
 
@@ -273,4 +303,4 @@ friend class ginn::Args(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

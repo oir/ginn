@@ -3,11 +3,16 @@
 
 ## Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | template <typename T \> <br>T | **[sto](api/Namespaces/namespaceginn_1_1sto.md#function-sto)**(const std::string & s) |
 | bool | **[sto< bool >](api/Namespaces/namespaceginn_1_1sto.md#function-sto<-bool->)**(const std::string & s) |
 | std::string | **[sto< std::string >](api/Namespaces/namespaceginn_1_1sto.md#function-sto<-stdstring->)**(const std::string & s) |
+
+
+</span>
 
 
 ## Functions Documentation
@@ -46,4 +51,4 @@ inline std::string sto< std::string >(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

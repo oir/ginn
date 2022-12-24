@@ -5,15 +5,25 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | void | **[check](api/Classes/classginn_1_1internal_1_1_validator.md#function-check)**(const std::string & name, const T & x) const |
 
+
+</span>
+
 ## Friends
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | class | **[TypedArgBase](api/Classes/classginn_1_1internal_1_1_validator.md#friend-typedargbase)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -47,4 +57,4 @@ friend class TypedArgBase(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

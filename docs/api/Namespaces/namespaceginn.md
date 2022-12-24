@@ -3,6 +3,8 @@
 
 ## Namespaces
 
+<span class="api-table">
+
 | Name           |
 | -------------- |
 | **[ginn::eigen](api/Namespaces/namespaceginn_1_1eigen.md)**  |
@@ -16,7 +18,12 @@
 | **[ginn::update](api/Namespaces/namespaceginn_1_1update.md)**  |
 | **[ginn::util](api/Namespaces/namespaceginn_1_1util.md)**  |
 
+
+</span>
+
 ## Classes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -153,7 +160,12 @@
 | class | **[ginn::VarianceNode](api/Classes/classginn_1_1_variance_node.md)**  |
 | class | **[ginn::WeightNode](api/Classes/classginn_1_1_weight_node.md)**  |
 
+
+</span>
+
 ## Types
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -192,7 +204,12 @@
 | template <typename T \> <br>using typename [innermost](api/Classes/structginn_1_1innermost.md)< T >::type | **[innermost_t](api/Namespaces/namespaceginn.md#using-innermost_t)**  |
 | template <int Rank,typename T \> <br>using typename [NestedInitListImpl](api/Classes/structginn_1_1_nested_init_list_impl.md)< Rank, T >::type | **[NestedInitList](api/Namespaces/namespaceginn.md#using-nestedinitlist)**  |
 
+
+</span>
+
 ## Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -385,7 +402,12 @@
 | template <typename Rng \> <br>std::vector< size_t > | **[randperm](api/Namespaces/namespaceginn.md#function-randperm)**(size_t size, Rng & g) |
 | template <typename T  =size_t\> <br>std::vector< T > | **[iota](api/Namespaces/namespaceginn.md#function-iota)**(size_t size) |
 
+
+</span>
+
 ## Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -2602,4 +2624,4 @@ constexpr bool is_node_ptr_v = is_node_ptr<T>::value;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

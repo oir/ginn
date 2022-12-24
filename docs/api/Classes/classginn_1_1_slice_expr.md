@@ -5,11 +5,16 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[SliceExpr](api/Classes/classginn_1_1_slice_expr.md#function-sliceexpr)**(DevPtr dev, [LhsExpr](api/Classes/classginn_1_1_lhs_expr.md) lhs, Index< N > offsets, Index< N > sizes) |
 | template <typename RhsExpr \> <br>void | **[operator=](api/Classes/classginn_1_1_slice_expr.md#function-operator=)**(RhsExpr rhs) |
 | template <typename RhsExpr \> <br>void | **[operator+=](api/Classes/classginn_1_1_slice_expr.md#function-operator+=)**(RhsExpr rhs) |
+
+
+</span>
 
 ## Detailed Description
 
@@ -55,4 +60,4 @@ inline void operator+=(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

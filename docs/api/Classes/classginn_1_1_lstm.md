@@ -5,11 +5,18 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using std::pair< [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >, [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > > | **[State](api/Classes/classginn_1_1_lstm.md#using-state)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -22,7 +29,12 @@
 | [Lstm](api/Classes/classginn_1_1_lstm.md) | **[copy](api/Classes/classginn_1_1_lstm.md#function-copy)**(Copy mode) |
 | template <typename DataPtrPair \> <br>State | **[step](api/Classes/classginn_1_1_lstm.md#function-step)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & x, const DataPtrPair & past) |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -41,6 +53,9 @@
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[bf](api/Classes/classginn_1_1_lstm.md#variable-bf)**  |
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[bc](api/Classes/classginn_1_1_lstm.md#variable-bc)**  |
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[bo](api/Classes/classginn_1_1_lstm.md#variable-bo)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -241,4 +256,4 @@ WeightPtr< Scalar > bo;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

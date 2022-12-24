@@ -5,11 +5,18 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using T | **[value_type](api/Classes/classginn_1_1tree_1_1_tree.md#using-value_type)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -24,11 +31,19 @@
 | auto | **[begin](api/Classes/classginn_1_1tree_1_1_tree.md#function-begin)**() const |
 | auto | **[end](api/Classes/classginn_1_1tree_1_1_tree.md#function-end)**() const |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | TreeNodePtr< T > | **[root](api/Classes/classginn_1_1tree_1_1_tree.md#variable-root)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -137,4 +152,4 @@ TreeNodePtr< T > root;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -5,9 +5,14 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using T | **[type](api/Classes/structginn_1_1_nested_init_list_impl_3_010_00_01_t_01_4.md#using-type)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -27,4 +32,4 @@ using ginn::NestedInitListImpl< 0, T >::type =  T;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

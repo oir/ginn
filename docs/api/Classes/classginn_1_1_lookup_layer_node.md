@@ -7,13 +7,20 @@ Inherits from [ginn::LayerNode< Func >](api/Classes/classginn_1_1_layer_node.md)
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using typename [FunctionTraits](api/Classes/structginn_1_1_function_traits.md)< Func >::arg_t | **[InputType](api/Classes/classginn_1_1_lookup_layer_node.md#using-inputtype)**  |
 | using typename [FunctionTraits](api/Classes/structginn_1_1_function_traits.md)< Func >::result_t | **[OutputType](api/Classes/classginn_1_1_lookup_layer_node.md#using-outputtype)**  |
 | using std::unordered_set< InputType > | **[Set](api/Classes/classginn_1_1_lookup_layer_node.md#using-set)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -23,11 +30,19 @@ Inherits from [ginn::LayerNode< Func >](api/Classes/classginn_1_1_layer_node.md)
 | OutputType | **[run](api/Classes/classginn_1_1_lookup_layer_node.md#function-run)**(const InputType & x) override |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_lookup_layer_node.md#function-weights_)**() override |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | [LookupTable](api/Classes/classginn_1_1_lookup_table.md)< InputType, OutputType > | **[table](api/Classes/classginn_1_1_lookup_layer_node.md#variable-table)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -116,4 +131,4 @@ LookupTable< InputType, OutputType > table;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

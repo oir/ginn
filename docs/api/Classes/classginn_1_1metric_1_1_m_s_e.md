@@ -7,20 +7,32 @@ Inherits from [ginn::metric::Metric< T >](api/Classes/classginn_1_1metric_1_1_me
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[add_](api/Classes/classginn_1_1metric_1_1_m_s_e.md#function-add_)**(const T & a, const T & b, double weight =1.) override |
 | virtual Real | **[eval](api/Classes/classginn_1_1metric_1_1_m_s_e.md#function-eval)**() const override |
 | virtual void | **[clear](api/Classes/classginn_1_1metric_1_1_m_s_e.md#function-clear)**() override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::metric::Metric< T >](api/Classes/classginn_1_1metric_1_1_metric.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | void | **[add](api/Classes/classginn_1_1metric_1_1_metric.md#function-add)**(const LabelType & pred, const LabelType & tru, double weight =1.) |
 | template <typename Preds ,typename Trus \> <br>void | **[batched_add](api/Classes/classginn_1_1metric_1_1_metric.md#function-batched_add)**(const Preds & preds, const Trus & trus) |
+
+
+</span>
 
 
 ## Detailed Description
@@ -68,4 +80,4 @@ inline virtual void clear() override
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

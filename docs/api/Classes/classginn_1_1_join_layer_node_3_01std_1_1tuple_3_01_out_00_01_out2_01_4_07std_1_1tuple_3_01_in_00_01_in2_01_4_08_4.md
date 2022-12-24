@@ -7,12 +7,19 @@ Inherits from [ginn::CombinedLayerNode< std::tuple< Out, Out2 >(std::tuple< In, 
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using std::tuple< In, In2 > | **[InputType](api/Classes/classginn_1_1_join_layer_node_3_01std_1_1tuple_3_01_out_00_01_out2_01_4_07std_1_1tuple_3_01_in_00_01_in2_01_4_08_4.md#using-inputtype)**  |
 | using std::tuple< Out, Out2 > | **[OutputType](api/Classes/classginn_1_1_join_layer_node_3_01std_1_1tuple_3_01_out_00_01_out2_01_4_07std_1_1tuple_3_01_in_00_01_in2_01_4_08_4.md#using-outputtype)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -21,15 +28,27 @@ Inherits from [ginn::CombinedLayerNode< std::tuple< Out, Out2 >(std::tuple< In, 
 | OutputType | **[run](api/Classes/classginn_1_1_join_layer_node_3_01std_1_1tuple_3_01_out_00_01_out2_01_4_07std_1_1tuple_3_01_in_00_01_in2_01_4_08_4.md#function-run)**(const InputType & xs) override |
 | LayerPtr< OutputType(InputType)> | **[copy](api/Classes/classginn_1_1_join_layer_node_3_01std_1_1tuple_3_01_out_00_01_out2_01_4_07std_1_1tuple_3_01_in_00_01_in2_01_4_08_4.md#function-copy)**(Copy mode) override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::CombinedLayerNode< std::tuple< Out, Out2 >(std::tuple< In, In2 >)>](api/Classes/classginn_1_1_combined_layer_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_combined_layer_node.md#function-weights_)**() override |
 | void | **[set_mode](api/Classes/classginn_1_1_combined_layer_node.md#function-set_mode)**(Mode mode) override |
 | Mode | **[mode](api/Classes/classginn_1_1_combined_layer_node.md#function-mode)**() const override |
+
+
+</span>
+
+</span>
 
 
 ## Detailed Description
@@ -100,4 +119,4 @@ inline LayerPtr< OutputType(InputType)> copy(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

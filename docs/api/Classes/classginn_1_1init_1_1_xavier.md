@@ -7,18 +7,30 @@ Inherits from [ginn::Initer< Scalar >](api/Classes/classginn_1_1_initer.md)
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[Xavier](api/Classes/classginn_1_1init_1_1_xavier.md#function-xavier)**() =default |
 | virtual void | **[init](api/Classes/classginn_1_1init_1_1_xavier.md#function-init)**([Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & w) override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::Initer< Scalar >](api/Classes/classginn_1_1_initer.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual | **[~Initer](api/Classes/classginn_1_1_initer.md#function-~initer)**() =default |
+
+
+</span>
 
 
 ## Detailed Description
@@ -51,4 +63,4 @@ inline virtual void init(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

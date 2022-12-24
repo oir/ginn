@@ -7,6 +7,8 @@ Inherits from [ginn::Device](api/Classes/classginn_1_1_device.md)
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[PreallocCpuDevice](api/Classes/classginn_1_1_prealloc_cpu_device.md#function-prealloccpudevice)**(size_t size) |
@@ -20,14 +22,24 @@ Inherits from [ginn::Device](api/Classes/classginn_1_1_device.md)
 | size_t | **[used](api/Classes/classginn_1_1_prealloc_cpu_device.md#function-used)**() const |
 | size_t | **[size](api/Classes/classginn_1_1_prealloc_cpu_device.md#function-size)**() const |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::Device](api/Classes/classginn_1_1_device.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | void | **[copy](api/Classes/classginn_1_1_device.md#function-copy)**(const [Device](api/Classes/classginn_1_1_device.md) & other, void * data, void * other_data, size_t size) |
 | virtual | **[~Device](api/Classes/classginn_1_1_device.md#function-~device)**() =default |
+
+
+</span>
 
 
 ## Public Functions Documentation
@@ -131,4 +143,4 @@ inline size_t size() const
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

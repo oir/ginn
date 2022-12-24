@@ -7,6 +7,8 @@ Inherited by [ginn::LayerNode< Out(In)>](api/Classes/classginn_1_1_layer_node_3_
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_layer_node_base.md#function-weights_)**() |
@@ -14,6 +16,9 @@ Inherited by [ginn::LayerNode< Out(In)>](api/Classes/classginn_1_1_layer_node_3_
 | virtual void | **[set_mode](api/Classes/classginn_1_1_layer_node_base.md#function-set_mode)**(Mode mode) |
 | virtual Mode | **[mode](api/Classes/classginn_1_1_layer_node_base.md#function-mode)**() const |
 | virtual | **[~LayerNodeBase](api/Classes/classginn_1_1_layer_node_base.md#function-~layernodebase)**() =default |
+
+
+</span>
 
 ## Public Functions Documentation
 
@@ -57,4 +62,4 @@ virtual ~LayerNodeBase() =default
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -5,12 +5,17 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | void | **[add](api/Classes/classginn_1_1metric_1_1_metric.md#function-add)**(const LabelType & pred, const LabelType & tru, double weight =1.) |
 | template <typename Preds ,typename Trus \> <br>void | **[batched_add](api/Classes/classginn_1_1metric_1_1_metric.md#function-batched_add)**(const Preds & preds, const Trus & trus) |
 | virtual Real | **[eval](api/Classes/classginn_1_1metric_1_1_metric.md#function-eval)**() const =0 |
 | virtual void | **[clear](api/Classes/classginn_1_1metric_1_1_metric.md#function-clear)**() =0 |
+
+
+</span>
 
 ## Detailed Description
 
@@ -66,4 +71,4 @@ virtual void clear() =0
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

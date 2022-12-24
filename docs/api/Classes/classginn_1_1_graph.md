@@ -5,6 +5,8 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[Graph](api/Classes/classginn_1_1_graph.md#function-graph)**([BaseNodePtr](api/Classes/classginn_1_1_ptr.md) e) |
@@ -15,6 +17,9 @@
 | auto & | **[reset_forwarded](api/Classes/classginn_1_1_graph.md#function-reset_forwarded)**() |
 | const auto & | **[nodes](api/Classes/classginn_1_1_graph.md#function-nodes)**() const |
 | [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) | **[sink](api/Classes/classginn_1_1_graph.md#function-sink)**() const |
+
+
+</span>
 
 ## Public Functions Documentation
 
@@ -80,4 +85,4 @@ inline BaseNodePtr sink() const
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

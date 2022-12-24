@@ -7,22 +7,36 @@ Inherits from [ginn::LayerNodeBase](api/Classes/classginn_1_1_layer_node_base.md
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using Out(In) | **[function_t](api/Classes/classginn_1_1_layer_node_3_01_out_07_in_08_4.md#using-function_t)**  |
 | using In | **[arg_t](api/Classes/classginn_1_1_layer_node_3_01_out_07_in_08_4.md#using-arg_t)**  |
 | using Out | **[result_t](api/Classes/classginn_1_1_layer_node_3_01_out_07_in_08_4.md#using-result_t)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual Out | **[run](api/Classes/classginn_1_1_layer_node_3_01_out_07_in_08_4.md#function-run)**(const In & ) =0 |
 | virtual LayerPtr< Out(In)> | **[copy](api/Classes/classginn_1_1_layer_node_3_01_out_07_in_08_4.md#function-copy)**(Copy mode) =0 |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::LayerNodeBase](api/Classes/classginn_1_1_layer_node_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -31,6 +45,9 @@ Inherits from [ginn::LayerNodeBase](api/Classes/classginn_1_1_layer_node_base.md
 | virtual void | **[set_mode](api/Classes/classginn_1_1_layer_node_base.md#function-set_mode)**(Mode mode) |
 | virtual Mode | **[mode](api/Classes/classginn_1_1_layer_node_base.md#function-mode)**() const |
 | virtual | **[~LayerNodeBase](api/Classes/classginn_1_1_layer_node_base.md#function-~layernodebase)**() =default |
+
+
+</span>
 
 
 ## Detailed Description
@@ -86,4 +103,4 @@ virtual LayerPtr< Out(In)> copy(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

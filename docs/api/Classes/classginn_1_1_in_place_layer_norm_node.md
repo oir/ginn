@@ -7,6 +7,8 @@ Inherits from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_no
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual const [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & | **[value](api/Classes/classginn_1_1_in_place_layer_norm_node.md#function-value)**() const override |
@@ -14,27 +16,49 @@ Inherits from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_no
 | virtual bool | **[has_grad](api/Classes/classginn_1_1_in_place_layer_norm_node.md#function-has_grad)**() const override |
 | virtual std::string | **[name](api/Classes/classginn_1_1_in_place_layer_norm_node.md#function-name)**() const override |
 
+
+</span>
+
 ## Protected Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[backward_](api/Classes/classginn_1_1_in_place_layer_norm_node.md#function-backward_)**() override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_norm_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | | **[LayerNormNode](api/Classes/classginn_1_1_layer_norm_node.md#function-layernormnode)**([NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > in, Scalar eps =Scalar(1e-8)) |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_norm_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[forward_](api/Classes/classginn_1_1_layer_norm_node.md#function-forward_)**() override |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_norm_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -43,7 +67,14 @@ Inherits from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_no
 | [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > | **[mean_](api/Classes/classginn_1_1_layer_norm_node.md#variable-mean_)**  |
 | [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > | **[std_](api/Classes/classginn_1_1_layer_norm_node.md#variable-std_)**  |
 
+
+</span>
+
+</span>
+
 **Public Functions inherited from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -56,13 +87,22 @@ Inherits from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_no
 | | **[BaseDataNode](api/Classes/classginn_1_1_base_data_node.md#function-basedatanode)**(const std::initializer_list< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 | | **[BaseDataNode](api/Classes/classginn_1_1_base_data_node.md#function-basedatanode)**(DevPtr dev, const std::initializer_list< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 
+
+</span>
+
 **Public Types inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using ScalarType | **[Scalar](api/Classes/classginn_1_1_node.md#using-scalar)**  |
 
+</span>
+
 **Public Functions inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -75,7 +115,14 @@ Inherits from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_no
 | | **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 | template <typename Container \> <br>| **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const Container & ins) |
 
+
+</span>
+
+</span>
+
 **Public Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -100,23 +147,41 @@ Inherits from [ginn::LayerNormNode< Scalar >](api/Classes/classginn_1_1_layer_no
 | virtual void | **[reset_grad](api/Classes/classginn_1_1_base_node.md#function-reset_grad)**() |
 | virtual void | **[reset_forwarded](api/Classes/classginn_1_1_base_node.md#function-reset_forwarded)**() |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[forward_](api/Classes/classginn_1_1_base_node.md#function-forward_)**() |
 
+
+</span>
+
 **Public Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | bool | **[forwarded](api/Classes/classginn_1_1_base_node.md#variable-forwarded)**  |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[ins_](api/Classes/classginn_1_1_base_node.md#variable-ins_)**  |
+
+
+</span>
 
 
 ## Detailed Description
@@ -182,4 +247,4 @@ inline virtual void backward_() override
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

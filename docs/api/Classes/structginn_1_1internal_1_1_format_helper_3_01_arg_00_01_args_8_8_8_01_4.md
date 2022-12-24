@@ -5,18 +5,28 @@
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | template <typename... Args2\> <br>std::string | **[realize](api/Classes/structginn_1_1internal_1_1_format_helper_3_01_arg_00_01_args_8_8_8_01_4.md#function-realize)**(const Args2 &... args) const |
 | | **[FormatHelper](api/Classes/structginn_1_1internal_1_1_format_helper_3_01_arg_00_01_args_8_8_8_01_4.md#function-formathelper)**([FormatHelper](api/Classes/structginn_1_1internal_1_1_format_helper.md)< Args... > head, const [Arg](api/Classes/classginn_1_1_arg.md) & arg) |
 | | **[operator std::string](api/Classes/structginn_1_1internal_1_1_format_helper_3_01_arg_00_01_args_8_8_8_01_4.md#function-operator-stdstring)**() const |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | [FormatHelper](api/Classes/structginn_1_1internal_1_1_format_helper.md)< Args... > | **[head_](api/Classes/structginn_1_1internal_1_1_format_helper_3_01_arg_00_01_args_8_8_8_01_4.md#variable-head_)**  |
 | member_t< [Arg](api/Classes/classginn_1_1_arg.md) > | **[arg_](api/Classes/structginn_1_1internal_1_1_format_helper_3_01_arg_00_01_args_8_8_8_01_4.md#variable-arg_)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -73,4 +83,4 @@ member_t< Arg > arg_;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

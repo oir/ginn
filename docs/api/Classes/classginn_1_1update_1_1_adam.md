@@ -7,11 +7,18 @@ Inherits from [ginn::Updater< Scalar >](api/Classes/classginn_1_1_updater.md)
 
 ## Public Classes
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | struct | **[History](api/Classes/structginn_1_1update_1_1_adam_1_1_history.md)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -21,7 +28,12 @@ Inherits from [ginn::Updater< Scalar >](api/Classes/classginn_1_1_updater.md)
 | void | **[update](api/Classes/classginn_1_1update_1_1_adam.md#function-update)**([Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & w, [Tensor](api/Classes/classginn_1_1_tensor.md)< Scalar > & d, size_t id) |
 | virtual void | **[update](api/Classes/classginn_1_1update_1_1_adam.md#function-update)**(const [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & w) override |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -33,19 +45,34 @@ Inherits from [ginn::Updater< Scalar >](api/Classes/classginn_1_1_updater.md)
 | Real | **[beta_2_](api/Classes/classginn_1_1update_1_1_adam.md#variable-beta_2_)**  |
 | Scalar | **[clip_](api/Classes/classginn_1_1update_1_1_adam.md#variable-clip_)**  |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::Updater< Scalar >](api/Classes/classginn_1_1_updater.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual | **[~Updater](api/Classes/classginn_1_1_updater.md#function-~updater)**() =default |
 
+
+</span>
+
 **Public Attributes inherited from [ginn::Updater< Scalar >](api/Classes/classginn_1_1_updater.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | bool | **[guard](api/Classes/classginn_1_1_updater.md#variable-guard)**  |
+
+
+</span>
 
 
 ## Detailed Description
@@ -166,4 +193,4 @@ Scalar clip_;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

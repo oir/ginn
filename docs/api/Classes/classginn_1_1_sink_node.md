@@ -7,6 +7,8 @@ Inherits from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual DevPtr | **[dev](api/Classes/classginn_1_1_sink_node.md#function-dev)**() const override |
@@ -16,9 +18,16 @@ Inherits from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)
 | | **[BaseNode](api/Classes/classginn_1_1_sink_node.md#function-basenode)**(const std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 | template <typename Container \> <br>| **[BaseNode](api/Classes/classginn_1_1_sink_node.md#function-basenode)**(const Container & ins) |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -39,24 +48,42 @@ Inherits from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)
 | virtual void | **[reset_grad](api/Classes/classginn_1_1_base_node.md#function-reset_grad)**() |
 | virtual void | **[reset_forwarded](api/Classes/classginn_1_1_base_node.md#function-reset_forwarded)**() |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[forward_](api/Classes/classginn_1_1_base_node.md#function-forward_)**() |
 | virtual void | **[backward_](api/Classes/classginn_1_1_base_node.md#function-backward_)**() |
 
+
+</span>
+
 **Public Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | bool | **[forwarded](api/Classes/classginn_1_1_base_node.md#variable-forwarded)**  |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[ins_](api/Classes/classginn_1_1_base_node.md#variable-ins_)**  |
+
+
+</span>
 
 
 ## Public Functions Documentation
@@ -119,4 +146,4 @@ inline BaseNode(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -7,6 +7,8 @@ Inherits from [ginn::LayerNode< Func >](api/Classes/classginn_1_1_layer_node.md)
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | virtual std::vector< ConstLayerBasePtr > | **[children](api/Classes/classginn_1_1_combined_layer_node.md#function-children)**() const =0 |
@@ -14,6 +16,9 @@ Inherits from [ginn::LayerNode< Func >](api/Classes/classginn_1_1_layer_node.md)
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_combined_layer_node.md#function-weights_)**() override |
 | void | **[set_mode](api/Classes/classginn_1_1_combined_layer_node.md#function-set_mode)**(Mode mode) override |
 | Mode | **[mode](api/Classes/classginn_1_1_combined_layer_node.md#function-mode)**() const override |
+
+
+</span>
 
 ## Detailed Description
 
@@ -66,4 +71,4 @@ inline Mode mode() const override
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

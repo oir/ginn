@@ -5,11 +5,18 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using typename std::shared_ptr< NodeType >::element_type | **[element_type](api/Classes/classginn_1_1_ptr.md#using-element_type)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -30,11 +37,19 @@
 | bool | **[operator==](api/Classes/classginn_1_1_ptr.md#function-operator==)**(const [Ptr](api/Classes/classginn_1_1_ptr.md)< NodeType > & other) const |
 | | **[operator bool](api/Classes/classginn_1_1_ptr.md#function-operator-bool)**() const |
 
+
+</span>
+
 ## Friends
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | class | **[Ptr](api/Classes/classginn_1_1_ptr.md#friend-ptr)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -198,4 +213,4 @@ friend class Ptr(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

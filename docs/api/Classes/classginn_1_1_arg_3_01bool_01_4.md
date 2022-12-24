@@ -9,27 +9,46 @@ Inherited by [ginn::Flag](api/Classes/classginn_1_1_flag.md)
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[Arg](api/Classes/classginn_1_1_arg_3_01bool_01_4.md#function-arg)**(bool & dest) |
 | virtual std::string | **[value](api/Classes/classginn_1_1_arg_3_01bool_01_4.md#function-value)**() const override |
 | virtual std::unique_ptr< [internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md) > | **[clone](api/Classes/classginn_1_1_arg_3_01bool_01_4.md#function-clone)**() const override |
 
+
+</span>
+
 ## Protected Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | virtual void | **[parse_](api/Classes/classginn_1_1_arg_3_01bool_01_4.md#function-parse_)**(const std::string & value) override |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Protected Types inherited from [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using typename [MaybeValueType](api/Classes/structginn_1_1internal_1_1_maybe_value_type.md)< T >::type | **[value_t](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#using-value_t)**  |
 
+
+</span>
+
 **Public Functions inherited from [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -44,40 +63,72 @@ Inherited by [ginn::Flag](api/Classes/classginn_1_1_flag.md)
 | template <typename Container \> <br>auto & | **[require_choices](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-require_choices)**(const Container & vals) |
 | auto & | **[require_choices](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-require_choices)**(std::initializer_list< value_t > vals) |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | | **[TypedArgBase](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-typedargbase)**(T & dest) |
 | virtual std::string | **[help](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#function-help)**() const override |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | T & | **[dest_](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#variable-dest_)**  |
 | std::vector< [Validator](api/Classes/classginn_1_1internal_1_1_validator.md)< value_t > > | **[validators_](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#variable-validators_)**  |
 
+
+</span>
+
 **Friends inherited from [ginn::internal::TypedArgBase< bool >](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::Args](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md#friend-ginnargs)**  |
 
+
+</span>
+
 **Public Classes inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | struct | **[DefinitionError](api/Classes/structginn_1_1internal_1_1_arg_base_1_1_definition_error.md)**  |
 
+
+</span>
+
+</span>
+
 **Protected Types inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using fmt::terminal_color | **[Color](api/Classes/classginn_1_1internal_1_1_arg_base.md#using-color)**  |
 | using fmt::emphasis | **[Emphasis](api/Classes/classginn_1_1internal_1_1_arg_base.md#using-emphasis)**  |
 
+
+</span>
+
 **Public Functions inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -85,7 +136,12 @@ Inherited by [ginn::Flag](api/Classes/classginn_1_1_flag.md)
 | | **[ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-argbase)**() =default |
 | void | **[ensure](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-ensure)**(bool predicate, const std::string & msg) |
 
+
+</span>
+
 **Protected Functions inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -98,7 +154,12 @@ Inherited by [ginn::Flag](api/Classes/classginn_1_1_flag.md)
 | virtual bool | **[is_flag](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-is_flag)**() const |
 | virtual bool | **[is_nary](api/Classes/classginn_1_1internal_1_1_arg_base.md#function-is_nary)**() const |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -110,11 +171,19 @@ Inherited by [ginn::Flag](api/Classes/classginn_1_1_flag.md)
 | bool | **[parsed_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-parsed_)**  |
 | bool | **[color_](api/Classes/classginn_1_1internal_1_1_arg_base.md#variable-color_)**  |
 
+
+</span>
+
 **Friends inherited from [ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::Args](api/Classes/classginn_1_1internal_1_1_arg_base.md#friend-ginnargs)**  |
+
+
+</span>
 
 
 ## Public Functions Documentation
@@ -170,4 +239,4 @@ inline virtual void parse_(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

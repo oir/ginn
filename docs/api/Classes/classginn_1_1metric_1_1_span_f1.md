@@ -7,11 +7,18 @@ Inherits from [ginn::metric::Metric< std::vector< std::string > >](api/Classes/c
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | typedef std::pair< Real, Real > | **[Span](api/Classes/classginn_1_1metric_1_1_span_f1.md#typedef-span)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -20,7 +27,12 @@ Inherits from [ginn::metric::Metric< std::vector< std::string > >](api/Classes/c
 | virtual Real | **[eval](api/Classes/classginn_1_1metric_1_1_span_f1.md#function-eval)**() const override |
 | virtual void | **[clear](api/Classes/classginn_1_1metric_1_1_span_f1.md#function-clear)**() override |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -30,14 +42,24 @@ Inherits from [ginn::metric::Metric< std::vector< std::string > >](api/Classes/c
 | std::unordered_map< std::string, size_t > | **[tru_counts](api/Classes/classginn_1_1metric_1_1_span_f1.md#variable-tru_counts)**  |
 | std::unordered_map< std::string, size_t > | **[match_counts](api/Classes/classginn_1_1metric_1_1_span_f1.md#variable-match_counts)**  |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::metric::Metric< std::vector< std::string > >](api/Classes/classginn_1_1metric_1_1_metric.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | void | **[add](api/Classes/classginn_1_1metric_1_1_metric.md#function-add)**(const LabelType & pred, const LabelType & tru, double weight =1.) |
 | template <typename Preds ,typename Trus \> <br>void | **[batched_add](api/Classes/classginn_1_1metric_1_1_metric.md#function-batched_add)**(const Preds & preds, const Trus & trus) |
+
+
+</span>
 
 
 ## Public Types Documentation
@@ -131,4 +153,4 @@ std::unordered_map< std::string, size_t > match_counts;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

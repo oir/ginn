@@ -5,11 +5,18 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using ScalarType | **[Scalar](api/Classes/classginn_1_1_tensor.md#using-scalar)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -76,6 +83,9 @@
 | void | **[load](api/Classes/classginn_1_1_tensor.md#function-load)**(std::istream & in) |
 | Size | **[size](api/Classes/classginn_1_1_tensor.md#function-size)**(const Shape & shape) |
 | Shape | **[reduce](api/Classes/classginn_1_1_tensor.md#function-reduce)**(const Shape & shape, Size dim) |
+
+
+</span>
 
 ## Detailed Description
 
@@ -644,4 +654,4 @@ static inline Shape reduce(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

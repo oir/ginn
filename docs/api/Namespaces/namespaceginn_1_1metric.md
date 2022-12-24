@@ -3,6 +3,8 @@
 
 ## Classes
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::metric::Accuracy](api/Classes/classginn_1_1metric_1_1_accuracy.md)**  |
@@ -13,10 +15,13 @@
 | class | **[ginn::metric::SpanF1](api/Classes/classginn_1_1metric_1_1_span_f1.md)**  |
 
 
+</span>
+
+
 
 
 
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

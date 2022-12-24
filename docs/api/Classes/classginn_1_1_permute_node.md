@@ -9,12 +9,19 @@ Inherited by [ginn::InPlacePermuteNode< Scalar >](api/Classes/classginn_1_1_in_p
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[PermuteNode](api/Classes/classginn_1_1_permute_node.md#function-permutenode)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & in, Shape indices) |
 | virtual std::string | **[name](api/Classes/classginn_1_1_permute_node.md#function-name)**() const override |
 
+
+</span>
+
 ## Protected Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -26,7 +33,12 @@ Inherited by [ginn::InPlacePermuteNode< Scalar >](api/Classes/classginn_1_1_in_p
 | virtual void | **[forward_](api/Classes/classginn_1_1_permute_node.md#function-forward_)**() override |
 | virtual void | **[backward_](api/Classes/classginn_1_1_permute_node.md#function-backward_)**() override |
 
+
+</span>
+
 ## Protected Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -34,9 +46,16 @@ Inherited by [ginn::InPlacePermuteNode< Scalar >](api/Classes/classginn_1_1_in_p
 | Shape | **[indices_](api/Classes/classginn_1_1_permute_node.md#variable-indices_)**  |
 | bool | **[overwrite_](api/Classes/classginn_1_1_permute_node.md#variable-overwrite_)**  |
 
+
+</span>
+
 ## Additional inherited members
 
+</span>
+
 **Public Functions inherited from [ginn::BaseDataNode< Scalar >](api/Classes/classginn_1_1_base_data_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -53,13 +72,22 @@ Inherited by [ginn::InPlacePermuteNode< Scalar >](api/Classes/classginn_1_1_in_p
 | virtual bool | **[has_grad](api/Classes/classginn_1_1_base_data_node.md#function-has_grad)**() const override |
 | virtual void | **[has_grad](api/Classes/classginn_1_1_base_data_node.md#function-has_grad)**(bool hg) |
 
+
+</span>
+
 **Public Types inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | using ScalarType | **[Scalar](api/Classes/classginn_1_1_node.md#using-scalar)**  |
 
+</span>
+
 **Public Functions inherited from [ginn::Node< Real >](api/Classes/classginn_1_1_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -76,7 +104,14 @@ Inherited by [ginn::InPlacePermuteNode< Scalar >](api/Classes/classginn_1_1_in_p
 | | **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > & ins) |
 | template <typename Container \> <br>| **[BaseNode](api/Classes/classginn_1_1_node.md#function-basenode)**(const Container & ins) |
 
+
+</span>
+
+</span>
+
 **Public Functions inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -102,17 +137,30 @@ Inherited by [ginn::InPlacePermuteNode< Scalar >](api/Classes/classginn_1_1_in_p
 | virtual void | **[reset_grad](api/Classes/classginn_1_1_base_node.md#function-reset_grad)**() |
 | virtual void | **[reset_forwarded](api/Classes/classginn_1_1_base_node.md#function-reset_forwarded)**() |
 
+
+</span>
+
 **Public Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | bool | **[forwarded](api/Classes/classginn_1_1_base_node.md#variable-forwarded)**  |
 
+
+</span>
+
 **Protected Attributes inherited from [ginn::BaseNode](api/Classes/classginn_1_1_base_node.md)**
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[ins_](api/Classes/classginn_1_1_base_node.md#variable-ins_)**  |
+
+
+</span>
 
 
 ## Detailed Description
@@ -233,4 +281,4 @@ bool overwrite_ = false;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

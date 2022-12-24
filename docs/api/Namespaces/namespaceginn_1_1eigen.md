@@ -3,13 +3,20 @@
 
 ## Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | template <typename Expression \> <br>using TensorRef< [Tensor](api/Classes/classginn_1_1_tensor.md)< typename Eigen::internal::traits< Expression >::Scalar, Eigen::internal::traits< Expression >::NumDimensions, Eigen::internal::traits< Expression >::Layout, typename Eigen::internal::traits< Expression >::Index > > | **[TensorRefLike](api/Namespaces/namespaceginn_1_1eigen.md#using-tensorreflike)**  |
 | template <size_t N\> <br>using DSizes< DenseIndex, N > | **[Dims](api/Namespaces/namespaceginn_1_1eigen.md#using-dims)**  |
 | template <size_t... Ns\> <br>using IndexList< type2index< Ns >... > | **[Indices](api/Namespaces/namespaceginn_1_1eigen.md#using-indices)**  |
 
+
+</span>
+
 ## Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -25,6 +32,9 @@
 | template <typename Expression \> <br>auto | **[dims](api/Namespaces/namespaceginn_1_1eigen.md#function-dims)**(const Expression & expr) |
 | template <typename Expression \> <br>auto | **[nelems](api/Namespaces/namespaceginn_1_1eigen.md#function-nelems)**(const Expression & expr) |
 | template <typename Expression ,typename... Expressions\> <br>constexpr void | **[static_assert_col_major](api/Namespaces/namespaceginn_1_1eigen.md#function-static_assert_col_major)**() |
+
+
+</span>
 
 ## Types Documentation
 
@@ -225,4 +235,4 @@ constexpr void static_assert_col_major()
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

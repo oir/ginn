@@ -5,17 +5,27 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | using std::shared_ptr< [TreeNode](api/Classes/structginn_1_1tree_1_1_tree_node.md)< T > > | **[TreeNodePtr](api/Classes/structginn_1_1tree_1_1_tree_node.md#using-treenodeptr)**  |
 | using std::vector< TreeNodePtr > | **[Children](api/Classes/structginn_1_1tree_1_1_tree_node.md#using-children)**  |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | T | **[data](api/Classes/structginn_1_1tree_1_1_tree_node.md#variable-data)**  |
 | std::vector< TreeNodePtr > | **[children](api/Classes/structginn_1_1tree_1_1_tree_node.md#variable-children)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -58,4 +68,4 @@ std::vector< TreeNodePtr > children;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -7,6 +7,8 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtr< Scalar >)>](api/Class
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | | **[AffineLayerNode](api/Classes/classginn_1_1_affine_layer_node.md#function-affinelayernode)**() |
@@ -17,13 +19,21 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtr< Scalar >)>](api/Class
 | [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[run](api/Classes/classginn_1_1_affine_layer_node.md#function-run)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & x) override |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_affine_layer_node.md#function-weights_)**() override |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[W](api/Classes/classginn_1_1_affine_layer_node.md#variable-w)**  |
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[b](api/Classes/classginn_1_1_affine_layer_node.md#variable-b)**  |
 | std::unique_ptr< [NonlinOp](api/Classes/classginn_1_1_nonlin_op.md)< Scalar > > | **[nonlin](api/Classes/classginn_1_1_affine_layer_node.md#variable-nonlin)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -124,4 +134,4 @@ std::unique_ptr< NonlinOp< Scalar > > nonlin;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

@@ -3,19 +3,31 @@
 
 ## Classes
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::tree::DereferencingIterator](api/Classes/classginn_1_1tree_1_1_dereferencing_iterator.md)**  |
 | class | **[ginn::tree::Tree](api/Classes/classginn_1_1tree_1_1_tree.md)**  |
 | struct | **[ginn::tree::TreeNode](api/Classes/structginn_1_1tree_1_1_tree_node.md)**  |
 
+
+</span>
+
 ## Types
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | template <typename T \> <br>using typename [TreeNode](api/Classes/structginn_1_1tree_1_1_tree_node.md)< T >::TreeNodePtr | **[TreeNodePtr](api/Namespaces/namespaceginn_1_1tree.md#using-treenodeptr)**  |
 
+
+</span>
+
 ## Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -29,6 +41,9 @@
 | template <typename T ,typename Reader \> <br>TreeNodePtr< T > | **[parse_helper](api/Namespaces/namespaceginn_1_1tree.md#function-parse_helper)**(std::string_view s, Reader r) |
 | template <typename T ,typename Reader \> <br>[Tree](api/Classes/classginn_1_1tree_1_1_tree.md)< T > | **[parse](api/Namespaces/namespaceginn_1_1tree.md#function-parse)**(const std::string & line, Reader r) |
 | template <typename T \> <br>[Tree](api/Classes/classginn_1_1tree_1_1_tree.md)< T > | **[parse](api/Namespaces/namespaceginn_1_1tree.md#function-parse)**(const std::string & line) |
+
+
+</span>
 
 ## Types Documentation
 
@@ -164,4 +179,4 @@ Tree< T > parse(
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

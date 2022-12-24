@@ -5,13 +5,20 @@
 
 ## Public Types
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | enum class| **[Reduce](api/Classes/classginn_1_1_tree_lstm.md#enum-reduce)** { add, max} |
 | using std::pair< [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >, [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > > | **[State](api/Classes/classginn_1_1_tree_lstm.md#using-state)**  |
 | using std::tuple< unsigned, [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >, [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > > | **[Child](api/Classes/classginn_1_1_tree_lstm.md#using-child)**  |
 
+
+</span>
+
 ## Public Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -25,7 +32,12 @@
 | void | **[init](api/Classes/classginn_1_1_tree_lstm.md#function-init)**(DevPtr dev, Size a_labels, Size dim, Size xdim, Reduce a_reduce) |
 | State | **[step](api/Classes/classginn_1_1_tree_lstm.md#function-step)**(const [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar > & x, const std::vector< Child > & children) |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -43,6 +55,9 @@
 | std::vector< [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > > | **[Uu](api/Classes/classginn_1_1_tree_lstm.md#variable-uu)**  |
 | std::vector< [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > > | **[Uo](api/Classes/classginn_1_1_tree_lstm.md#variable-uo)**  |
 | std::vector< std::vector< [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > > > | **[Uf](api/Classes/classginn_1_1_tree_lstm.md#variable-uf)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -265,4 +280,4 @@ std::vector< std::vector< WeightPtr< Scalar > > > Uf;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

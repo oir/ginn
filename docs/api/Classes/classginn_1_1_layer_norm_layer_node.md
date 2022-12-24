@@ -7,6 +7,8 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtr< Scalar >)>](api/Class
 
 ## Public Functions
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | std::vector< [BaseNodePtr](api/Classes/classginn_1_1_ptr.md) > | **[weights_](api/Classes/classginn_1_1_layer_norm_layer_node.md#function-weights_)**() override |
@@ -17,13 +19,21 @@ Inherits from [ginn::LayerNode< NodePtr< Scalar >(NodePtr< Scalar >)>](api/Class
 | | **[LayerNormLayerNode](api/Classes/classginn_1_1_layer_norm_layer_node.md#function-layernormlayernode)**(const [LayerNormLayerNode](api/Classes/classginn_1_1_layer_norm_layer_node.md) & other) |
 | LayerPtr< [NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >([NodePtr](api/Classes/classginn_1_1_ptr.md)< Scalar >)> | **[copy](api/Classes/classginn_1_1_layer_norm_layer_node.md#function-copy)**(Copy mode) override |
 
+
+</span>
+
 ## Public Attributes
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[gamma](api/Classes/classginn_1_1_layer_norm_layer_node.md#variable-gamma)**  |
 | [WeightPtr](api/Classes/classginn_1_1_ptr.md)< Scalar > | **[beta](api/Classes/classginn_1_1_layer_norm_layer_node.md#variable-beta)**  |
 | bool | **[inplace_](api/Classes/classginn_1_1_layer_norm_layer_node.md#variable-inplace_)**  |
+
+
+</span>
 
 ## Detailed Description
 
@@ -121,4 +131,4 @@ bool inplace_ = false;
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500

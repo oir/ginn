@@ -3,6 +3,8 @@
 
 ## Classes
 
+<span class="api-table">
+
 |                | Name           |
 | -------------- | -------------- |
 | class | **[ginn::internal::ArgBase](api/Classes/classginn_1_1internal_1_1_arg_base.md)**  |
@@ -16,13 +18,23 @@
 | class | **[ginn::internal::TypedArgBase](api/Classes/classginn_1_1internal_1_1_typed_arg_base.md)**  |
 | class | **[ginn::internal::Validator](api/Classes/classginn_1_1internal_1_1_validator.md)**  |
 
+
+</span>
+
 ## Types
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
 | template <typename T \> <br>using typename [MemberTypeHelper](api/Classes/structginn_1_1internal_1_1_member_type_helper.md)< T >::type | **[member_t](api/Namespaces/namespaceginn_1_1internal.md#using-member_t)**  |
 
+
+</span>
+
 ## Functions
+
+<span class="api-table">
 
 |                | Name           |
 | -------------- | -------------- |
@@ -35,6 +47,9 @@
 | template <typename T \> <br>auto | **[deep_copy](api/Namespaces/namespaceginn_1_1internal.md#function-deep_copy)**(const std::shared_ptr< T > & x) |
 | template <typename T \> <br>auto | **[deep_copy](api/Namespaces/namespaceginn_1_1internal.md#function-deep_copy)**(const T & x) |
 | bool | **[istty](api/Namespaces/namespaceginn_1_1internal.md#function-istty)**() |
+
+
+</span>
 
 ## Types Documentation
 
@@ -144,4 +159,4 @@ bool istty()
 
 -------------------------------
 
-Updated on 2022-12-24 at 14:52:49 -0500
+Updated on 2022-12-24 at 15:34:35 -0500
