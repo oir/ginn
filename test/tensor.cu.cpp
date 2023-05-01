@@ -41,29 +41,32 @@ using namespace ginn::literals;
   TensorType t(std::move(t_))
 #define GPU_ASSIGNED_TENSOR(t, ...)                                            \
   TensorType t_(__VA_ARGS__);                                                  \
-  TensorType t(gpu());                                                         \
+  using Scalar = typename TensorType::Scalar;                                  \
+  Tensor<Scalar, GPU> t(gpu());                                                \
   t = t_
 #define CPU_ASSIGNED_TENSOR(t, ...)                                            \
   TensorType t_(__VA_ARGS__);                                                  \
-  TensorType t(cpu());                                                         \
+  using Scalar = typename TensorType::Scalar;                                  \
+  Tensor<Scalar, CPU> t(cpu());                                                \
   t = t_
 
 // Take one of the tensor makers above and test it with this body
-#define TEST_CTOR(TENSOR_CTOR, name, init_dev, DEV_TYPE)                       \
-  TEMPLATE_TEST_CASE(                                                          \
-      name, "[tensor]", Tensor<Real>, Tensor<Int>, Tensor<Half>) {             \
-    using TensorType = TestType;                                               \
-    using Scalar = typename TensorType::Scalar;                                \
+#define TEST_CTOR(TENSOR_CTOR, name, init_dev, DEV_KIND)                       \
+  TEMPLATE_TEST_CASE(name, "[tensor]", Real, Int, Half) {                      \
+    using Scalar = TestType;                                                   \
+    const static auto DevKind =                                                \
+        std::decay_t<decltype(init_dev)>::element_type::device_kind;           \
+    using TensorType = Tensor<Scalar, DevKind>;                                \
                                                                                \
     SECTION("Device") {                                                        \
       TENSOR_CTOR(t, init_dev);                                                \
-      CHECK(t.dev()->kind() == DEV_TYPE);                                      \
+      CHECK(t.dev()->kind() == DEV_KIND);                                      \
       CHECK(t.size() == 0);                                                    \
     }                                                                          \
                                                                                \
     SECTION("Shape") {                                                         \
       TENSOR_CTOR(t, init_dev, {2, 1, 3});                                     \
-      CHECK(t.dev()->kind() == DEV_TYPE);                                      \
+      CHECK(t.dev()->kind() == DEV_KIND);                                      \
       CHECK(t.size() == 6);                                                    \
       CHECK(t.shape().size() == 3);                                            \
     }                                                                          \
@@ -82,11 +85,11 @@ using namespace ginn::literals;
         val = Half{0.6};                                                       \
       }                                                                        \
       TENSOR_CTOR(t, init_dev, {2, 1, 3}, val);                                \
-      CHECK(t.dev()->kind() == DEV_TYPE);                                      \
+      CHECK(t.dev()->kind() == DEV_KIND);                                      \
       CHECK(t.size() == 6);                                                    \
       CHECK(t.shape().size() == 3);                                            \
-      t.move_to(cpu());                                                        \
-      for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == val); }          \
+      auto t_cpu = t.template copy_to(cpu());                                  \
+      for (Size i = 0; i < t.size(); i++) { CHECK(t_cpu.v()[i] == val); }      \
     }                                                                          \
   }
 
@@ -103,16 +106,16 @@ TEST_CTOR(CPU_ASSIGNED_TENSOR, "Gpu Cpu Assign", gpu(), CPU)
 #endif
 
 #ifdef GINN_ENABLE_GPU
-using Typelist = std::tuple<std::tuple<Tensor<Real>, GpuDevice>,
-                            std::tuple<Tensor<Int>, GpuDevice>,
-                            std::tuple<Tensor<Half>, GpuDevice>,
-                            std::tuple<Tensor<Real>, CpuDevice>,
-                            std::tuple<Tensor<Int>, CpuDevice>,
-                            std::tuple<Tensor<Half>, CpuDevice>>;
+using Typelist = std::tuple<std::tuple<Tensor<Real, GPU>, GpuDevice>,
+                            std::tuple<Tensor<Int, GPU>, GpuDevice>,
+                            std::tuple<Tensor<Half, GPU>, GpuDevice>,
+                            std::tuple<Tensor<Real, CPU>, CpuDevice>,
+                            std::tuple<Tensor<Int, CPU>, CpuDevice>,
+                            std::tuple<Tensor<Half, CPU>, CpuDevice>>;
 #else
-using Typelist = std::tuple<std::tuple<Tensor<Real>, CpuDevice>,
-                            std::tuple<Tensor<Int>, CpuDevice>,
-                            std::tuple<Tensor<Half>, CpuDevice>>;
+using Typelist = std::tuple<std::tuple<Tensor<Real, CPU>, CpuDevice>,
+                            std::tuple<Tensor<Int, CPU>, CpuDevice>,
+                            std::tuple<Tensor<Half, CPU>, CpuDevice>>;
 #endif
 
 TEMPLATE_LIST_TEST_CASE("Resize", "[tensor]", Typelist) {
@@ -123,25 +126,26 @@ TEMPLATE_LIST_TEST_CASE("Resize", "[tensor]", Typelist) {
   auto dev = std::make_shared<DeviceType>();
   TensorType t(dev);
   if constexpr (std::is_same_v<Scalar, Half>) {
-    t = TensorType(dev, {2, 1, 3}, {1_h, 2_h, 3_h, 4_h, 5_h, 6_h});
+    t = TensorType(
+        dev, Shape{2, 1, 3}, std::vector<Scalar>{1_h, 2_h, 3_h, 4_h, 5_h, 6_h});
   } else {
-    t = TensorType(dev, {2, 1, 3}, {1, 2, 3, 4, 5, 6});
+    t = TensorType(dev, Shape{2, 1, 3}, std::vector<Scalar>{1, 2, 3, 4, 5, 6});
   }
 
   SECTION("Same size vector") {
     t.resize({6});
     CHECK(t.size() == 6);
     CHECK(t.shape() == Shape{6});
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == (i + 1)); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t_.size(); i++) { CHECK(t_.v()[i] == (i + 1)); }
   }
 
   SECTION("Same size matrix") {
     t.resize({2, 3});
     CHECK(t.size() == 6);
     CHECK(t.shape() == Shape{2, 3});
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == (i + 1)); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t.size(); i++) { CHECK(t_.v()[i] == (i + 1)); }
   }
 
   SECTION("Different size vector") {
@@ -226,14 +230,14 @@ TEMPLATE_LIST_TEST_CASE("Set values", "[tensor]", Typelist) {
 
   SECTION("Zero") {
     t.set_zero();
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == 0); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t_.size(); i++) { CHECK(t_.v()[i] == 0); }
   }
 
   SECTION("Ones") {
     t.set_ones();
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == 1); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t_.size(); i++) { CHECK(t_.v()[i] == 1); }
   }
 
   SECTION("Constant") {
@@ -249,43 +253,43 @@ TEMPLATE_LIST_TEST_CASE("Set values", "[tensor]", Typelist) {
       val = 0.12345_h;
     }
     t.fill(val);
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == val); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t_.size(); i++) { CHECK(t_.v()[i] == val); }
   }
 
   SECTION("Random") {
     if constexpr (std::is_same_v<Real, Scalar>) {
       t.set_random();
-      t.move_to(cpu());
-      for (Size i = 0; i < t.size(); i++) {
-        CHECK(t.v()[i] <= 1.);
-        CHECK(t.v()[i] >= -1.);
-        if (i > 0) { CHECK(t.v()[i] != t.v()[i - 1]); }
+      auto t_ = t.copy_to(cpu());
+      for (Size i = 0; i < t_.size(); i++) {
+        CHECK(t_.v()[i] <= 1.);
+        CHECK(t_.v()[i] >= -1.);
+        if (i > 0) { CHECK(t_.v()[i] != t_.v()[i - 1]); }
       }
     }
   }
 
   SECTION("Values") {
     t.set(5, 4, 3, 2, 1, 0);
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == 5 - i); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t_.size(); i++) { CHECK(t_.v()[i] == 5 - i); }
   }
 
   SECTION("Longer") {
     t.set(5, 4, 3, 2, 1, 0, 1, 2, 3);
-    t.move_to(cpu());
-    for (Size i = 0; i < t.size(); i++) { CHECK(t.v()[i] == 5 - i); }
+    auto t_ = t.copy_to(cpu());
+    for (Size i = 0; i < t_.size(); i++) { CHECK(t_.v()[i] == 5 - i); }
   }
 
   SECTION("Shorter") {
     t.set(5, 4, 3);
-    t.move_to(cpu());
-    CHECK(t.v()[0] == 5);
-    CHECK(t.v()[1] == 4);
-    CHECK(t.v()[2] == 3);
-    CHECK(t.v()[3] == 4);
-    CHECK(t.v()[4] == 5);
-    CHECK(t.v()[5] == 6);
+    auto t_ = t.copy_to(cpu());
+    CHECK(t_.v()[0] == 5);
+    CHECK(t_.v()[1] == 4);
+    CHECK(t_.v()[2] == 3);
+    CHECK(t_.v()[3] == 4);
+    CHECK(t_.v()[4] == 5);
+    CHECK(t_.v()[5] == 6);
   }
 }
 
@@ -326,7 +330,7 @@ TEMPLATE_LIST_TEST_CASE("Errors", "[tensor]", Typelist) {
   }
 
   SECTION("Misshaped value ctor") {
-    CHECK_THROWS_MATCHES(t3 = TensorType({1, 3}, {Scalar(1), Scalar(2)}),
+    CHECK_THROWS_MATCHES(t3 = TensorType(dev, {1, 3}, {Scalar(1), Scalar(2)}),
                          ginn::RuntimeError,
                          Catch::Message("Size of Shape (3) does not match "
                                         "size of values (2)!"));

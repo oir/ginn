@@ -60,7 +60,7 @@ struct DeviceId { // to distinguish multiple gpus
   }
 };
 
-class Device {
+class BaseDevice {
  public:
   virtual void* alloc(size_t size) = 0;
   virtual void* realloc(void* data, size_t size) = 0;
@@ -69,21 +69,28 @@ class Device {
   virtual DeviceId id() const = 0;
   virtual short precedence() const { return 0; }
 
-  void copy(const Device& other, void* data, void* other_data, size_t size);
+  void copy(const BaseDevice& other, void* data, void* other_data, size_t size);
 
-  virtual ~Device() = default;
+  virtual ~BaseDevice() = default;
 };
 
-using DevPtr = std::shared_ptr<Device>;
+template <DeviceKind Kind>
+class Device : public BaseDevice {
+ public:
+  DeviceKind kind() const override { return Kind; }
+  static const auto device_kind = Kind;
+};
+
+template <DeviceKind Kind>
+using DevPtr = std::shared_ptr<Device<Kind>>;
 
 // For nodes that don't allocate anything and not use any device
 // TODO: Reevaluate if this is really needed or not.
-class NullDevice : public Device {
+class NullDevice : public Device<NULL_DEV> {
  public:
   void* alloc(size_t /*size*/) override { return nullptr; }
   void* realloc(void* /*data*/, size_t /*size*/) override { return nullptr; }
   void free(void* /*data*/) override {}
-  DeviceKind kind() const override { return NULL_DEV; }
   DeviceId id() const override { return {NULL_DEV, 0}; }
   short precedence() const override { return -1; }
 };
@@ -93,14 +100,13 @@ inline auto null_dev() {
   return dev;
 }
 
-class CpuDevice : public Device {
+class CpuDevice : public Device<CPU> {
  public:
   void* alloc(size_t size) override { return malloc(size); }
   void* realloc(void* data, size_t size) override {
     return ::realloc(data, size);
   }
   void free(void* data) override { ::free(data); }
-  DeviceKind kind() const override { return CPU; }
   DeviceId id() const override { return {CPU, 0}; }
 };
 
@@ -111,7 +117,7 @@ inline auto& cpu() {
   return dev;
 }
 
-class PreallocCpuDevice : public Device {
+class PreallocCpuDevice : public Device<CPU> {
  private:
   using Byte = std::byte;
   static_assert(sizeof(Byte) == 1);
@@ -133,7 +139,6 @@ class PreallocCpuDevice : public Device {
   }
   void* realloc(void* /*data*/, size_t /*size*/) override { return nullptr; }
   void free(void* /*data*/) override {}
-  DeviceKind kind() const override { return CPU; }
   DeviceId id() const override { return {CPU, 0}; }
   short precedence() const override { return 1; }
   void clear() { offset_ = storage_.data(); }
@@ -146,7 +151,7 @@ inline auto PreallocCpu(size_t size) {
 }
 
 #ifdef GINN_ENABLE_GPU
-class GpuDevice : public Device {
+class GpuDevice : public Device<GPU> {
  private:
   const size_t id_;
   CurandGenerator gen_;
@@ -173,7 +178,6 @@ class GpuDevice : public Device {
     set_device();
     GINN_CUDA_CALL(cudaFree(data));
   }
-  DeviceKind kind() const override { return GPU; }
   DeviceId id() const override { return {GPU, id_}; }
   auto& stream() { return *stream_; }
   auto& handle() { return *handle_; }
@@ -211,7 +215,7 @@ inline auto& gpu(int idx = 0) {
   return devs.at(idx);
 }
 
-class PreallocGpuDevice : public Device {
+class PreallocGpuDevice : public Device<GPU> {
  private:
   const size_t id_ = 0;
   thrust::device_vector<std::byte> storage_;
@@ -245,7 +249,6 @@ class PreallocGpuDevice : public Device {
   }
   void* realloc(void* /*data*/, size_t /*size*/) override { return nullptr; }
   void free(void* /*data*/) override {}
-  DeviceKind kind() const override { return GPU; }
   DeviceId id() const override { return {GPU, id_}; }
   short precedence() const override { return 1; }
   void clear() { offset_ = storage_.data(); }
@@ -295,8 +298,11 @@ class PeerAccess {
 
 #endif
 
-inline void
-Device::copy(const Device& other, void* data, void* other_data, size_t size) {
+inline void BaseDevice::copy(const BaseDevice& other,
+                             void* data,
+                             void* other_data,
+                             size_t size) {
+
   if (kind() == CPU and other.kind() == CPU) {
     memcpy(data, other_data, size);
 #ifdef GINN_ENABLE_GPU
@@ -346,7 +352,6 @@ Device::copy(const Device& other, void* data, void* other_data, size_t size) {
     GINN_THROW("Unexpected device in Device::copy()!");
   }
 }
-
 template <typename NodeType>
 auto best_dev(const std::vector<NodeType>& ins) {
   // Inspect devices of all the inputs, adopt the one with the highest
@@ -356,6 +361,20 @@ auto best_dev(const std::vector<NodeType>& ins) {
     return i->dev()->precedence() < j->dev()->precedence();
   });
   return (*max)->dev();
+}
+
+// Default device of the given Kind. cpu() for CPU and gpu() for GPU
+template <DeviceKind Kind>
+DevPtr<Kind> default_dev() {
+  if constexpr (Kind == CPU) {
+    return cpu();
+#ifdef GINN_ENABLE_GPU
+  } else if constexpr (Kind == GPU) {
+    return gpu();
+#endif
+  } else {
+    return null_dev();
+  }
 }
 
 } // namespace ginn

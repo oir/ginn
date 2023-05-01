@@ -50,30 +50,31 @@ Index<N> ShapeToIndex(const Shape& shape) {
 // Forward declare helper types. These are invoked when a Tensor is on the
 // lefthand side of a statement.
 
-template <typename InnerExpr>
+template <typename InnerExpr, enum DeviceKind>
 class LhsExpr;
 
-template <typename InnerExpr, Size N>
+template <typename InnerExpr, Size N, enum DeviceKind>
 class SliceExpr;
 
-template <typename InnerExpr, Size N>
+template <typename InnerExpr, Size N, enum DeviceKind>
 class ChipExpr;
 
 // Core Tensor class, specialized as Tensor and IntTensor on ScalarType Real and
 // Int, respectively.
-template <typename ScalarType = Real>
+template <typename ScalarType, DeviceKind Kind>
 class Tensor {
  public:
   using Scalar = ScalarType;
+  // static const auto DeviceKind = Kind;
 
  private:
-  DevPtr dev_ = nullptr;
+  DevPtr<Kind> dev_ = nullptr;
   Shape shape_ = {0};
   Scalar* data_ = nullptr; // owned in most cases
   bool owns_mem_ = true;   // whether this Tensor owns data_
 
  public:
-  DevPtr dev() const { return dev_; }
+  DevPtr<Kind> dev() const { return dev_; }
   Shape shape() const { return shape_; }
   Scalar* data() { return data_; }
 
@@ -86,32 +87,39 @@ class Tensor {
   Size size() const { return size(shape()); }
 
   // Move this tensor to another device
-  auto& move_to(const DevPtr& to) {
-    GINN_ASSERT(owns_mem_);
-    if (dev_ == to) { return *this; }
-    Tensor<Scalar> from(dev_);
-    from.data_ = data_;
-    from.shape_ = shape_; // to make sure destructor deallocates this
+  // auto& move_to(const DevPtr& to) {
+  //  GINN_ASSERT(owns_mem_);
+  //  if (dev_ == to) { return *this; }
+  //  Tensor<Scalar> from(dev_);
+  //  from.data_ = data_;
+  //  from.shape_ = shape_; // to make sure destructor deallocates this
 
-    dev_ = to;
-    data_ = nullptr;
+  //  dev_ = to;
+  //  data_ = nullptr;
 
-    if (size() > 0) {
-      allocate(size());
-      copy(from.dev(), from.data_, size());
-    }
+  //  if (size() > 0) {
+  //    allocate(size());
+  //    copy(from.dev(), from.data_, size());
+  //  }
 
-    return *this;
-  }
+  //  return *this;
+  //}
 
   // Copy this tensor to another device
-  auto copy_to(const DevPtr& to) const { return Tensor<Scalar>(to, *this); }
+  template <typename OtherDevPtr>
+  auto copy_to(const OtherDevPtr& to) const {
+    const static auto OtherKind = OtherDevPtr::element_type::device_kind;
+    return Tensor<Scalar, OtherKind>(to, *this);
+  }
 
   // If tensor not on specified device, copy to it. Otherwise return a shallow
   // copy based on Tensor::map() which uses the same storage
-  auto maybe_copy_to(const DevPtr& to) {
+  template <typename OtherDevPtr>
+  auto maybe_copy_to(const OtherDevPtr& to) {
+    const static auto OtherKind = OtherDevPtr::element_type::device_kind;
+    // TODO: if constexprs will be needed here
     if (dev_->id() == to->id()) {
-      return Tensor<Scalar>().map(*this);
+      return Tensor<Scalar, OtherKind>().map(*this);
     } else {
       return copy_to(to);
     }
@@ -130,7 +138,8 @@ class Tensor {
     if (size > 0) { data_ = (Scalar*)dev_->alloc(size * sizeof(Scalar)); }
   }
 
-  void copy(const DevPtr& from, Scalar* other_data, Size size) {
+  template <enum DeviceKind OtherKind>
+  void copy(const DevPtr<OtherKind>& from, Scalar* other_data, Size size) {
     dev_->copy(*from, data_, other_data, size * sizeof(Scalar));
   }
 
@@ -151,36 +160,49 @@ class Tensor {
 
  public:
   // Construct
-  Tensor(DevPtr dev = cpu()) : dev_(std::move(dev)) {}
-  Tensor(DevPtr dev, Shape shape)
+  Tensor(DevPtr<Kind> dev = default_dev<Kind>()) : dev_(std::move(dev)) {}
+  Tensor(DevPtr<Kind> dev, Shape shape)
       : dev_(std::move(dev)), shape_(std::move(shape)) {
     allocate(size());
   }
-  Tensor(DevPtr dev, Shape shape, Scalar val)
-      : Tensor<Scalar>(std::move(dev), std::move(shape)) {
+  Tensor(DevPtr<Kind> dev, Shape shape, Scalar val)
+      : Tensor<Scalar, Kind>(std::move(dev), std::move(shape)) {
     fill(val);
   }
-  Tensor(Shape shape) : Tensor<Scalar>(cpu(), std::move(shape)) {}
-  Tensor(Shape shape, const std::vector<Scalar>& val)
-      : Tensor<Scalar>(std::move(shape)) {
-    GINN_ASSERT(size() == (Size)val.size(),
-                "Size of Shape (" + std::to_string(size()) +
-                    ") does not match size of values (" +
-                    std::to_string(val.size()) + ")!");
-    auto vmap = v();
-    for (size_t i = 0; i < val.size(); i++) { vmap[i] = val[i]; }
-  }
-  Tensor(DevPtr dev, Shape shape, std::vector<Scalar> val)
-      : Tensor<Scalar>(std::move(shape), std::move(val)) {
-    move_to(dev);
+  // can I make these ctor available only to DeviceKind==CPU?
+  Tensor(Shape shape)
+      : Tensor<Scalar, Kind>(default_dev<Kind>(), std::move(shape)) {}
+  // Tensor(Shape shape, const std::vector<Scalar>& val)
+  //     : Tensor<Scalar>(std::move(shape)) {
+  //   GINN_ASSERT(size() == (Size)val.size(),
+  //               "Size of Shape (" + std::to_string(size()) +
+  //                   ") does not match size of values (" +
+  //                   std::to_string(val.size()) + ")!");
+  //   auto vmap = v();
+  //   for (size_t i = 0; i < val.size(); i++) { vmap[i] = val[i]; }
+  // }
+  Tensor(DevPtr<Kind> dev, Shape shape, std::vector<Scalar> val)
+      : Tensor<Scalar, Kind>(dev, shape) {
+    if constexpr (Kind == CPU) {
+      GINN_ASSERT(size() == (Size)val.size(),
+                  "Size of Shape (" + std::to_string(size()) +
+                      ") does not match size of values (" +
+                      std::to_string(val.size()) + ")!");
+      auto vmap = v();
+      for (size_t i = 0; i < val.size(); i++) { vmap[i] = val[i]; }
+    } else {
+      Tensor<Scalar, CPU> tmp(cpu(), shape, val);
+      *this = tmp;
+    }
   }
 
   template <int Rank>
-  Tensor(DevPtr dev, NestedInitList<Rank, Scalar> val)
+  Tensor(DevPtr<Kind> dev, NestedInitList<Rank, Scalar> val)
       : dev_(std::move(dev)), shape_(shape_of<Size, Rank, Scalar>(val)) {
     set<Rank>(val);
   }
 
+  // Ditto for CPU
   template <int Rank>
   Tensor(NestedInitList<Rank, Scalar> val)
       : dev_(cpu()), shape_(shape_of<Size, Rank, Scalar>(val)) {
@@ -188,11 +210,12 @@ class Tensor {
   }
 
   // Copy & Move construct
-  Tensor(const Tensor<Scalar>& other) : dev_(other.dev_), shape_(other.shape_) {
+  Tensor(const Tensor<Scalar, Kind>& other)
+      : dev_(other.dev_), shape_(other.shape_) {
     allocate(size());
     copy(other.dev_, other.data_, size());
   }
-  Tensor(Tensor<Scalar>&& other)
+  Tensor(Tensor<Scalar, Kind>&& other)
       : dev_(other.dev_),
         shape_(other.shape_),
         data_(other.data_),
@@ -202,17 +225,24 @@ class Tensor {
   }
 
   // Copy & Move assign
-  // TODO: Consider operator= copying the device as well, to avoid confusion.
-  //   Maybe only having the special ctor and `move_to()` as well as
-  //   `maybe_copy_to()` is enough to transfer tensor across devices. This just
-  //   seems confusing.
-  auto& operator=(const Tensor<Scalar>& other) {
+  template <enum DeviceKind OtherKind>
+  auto& operator=(const Tensor<Scalar, OtherKind>& other) {
+    if constexpr (Kind == OtherKind) {
+      if (this == &other) { return *this; }
+    }
+    resize(other.shape_);
+    copy(other.dev_, other.data_, size());
+    return *this;
+  }
+
+  auto& operator=(const Tensor<Scalar, Kind>& other) {
     if (this == &other) { return *this; }
     resize(other.shape_);
     copy(other.dev_, other.data_, size());
     return *this;
   }
-  auto& operator=(Tensor<Scalar>&& other) {
+
+  auto& operator=(Tensor<Scalar, Kind>&& other) {
     if (dev_ == other.dev_) {
       free();
       shape_ = other.shape_;
@@ -226,13 +256,14 @@ class Tensor {
     }
     return *this;
   }
-  auto& operator+=(const Tensor<Scalar>& other) {
+  auto& operator+=(const Tensor<Scalar, Kind>& other) {
     *this += other.t();
     return *this;
   }
 
   // Construct by copying across devices
-  Tensor(DevPtr dev, const Tensor<Scalar>& other)
+  template <enum DeviceKind OtherKind>
+  Tensor(DevPtr<Kind> dev, const Tensor<Scalar, OtherKind>& other)
       : dev_(std::move(dev)), shape_(other.shape_) {
     allocate(size());
     copy(other.dev_, other.data_, size());
@@ -256,8 +287,8 @@ class Tensor {
   }
 
   template <typename OtherScalar>
-  Tensor<OtherScalar> cast() const {
-    Tensor<OtherScalar> other(dev(), shape());
+  Tensor<OtherScalar, Kind> cast() const {
+    Tensor<OtherScalar, Kind> other(dev(), shape());
     other = t().template cast<OtherScalar>();
     return other;
   }
@@ -283,7 +314,7 @@ class Tensor {
 
   // Make this tensor a (possibly reshaped) non-memory-owning shallow copy
   // of the other
-  auto& map(Tensor<Scalar>& other, const Shape& shape) {
+  auto& map(Tensor<Scalar, Kind>& other, const Shape& shape) {
     GINN_ASSERT(size(shape) == size(other.shape()));
     if (owns_mem_) { free(); }
     dev_ = other.dev_;
@@ -295,11 +326,11 @@ class Tensor {
 
   // Make this tensor a (possibly reshaped) non-memory-owning shallow copy
   // of the other
-  auto& map(Tensor<Scalar>& other) { return map(other, other.shape()); }
+  auto& map(Tensor<Scalar, Kind>& other) { return map(other, other.shape()); }
 
   // Make this tensor a non-memory-owning shallow copy of a subtensor
   // of the other
-  auto& map(Tensor<Scalar>& other, Shape shape, Size offset) {
+  auto& map(Tensor<Scalar, Kind>& other, Shape shape, Size offset) {
     GINN_ASSERT((size(shape) + offset) <= size(other.shape()));
     if (owns_mem_) { free(); }
     dev_ = other.dev_;
@@ -312,16 +343,18 @@ class Tensor {
   // Return a possibly reshaped map (shallow, non-memory-owning copy) to this
   // tensor
   auto reshaped(const Shape& shape) {
-    Tensor<Scalar> t;
+    Tensor<Scalar, Kind> t;
     t.map(*this, shape);
     return t;
   }
 
-  const Tensor<Scalar> reshaped(const Shape& shape) const {
-    Tensor<Scalar> t;
-    t.map(const_cast<Tensor<Scalar>&>(*this), shape);
+  const Tensor<Scalar, Kind> reshaped(const Shape& shape) const {
+    Tensor<Scalar, Kind> t;
+    t.map(const_cast<Tensor<Scalar, Kind>&>(*this), shape);
     return t;
   }
+
+  // TODO: Ditto for _only_ Kind==CPU
 
   // View as classical (CPU) Eigen matrix
   MatrixMap<Scalar> m() {
@@ -371,7 +404,7 @@ class Tensor {
 
   // wrap a Rank-0 (single element) Tensor around a scalar entry of this tensor
   auto operator()(Size i) {
-    Tensor<Scalar> t;
+    Tensor<Scalar, Kind> t;
     t.dev_ = dev_;
     t.shape_ = {}; // has to be rank 0
     t.owns_mem_ = false;
@@ -380,7 +413,7 @@ class Tensor {
   }
 
   auto operator()(Size i, Size j) {
-    Tensor<Scalar> t;
+    Tensor<Scalar, Kind> t;
     t.dev_ = dev_;
     t.shape_ = {}; // has to be rank 0
     t.owns_mem_ = false;
@@ -404,19 +437,19 @@ class Tensor {
   //     tensor.lhs() += ...
   template <unsigned long R = 2>
   auto lhs() {
-    return LhsExpr<decltype(view<R>())>(view<R>(), dev());
+    return LhsExpr<decltype(view<R>()), Kind>(view<R>(), dev());
   }
 
   template <unsigned long N>
   auto slice(const Index<N>& offsets, const Index<N>& sizes) {
     using LhsExprType = decltype(view<N>());
-    return SliceExpr<LhsExprType, N>(dev(), view<N>(), offsets, sizes);
+    return SliceExpr<LhsExprType, N, Kind>(dev(), view<N>(), offsets, sizes);
   }
 
   template <Size N>
   auto chip(Size offset, Size dim) {
     using LhsExprType = decltype(view<N>());
-    return ChipExpr<LhsExprType, N>(dev(), view<N>(), offset, dim);
+    return ChipExpr<LhsExprType, N, Kind>(dev(), view<N>(), offset, dim);
   }
 
   // Operator overloads for Eigen expressions to avoid having to use .lhs()
@@ -448,9 +481,9 @@ class Tensor {
     if constexpr (std::is_same_v<Scalar, Half> or std::is_same_v<Scalar, Int> or
                   std::is_same_v<Scalar, bool>) {
       // TODO: properly handle int and bool
-      Tensor<Real> tmp(dev(), shape());
+      Tensor<Real, Kind> tmp(dev(), shape());
       tmp.set_random();
-      *this = tmp.cast<Scalar>();
+      *this = tmp.template cast<Scalar>();
     } else if constexpr (std::is_same_v<Scalar, Real>) {
       if (dev_->kind() == CPU) {
         m().setRandom();
@@ -478,7 +511,7 @@ class Tensor {
       for (size_t i = 0; i < s; i++) { v_[i] = val[i]; }
 #ifdef GINN_ENABLE_GPU
     } else if (dev_->kind() == GPU) {
-      Tensor<Scalar> tmp(cpu(), shape());
+      Tensor<Scalar, CPU> tmp(cpu(), shape());
       tmp = *this;
       tmp.set(val);
       *this = tmp;
@@ -500,8 +533,8 @@ class Tensor {
       assign<Rank, Scalar, RhsScalar>(view<Rank>(), val);
 #ifdef GINN_ENABLE_GPU
     } else if (dev_->kind() == GPU) {
-      Tensor<Scalar> tmp(cpu(), shape());
-      tmp.set<Rank, RhsScalar>(val);
+      Tensor<Scalar, CPU> tmp(cpu(), shape());
+      tmp.template set<Rank, RhsScalar>(val);
       *this = tmp;
 #endif
     } else {
@@ -509,17 +542,18 @@ class Tensor {
     }
   }
 
-  bool operator==(const Tensor<Scalar>& other) const {
+  template <enum DeviceKind OtherKind>
+  bool operator==(const Tensor<Scalar, OtherKind>& other) const {
     if (dev()->kind() == CPU) {
       if (other.dev()->kind() == CPU) {
         return shape_ == other.shape_ and v() == other.v();
       }
-      Tensor<Scalar> other_cp(cpu());
+      Tensor<Scalar, CPU> other_cp(cpu());
       other_cp = other;
       return operator==(other_cp);
     }
     // TODO: compare gpu tensors without moving both to cpu
-    Tensor<Scalar> cp(cpu());
+    Tensor<Scalar, CPU> cp(cpu());
     cp = *this;
     return cp == other;
   }
@@ -535,7 +569,7 @@ class Tensor {
       }
       out << std::endl;
     } else {
-      Tensor<Scalar> cp(cpu());
+      Tensor<Scalar, CPU> cp(cpu());
       cp = *this;
       cp.save(out);
     }
@@ -557,11 +591,14 @@ class Tensor {
       in.get(end_of_line);
       GINN_ASSERT(end_of_line == '\n');
     } else {
-      Tensor<Scalar> cp(cpu());
+      Tensor<Scalar, CPU> cp(cpu());
       cp.load(in);
       *this = cp;
     }
   }
+
+  template <typename OtherScalar, enum DeviceKind Other>
+  friend class Tensor;
 };
 
 template <typename Scalar, size_t... Indices>
@@ -571,30 +608,30 @@ auto view_impl(Scalar* data,
   if constexpr (sizeof...(Indices) == 0) {
     return TensorMap<Scalar, 0>(data);
   } /*else {*/
-  auto dims = Tensor<Scalar>::reduce(shape, sizeof...(Indices));
+  auto dims = Tensor<Scalar, CPU>::reduce(shape, sizeof...(Indices));
   return TensorMap<Scalar, sizeof...(Indices)>(data, (dims[Indices])...);
   //}
 }
 
-template <typename Scalar>
+template <typename Scalar, enum DeviceKind Kind>
 template <size_t Rank>
-TensorMap<Scalar, Rank> Tensor<Scalar>::view() {
+TensorMap<Scalar, Rank> Tensor<Scalar, Kind>::view() {
   return view_impl(data_, shape_, std::make_index_sequence<Rank>());
 }
 
-template <typename Scalar>
+template <typename Scalar, enum DeviceKind Kind>
 template <size_t Rank>
-const TensorMap<Scalar, Rank> Tensor<Scalar>::view() const {
+const TensorMap<Scalar, Rank> Tensor<Scalar, Kind>::view() const {
   return view_impl(data_, shape_, std::make_index_sequence<Rank>());
 }
 
-template <typename Scalar>
-inline TensorMap<Scalar, 2> Tensor<Scalar>::t() {
+template <typename Scalar, enum DeviceKind Kind>
+inline TensorMap<Scalar, 2> Tensor<Scalar, Kind>::t() {
   return view<2>();
 }
 
-template <typename Scalar>
-inline const TensorMap<Scalar, 2> Tensor<Scalar>::t() const {
+template <typename Scalar, enum DeviceKind Kind>
+inline const TensorMap<Scalar, 2> Tensor<Scalar, Kind>::t() const {
   return view<2>();
 }
 
@@ -605,12 +642,11 @@ inline const TensorMap<Scalar, 2> Tensor<Scalar>::t() const {
 //     Lhs(CPU, SomeEigenExpr) = OtherEigenExpr
 //     Lhs(GPU, SomeEigenExpr) += OtherEigenExpr
 // Lefthandside Expressions
-template <typename InnerExpr>
+template <typename InnerExpr, enum DeviceKind Kind>
 class LhsExpr {
- public:
-  InnerExpr e;
-  DevPtr dev;
-  LhsExpr(InnerExpr a_e, DevPtr a_dev) : e(a_e), dev(std::move(a_dev)) {}
+  public : InnerExpr e; DevPtr<Kind> dev;
+  LhsExpr(InnerExpr a_e, DevPtr<Kind> a_dev) : e(a_e),
+  dev(std::move(a_dev)){}
 
 #ifdef GINN_ENABLE_GPU
 #define LHSEXPR_IMPLEMENT(op)                                                  \
@@ -638,61 +674,55 @@ class LhsExpr {
   }
 #endif
 
-  LHSEXPR_IMPLEMENT(operator=)
-  LHSEXPR_IMPLEMENT(operator+=)
-  LHSEXPR_IMPLEMENT(operator-=)
+  LHSEXPR_IMPLEMENT(operator=) LHSEXPR_IMPLEMENT(operator+=)
+      LHSEXPR_IMPLEMENT(operator-=)
 };
 
-template <typename InnerExpr>
-auto Lhs(DevPtr dev, InnerExpr e) {
-  return LhsExpr<InnerExpr>(e, std::move(dev));
+template <typename InnerExpr, enum DeviceKind Kind>
+auto Lhs(DevPtr<Kind> dev, InnerExpr e) {
+  return LhsExpr<InnerExpr, Kind>(e, std::move(dev));
 }
 
-template <typename LhsExpr, Size N>
+template <typename LhsExpr, Size N, enum DeviceKind Kind>
 class SliceExpr {
- private:
-  DevPtr dev_;
+  private : DevPtr<Kind> dev_;
   LhsExpr lhs_;
   Index<N> offsets_, sizes_;
 
- public:
-  SliceExpr(DevPtr dev, LhsExpr lhs, Index<N> offsets, Index<N> sizes)
-      : dev_(std::move(dev)),
-        lhs_(std::move(lhs)),
-        offsets_(std::move(offsets)),
-        sizes_(std::move(sizes)) {}
-  template <typename RhsExpr>
-  void operator=(RhsExpr rhs) {
-    Lhs(dev_, lhs_.slice(offsets_, sizes_)) = rhs;
-  }
-  template <typename RhsExpr>
-  void operator+=(RhsExpr rhs) {
-    Lhs(dev_, lhs_.slice(offsets_, sizes_)) += rhs;
-  }
-};
+  public : SliceExpr(DevPtr<Kind> dev,
+                     LhsExpr lhs,
+                     Index<N> offsets,
+                     Index<N> sizes) : dev_(std::move(dev)),
+  lhs_(std::move(lhs)),
+  offsets_(std::move(offsets)),
+  sizes_(std::move(sizes)){} template <typename RhsExpr>
+  void
+  operator=(RhsExpr rhs){Lhs(dev_, lhs_.slice(offsets_, sizes_)) = rhs;}
+template <typename RhsExpr>
+void operator+=(RhsExpr rhs) {
+  Lhs(dev_, lhs_.slice(offsets_, sizes_)) += rhs;
+}
+}; // namespace ginn
 
-template <typename LhsExpr, Size N>
+template <typename LhsExpr, Size N, enum DeviceKind Kind>
 class ChipExpr {
- private:
-  DevPtr dev_;
+  private : DevPtr<Kind> dev_;
   LhsExpr lhs_;
   Size offset_, dim_;
 
- public:
-  ChipExpr(DevPtr dev, LhsExpr lhs, Size offset, Size dim)
-      : dev_(std::move(dev)),
-        lhs_(std::move(lhs)),
-        offset_(offset),
-        dim_(dim) {}
-  template <typename RhsExpr>
-  void operator=(RhsExpr rhs) {
-    Lhs(dev_, lhs_.chip(offset_, dim_)) = rhs;
-  }
-  template <typename RhsExpr>
-  void operator+=(RhsExpr rhs) {
-    Lhs(dev_, lhs_.chip(offset_, dim_)) += rhs;
-  }
-};
+  public : ChipExpr(DevPtr<Kind> dev, LhsExpr lhs, Size offset, Size dim) :
+      dev_(std::move(dev)),
+  lhs_(std::move(lhs)),
+  offset_(offset),
+  dim_(dim){} template <typename RhsExpr>
+  void
+  operator=(RhsExpr rhs){Lhs(dev_, lhs_.chip(offset_, dim_)) = rhs;}
+template <typename RhsExpr>
+void operator+=(RhsExpr rhs) {
+  Lhs(dev_, lhs_.chip(offset_, dim_)) += rhs;
+}
+}
+;
 
 } // end namespace ginn
 
