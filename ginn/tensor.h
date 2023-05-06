@@ -61,11 +61,11 @@ class ChipExpr;
 
 // Core Tensor class, specialized as Tensor and IntTensor on ScalarType Real and
 // Int, respectively.
-template <typename ScalarType, DeviceKind Kind>
+template <typename ScalarType = Real, enum DeviceKind Kind = CPU>
 class Tensor {
  public:
   using Scalar = ScalarType;
-  // static const auto DeviceKind = Kind;
+  static const auto device_kind = Kind;
 
  private:
   DevPtr<Kind> dev_ = nullptr;
@@ -117,9 +117,12 @@ class Tensor {
   template <typename OtherDevPtr>
   auto maybe_copy_to(const OtherDevPtr& to) {
     const static auto OtherKind = OtherDevPtr::element_type::device_kind;
-    // TODO: if constexprs will be needed here
-    if (dev_->id() == to->id()) {
-      return Tensor<Scalar, OtherKind>().map(*this);
+    if constexpr (Kind == OtherKind) {
+      if (dev_->id() == to->id()) {
+        return Tensor<Scalar, OtherKind>().map(*this);
+      } else {
+        return copy_to(to);
+      }
     } else {
       return copy_to(to);
     }

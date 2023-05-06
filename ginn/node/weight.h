@@ -26,8 +26,8 @@ namespace ginn {
 
 enum class Copy { Tied, Deep };
 
-template <typename Scalar = Real>
-class WeightNode : public Node<Scalar> {
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+class WeightNode : public Node<Scalar, Kind> {
  private:
   static size_t next_id() {
     static std::atomic<size_t> id{0};
@@ -35,8 +35,8 @@ class WeightNode : public Node<Scalar> {
   }
 
   size_t id_;
-  Tensor<Scalar> dfx_;
-  std::shared_ptr<Tensor<Scalar>> fx_; // to be shared across threads
+  Tensor<Scalar, Kind> dfx_;
+  std::shared_ptr<Tensor<Scalar, Kind>> fx_; // to be shared across threads
   std::shared_ptr<std::mutex> access_;
 
   bool has_grad_ = true;
@@ -44,16 +44,16 @@ class WeightNode : public Node<Scalar> {
  public:
   std::string label;
 
-  Tensor<Scalar>& value() {
+  Tensor<Scalar, Kind>& value() {
     GINN_ASSERT(fx_);
     return *fx_;
   }
-  const Tensor<Scalar>& value() const override {
+  const Tensor<Scalar, Kind>& value() const override {
     GINN_ASSERT(fx_);
     return *fx_;
   }
-  const Tensor<Scalar>& grad() const override { return dfx_; }
-  using Node<Scalar>::grad;
+  const Tensor<Scalar, Kind>& grad() const override { return dfx_; }
+  using Node<Scalar, Kind>::grad;
 
   bool has_grad() const override { return has_grad_; }
   virtual void set_has_grad(bool hg) { has_grad_ = hg; }
@@ -62,33 +62,34 @@ class WeightNode : public Node<Scalar> {
   std::mutex& access() { return *access_; }
 
   // Create
-  WeightNode(DevPtr dev = cpu(), const Shape& shape = {0})
+  WeightNode(DevPtr<Kind> dev = default_dev<Kind>(), const Shape& shape = {0})
       : id_(next_id()),
         dfx_(dev),
-        fx_(std::make_shared<Tensor<Scalar>>(dev, shape)),
+        fx_(std::make_shared<Tensor<Scalar, Kind>>(dev, shape)),
         access_(std::make_shared<std::mutex>()) {
     this->forwarded = true;
   }
 
   WeightNode(const WeightNode& other)
-      : Node<Scalar>((const Node<Scalar>&)other),
+      : Node<Scalar, Kind>((const Node<Scalar, Kind>&)other),
         id_(next_id()),
         dfx_(other.dfx_),
-        fx_(std::make_shared<Tensor<Scalar>>(*other.fx_)),
+        fx_(std::make_shared<Tensor<Scalar, Kind>>(*other.fx_)),
         access_(std::make_shared<std::mutex>()) {}
 
   // TODO: is this safe? maybe deep copy here, rely on tie() when needed?
   void operator=(const WeightNode& other) {
     dfx_ = other.dfx_;
-    fx_ = std::make_shared<Tensor<Scalar>>(*other.fx_);
+    fx_ = std::make_shared<Tensor<Scalar, Kind>>(*other.fx_);
   }
 
   void reset_forwarded() override {}
 
-  // TODO: Is the following safe with tied copies? Probably not
-  void move_to(const DevPtr& to) {
-    fx_->move_to(to);
-    dfx_.move_to(to);
+  template <enum DeviceKind OtherKind>
+  auto copy_to(const DevPtr<OtherKind>& to) {
+    auto copy = make_ptr<WeightNode<Scalar, OtherKind>>();
+    copy->value() = this->value().copy_to(to);
+    copy->grad() = this->grad().copy_to(to);
   }
 
   // Tie this weight to other. value() is shared but grad() is not.
@@ -130,38 +131,38 @@ class WeightNode : public Node<Scalar> {
   }
 };
 
-template <typename Scalar>
-using WeightPtr = Ptr<WeightNode<Scalar>>;
+template <typename Scalar, enum DeviceKind Kind>
+using WeightPtr = Ptr<WeightNode<Scalar, Kind>>;
 
-template <typename Scalar>
-using ConstWeightPtr = Ptr<const WeightNode<Scalar>>;
+template <typename Scalar, enum DeviceKind Kind>
+using ConstWeightPtr = Ptr<const WeightNode<Scalar, Kind>>;
 
-template <typename Scalar = Real>
-auto Weight(DevPtr dev = cpu(), const Shape& s = {0}) {
-  return make_ptr<WeightNode<Scalar>>(dev, s);
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+auto Weight(DevPtr<Kind> dev = default_dev<Kind>(), const Shape& s = {0}) {
+  return make_ptr<WeightNode<Scalar, Kind>>(dev, s);
 }
-template <typename Scalar = Real>
-auto Weight(DevPtr dev, std::initializer_list<Size> shape) {
-  return Weight<Scalar>(dev, Shape(shape));
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+auto Weight(DevPtr<Kind> dev, std::initializer_list<Size> shape) {
+  return Weight<Scalar, Kind>(dev, Shape(shape));
 }
-template <typename Scalar>
-auto Weight(const WeightNode<Scalar>& other) {
-  return make_ptr<WeightNode<Scalar>>(other);
-}
-
-template <typename Scalar = Real>
-auto FixedWeight(DevPtr dev = cpu(), const Shape& s = {0}) {
-  auto w = Weight<Scalar>(dev, s);
-  w->has_grad_ = false;
-  return w;
+template <typename Scalar, enum DeviceKind Kind>
+auto Weight(const WeightNode<Scalar, Kind>& other) {
+  return make_ptr<WeightNode<Scalar, Kind>>(other);
 }
 
-template <typename Scalar = Real>
-auto FixedWeight(DevPtr dev, std::initializer_list<Size> shape) {
-  auto w = Weight<Scalar>(dev, Shape(shape));
-  w->set_has_grad(false);
-  return w;
-}
+// template <typename Scalar = Real>
+// auto FixedWeight(DevPtr dev = cpu(), const Shape& s = {0}) {
+//   auto w = Weight<Scalar>(dev, s);
+//   w->has_grad_ = false;
+//   return w;
+// }
+//
+// template <typename Scalar = Real>
+// auto FixedWeight(DevPtr dev, std::initializer_list<Size> shape) {
+//   auto w = Weight<Scalar>(dev, Shape(shape));
+//   w->set_has_grad(false);
+//   return w;
+// }
 
 } // end namespace ginn
 

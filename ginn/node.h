@@ -143,7 +143,7 @@ class BaseNode {
 
   virtual ~BaseNode() = default;
 
-  virtual DevPtr dev() const = 0;
+  virtual BaseDevPtr dev_() const = 0;
   virtual Shape shape() const = 0;
   Shape shape2() const { return Tensor<>::reduce(shape(), 2); }
   Size rows() const { return shape2()[0]; }
@@ -168,24 +168,29 @@ class BaseNode {
   virtual std::string name() const = 0;
 };
 
-template <typename ScalarType = Real>
+template <typename ScalarType = Real, enum DeviceKind Kind = CPU>
 class Node : public BaseNode {
  public:
   using Scalar = ScalarType;
+  static const auto device_kind = Kind;
 
  public:
   using BaseNode::BaseNode;
 
-  virtual const Tensor<Scalar>& value() const = 0;
-  virtual const Tensor<Scalar>& grad() const = 0;
-  Tensor<Scalar>& value() {
-    return const_cast<Tensor<Scalar>&>(const_cast<const Node&>(*this).value());
+  virtual const Tensor<Scalar, Kind>& value() const = 0;
+  virtual const Tensor<Scalar, Kind>& grad() const = 0;
+  Tensor<Scalar, Kind>& value() {
+    return const_cast<Tensor<Scalar, Kind>&>(
+        const_cast<const Node&>(*this).value());
   }
-  Tensor<Scalar>& grad() {
-    return const_cast<Tensor<Scalar>&>(const_cast<const Node&>(*this).grad());
+  Tensor<Scalar, Kind>& grad() {
+    return const_cast<Tensor<Scalar, Kind>&>(
+        const_cast<const Node&>(*this).grad());
   }
 
-  DevPtr dev() const override { return value().dev(); }
+  virtual DevPtr<Kind> dev() const { return value().dev(); }
+  BaseDevPtr dev_() const override { return dev(); }
+
   Shape shape() const override { return value().shape(); }
 
   void init_grad() override {
@@ -202,11 +207,11 @@ class Node : public BaseNode {
   Scalar item() const { return value().item(); }
 };
 
-template <typename Scalar = Real>
-using NodePtr = Ptr<Node<Scalar>>;
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+using NodePtr = Ptr<Node<Scalar, Kind>>;
 
-template <typename Scalar = Real>
-using ConstNodePtr = Ptr<const Node<Scalar>>;
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+using ConstNodePtr = Ptr<const Node<Scalar, Kind>>;
 
 class Graph {
  private:
@@ -235,14 +240,25 @@ class Graph {
   }
 
   auto& backward(double loss_coeff = 1) {
-    if (auto sink = dynamic_ptr_cast<Node<Real>>(list_.back())) {
+    // TODO: Come back here for Gpu nodes!!!
+    if (auto sink = dynamic_ptr_cast<Node<Real, CPU>>(list_.back())) {
       GINN_ASSERT(sink->has_grad());
       // TODO: should i constrain this to have shape {1} ?
       sink->grad().fill(loss_coeff); // assume scalar loss.
-    } else if (auto sink = dynamic_ptr_cast<Node<Half>>(list_.back())) {
+    } else if (auto sink = dynamic_ptr_cast<Node<Half, CPU>>(list_.back())) {
       GINN_ASSERT(sink->has_grad());
       // TODO: should i constrain this to have shape {1} ?
       sink->grad().fill(Half(loss_coeff)); // assume scalar loss.
+#ifdef GINN_ENABLE_GPU
+    } else if (auto sink = dynamic_ptr_cast<Node<Real, GPU>>(list_.back())) {
+      GINN_ASSERT(sink->has_grad());
+      // TODO: should i constrain this to have shape {1} ?
+      sink->grad().fill(loss_coeff); // assume scalar loss.
+    } else if (auto sink = dynamic_ptr_cast<Node<Half, GPU>>(list_.back())) {
+      GINN_ASSERT(sink->has_grad());
+      // TODO: should i constrain this to have shape {1} ?
+      sink->grad().fill(Half(loss_coeff)); // assume scalar loss.
+#endif
     } else {
       GINN_THROW("Unexpected scalar type in sink node!");
     }
@@ -292,13 +308,16 @@ class Graph {
 // TODO: a version of the following where Scalar can be ommitted and defaults to
 //   Real.
 #define GINN_MAKE_TEMPLATE_FACTORY(f)                                          \
-  template <typename Scalar, typename... Args>                                 \
-  auto f(Args&&... args) {                                                     \
-    return make_ptr<f##Node<Scalar>>(std::forward<Args>(args)...);             \
+  template <typename Scalar, typename DevicePtr, typename... Args>             \
+  auto f(DevicePtr dev, Args&&... args) {                                      \
+    static const auto Kind = DevicePtr::element_type::device_kind;             \
+    return make_ptr<f##Node<Scalar, Kind>>(dev, std::forward<Args>(args)...);  \
   }                                                                            \
-  template <typename Scalar, typename... Args>                                 \
-  auto Fixed##f(Args&&... args) {                                              \
-    auto n = make_ptr<f##Node<Scalar>>(std::forward<Args>(args)...);           \
+  template <typename Scalar, typename DevicePtr, typename... Args>             \
+  auto Fixed##f(DevicePtr dev, Args&&... args) {                               \
+    static const auto Kind = DevicePtr::element_type::device_kind;             \
+    auto n =                                                                   \
+        make_ptr<f##Node<Scalar, Kind>>(dev, std::forward<Args>(args)...);     \
     n->set_has_grad(false);                                                    \
     return n;                                                                  \
   }                                                                            \
@@ -314,14 +333,15 @@ class Graph {
 
 // Helper for forwarding the Scalar type of first arg
 #define GINN_MAKE_SCALAR_FORWARDING_FACTORY(f)                                 \
-  /*If first arg is a Ptr<Node<Scalar>> for a derived node type, forward its   \
-   * Scalar */                                                                 \
+  /*If first arg is a Ptr<Node<Scalar, Kind>> for a derived node type, forward \
+   * its Scalar */                                                                     \
   template <typename Arg, typename... Args>                                    \
   auto f(Arg&& arg, Args&&... args) {                                          \
-    using NodePtr = innermost_t<Arg>;                                          \
-    using Scalar = typename std::decay_t<NodePtr>::element_type::Scalar;       \
-    return make_ptr<f##Node<Scalar>>(std::forward<Arg>(arg),                   \
-                                     std::forward<Args>(args)...);             \
+    using NodePtr = std::decay_t<innermost_t<Arg>>;                            \
+    using Scalar = typename NodePtr::element_type::Scalar;                     \
+    static const DeviceKind Kind = NodePtr::element_type::device_kind;         \
+    return make_ptr<f##Node<Scalar, Kind>>(std::forward<Arg>(arg),             \
+                                           std::forward<Args>(args)...);       \
   }                                                                            \
   static_assert(true, "Factory maker requires a semicolon")
 

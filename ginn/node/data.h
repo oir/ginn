@@ -24,44 +24,46 @@ namespace ginn {
 // the corresponding gradient with respect to that. Since many operations fit
 // this bill, most nodes will derive from this type and the constructors
 // provided here are for convenience purposes.
-template <typename Scalar = Real>
-class BaseDataNode : public Node<Scalar> {
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+class BaseDataNode : public Node<Scalar, Kind> {
  private:
-  Tensor<Scalar> fx_, dfx_;
+  Tensor<Scalar, Kind> fx_, dfx_;
 
  public:
   // TODO: These used to be protected but nvcc breaks. Why?
   // Protected constructors for helping derived nodes
-  BaseDataNode(DevPtr dev, const std::vector<BaseNodePtr>& ins)
-      : Node<Scalar>(ins), fx_(dev), dfx_(dev) {}
-  BaseDataNode(DevPtr dev,
+  BaseDataNode(DevPtr<Kind> dev, const std::vector<BaseNodePtr>& ins)
+      : Node<Scalar, Kind>(ins), fx_(dev), dfx_(dev) {}
+  BaseDataNode(DevPtr<Kind> dev,
                const Shape& shape,
                const std::vector<BaseNodePtr>& ins)
-      : Node<Scalar>(ins), fx_(dev, shape), dfx_(dev) {}
+      : Node<Scalar, Kind>(ins), fx_(dev, shape), dfx_(dev) {}
 
   template <typename NodeType>
   BaseDataNode(std::vector<NodeType> ins)
-      : Node<Scalar>(std::move(ins)),
-        fx_(best_dev(this->ins_)),
+      : Node<Scalar, Kind>(std::move(ins)),
+        fx_(best_dev<Kind>(this->ins_)),
         dfx_(fx_.dev()) {}
 
-  BaseDataNode(DevPtr dev = cpu()) : fx_(dev), dfx_(dev) {}
-  BaseDataNode(const Shape& shape) : fx_(cpu(), shape), dfx_(cpu()) {}
-  BaseDataNode(DevPtr dev, const Shape& shape) : fx_(dev, shape), dfx_(dev) {}
+  BaseDataNode(DevPtr<Kind> dev = default_dev<Kind>()) : fx_(dev), dfx_(dev) {}
+  BaseDataNode(const Shape& shape)
+      : fx_(default_dev<Kind>(), shape), dfx_(default_dev<Kind>()) {}
+  BaseDataNode(DevPtr<Kind> dev, const Shape& shape)
+      : fx_(dev, shape), dfx_(dev) {}
 
   BaseDataNode(const std::initializer_list<BaseNodePtr>& ins)
       : BaseDataNode(std::vector<BaseNodePtr>(ins)) {}
-  BaseDataNode(DevPtr dev, const std::initializer_list<BaseNodePtr>& ins)
+  BaseDataNode(DevPtr<Kind> dev, const std::initializer_list<BaseNodePtr>& ins)
       : BaseDataNode(dev, std::vector<BaseNodePtr>(ins)) {}
 
  private:
   bool has_grad_ = true;
 
  public:
-  const Tensor<Scalar>& value() const override { return fx_; }
-  const Tensor<Scalar>& grad() const override { return dfx_; }
-  using Node<Scalar>::value;
-  using Node<Scalar>::grad;
+  const Tensor<Scalar, Kind>& value() const override { return fx_; }
+  const Tensor<Scalar, Kind>& grad() const override { return dfx_; }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
 
   bool has_grad() const override { return has_grad_; }
   virtual void set_has_grad(bool hg) { has_grad_ = hg; }
@@ -70,54 +72,57 @@ class BaseDataNode : public Node<Scalar> {
   std::string name() const override = 0;
 };
 
-template <typename Scalar = Real>
-class DataNode : public BaseDataNode<Scalar> {
- public:
-  DataNode(DevPtr dev = cpu()) : BaseDataNode<Scalar>(dev) {
-    this->forwarded = true;
-  }
-  DataNode(Shape shape) : BaseDataNode<Scalar>(std::move(shape)) {
-    this->forwarded = true;
-  }
-  DataNode(DevPtr dev, Shape shape)
-      : BaseDataNode<Scalar>(std::move(dev), std::move(shape)) {
-    this->forwarded = true;
-  }
+template <typename Scalar, enum DeviceKind Kind>
+class DataNode : public BaseDataNode<Scalar, Kind> {
+  public : DataNode(DevPtr<Kind> dev = default_dev<Kind>()) :
+      BaseDataNode<Scalar, Kind>(dev){this->forwarded = true;}
+DataNode(Shape shape) : BaseDataNode<Scalar, Kind>(std::move(shape)) {
+  this->forwarded = true;
+}
+DataNode(DevPtr<Kind> dev, Shape shape)
+    : BaseDataNode<Scalar, Kind>(std::move(dev), std::move(shape)) {
+  this->forwarded = true;
+}
 
-  using Node<Scalar>::value;
+using Node<Scalar, Kind>::value;
 
-  void move_to(const DevPtr& to) {
-    this->value().move_to(to);
-    this->grad().move_to(to);
-  }
+template <typename DevicePtr>
+auto copy_to(const DevicePtr& to) {
+  const static auto OtherKind = DevicePtr::element_type::device_kind;
+  auto copy = make_ptr<DataNode<Scalar, OtherKind>>();
+  copy->value() = this->value().copy_to(to);
+  copy->grad() = this->grad().copy_to(to);
+  return copy;
+}
 
-  void fill(Scalar val) { value().fill(val); }
-  void set_zero() { value().set_zero(); }
-  void set_ones() { value().set_ones(); }
-  void set_random() { value().set_random(); }
+void fill(Scalar val) { value().fill(val); }
+void set_zero() { value().set_zero(); }
+void set_ones() { value().set_ones(); }
+void set_random() { value().set_random(); }
 
-  void reset_forwarded() override {}
+void reset_forwarded() override {}
 
-  template <typename OtherScalar>
-  auto cast() const {
-    auto other = make_ptr<DataNode<OtherScalar>>(this->dev(), this->shape());
-    other->set_has_grad(this->has_grad());
-    other->forwarded = this->forwarded;
-    other->value() = this->value().template cast<OtherScalar>();
-    other->grad() = this->grad().template cast<OtherScalar>();
-    return other;
-  }
+template <typename OtherScalar>
+auto cast() const {
+  auto other =
+      make_ptr<DataNode<OtherScalar, Kind>>(this->dev(), this->shape());
+  other->set_has_grad(this->has_grad());
+  other->forwarded = this->forwarded;
+  other->value() = this->value().template cast<OtherScalar>();
+  other->grad() = this->grad().template cast<OtherScalar>();
+  return other;
+}
 
-  Shape shape() const override { return value().shape(); }
+Shape shape() const override { return value().shape(); }
 
-  std::string name() const override { return "DataNode"; }
-};
+std::string name() const override { return "DataNode"; }
+}; // namespace ginn
 
-template <typename Scalar = Real>
-using DataPtr = Ptr<DataNode<Scalar>>;
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+using DataPtr = Ptr<DataNode<Scalar, Kind>>;
 
-template <typename Scalar = Real>
-class ConstantLikeNode : public BaseDataNode<Scalar> {
+template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+class ConstantLikeNode : public BaseDataNode<Scalar, Kind> {
  private:
   Scalar val_;
 
@@ -127,8 +132,8 @@ class ConstantLikeNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  ConstantLikeNode(NodePtr<Scalar> in, Real val)
-      : BaseDataNode<Scalar>({in}), val_(val) {}
+  ConstantLikeNode(NodePtr<Scalar, Kind> in, Real val)
+      : BaseDataNode<Scalar, Kind>({std::move(in)}), val_(val) {}
 
   std::string name() const override { return "ConstantLike"; }
 };
@@ -137,79 +142,86 @@ class ConstantLikeNode : public BaseDataNode<Scalar> {
 
 GINN_MAKE_TEMPLATE_FACTORY(Data);
 
-template <typename Scalar = Real>
-auto Data(DevPtr dev, std::initializer_list<Size> shape) {
-  return Data<Scalar>(dev, Shape(shape));
+template <typename Scalar, typename DevicePtr>
+auto Data(DevicePtr dev, std::initializer_list<Size> shape) {
+  auto Kind = DevicePtr::element_type::device_kind;
+  return Data<Scalar, Kind>(dev, Shape(shape));
 }
-template <typename Scalar = Real>
-auto FixedData(DevPtr dev, std::initializer_list<Size> shape) {
-  return FixedData<Scalar>(dev, Shape(shape));
-}
+// template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+// auto FixedData(DevPtr<Kind> dev, std::initializer_list<Size> shape) {
+//   return FixedData<Scalar, Kind>(dev, Shape(shape));
+// }
 
-template <typename Scalar>
-auto Constant(DevPtr dev, const Shape& shape, Scalar val) {
-  auto x = FixedData<Scalar>(dev, shape);
-  x->value().fill(val);
-  return x;
-}
-
-template <typename Scalar, typename InScalar>
-auto ConstantLike(NodePtr<InScalar> x, Scalar val) {
-  return make_ptr<ConstantLikeNode<Scalar>>(x, val);
-}
-
-template <typename Scalar = Real>
-auto Zero(DevPtr dev, const Shape& s) {
-  return Constant<Scalar>(dev, s, 0);
-}
-
-template <typename Scalar>
-auto ZeroLike(NodePtr<Scalar> x) {
-  return ConstantLike<Scalar>(x, 0);
-}
-
-template <typename Scalar = Real>
-auto Ones(DevPtr dev, const Shape& s) {
-  return Constant<Scalar>(dev, s, 1);
-}
-
-template <typename Scalar>
-auto OnesLike(NodePtr<Scalar> x) {
-  return ConstantLike<Scalar>(x, 1);
-}
-
-template <typename Scalar = Real>
-auto Random(DevPtr dev, const Shape& shape) {
+// template <typename Scalar>
+// auto Constant(DevPtr dev, const Shape& shape, Scalar val) {
+//   auto x = FixedData<Scalar>(dev, shape);
+//   x->value().fill(val);
+//   return x;
+// }
+//
+// template <typename Scalar, typename InScalar>
+// auto ConstantLike(NodePtr<InScalar> x, Scalar val) {
+//   return make_ptr<ConstantLikeNode<Scalar>>(x, val);
+// }
+//
+// template <typename Scalar = Real>
+// auto Zero(DevPtr dev, const Shape& s) {
+//   return Constant<Scalar>(dev, s, 0);
+// }
+//
+// template <typename Scalar>
+// auto ZeroLike(NodePtr<Scalar> x) {
+//   return ConstantLike<Scalar>(x, 0);
+// }
+//
+// template <typename Scalar = Real>
+// auto Ones(DevPtr dev, const Shape& s) {
+//   return Constant<Scalar>(dev, s, 1);
+// }
+//
+// template <typename Scalar>
+// auto OnesLike(NodePtr<Scalar> x) {
+//   return ConstantLike<Scalar>(x, 1);
+// }
+//
+template <typename Scalar, typename DevicePtr>
+auto Random(DevicePtr dev, const Shape& shape) {
   auto x = Data<Scalar>(dev, shape);
   x->value().set_random();
   return x;
 }
-
-template <typename Scalar = Real>
-auto Random(const Shape& shape) {
-  return Random<Scalar>(cpu(), shape);
-}
-
-// Temporary? workaround for lack of "uniform" impl for Half
-template <>
-inline auto Random<Half>(DevPtr dev, const Shape& shape) {
-  return Random(dev, shape)->cast<Half>();
-}
-
-template <>
-inline auto Random<Half>(const Shape& shape) {
-  return Random(shape)->cast<Half>();
-}
-
-template <typename Scalar = Real>
-auto FixedRandom(DevPtr dev, const Shape& shape) {
-  auto x = FixedData<Scalar>(dev, shape);
+template <typename DevicePtr>
+auto Random(DevicePtr dev, const Shape& shape) {
+  auto x = Data<Real>(dev, shape);
   x->value().set_random();
   return x;
 }
 
-template <int Rank, typename Scalar = Real>
-auto Values(DevPtr dev, NestedInitList<Rank, Scalar> val) {
+// template <typename Scalar = Real>
+// auto Random(const Shape& shape) {
+//   return Random<Scalar>(cpu(), shape);
+// }
+//
+//// Temporary? workaround for lack of "uniform" impl for Half
+// template <>
+// inline auto Random<Half>(DevPtr dev, const Shape& shape) {
+//   return Random(dev, shape)->cast<Half>();
+// }
+//
+// template <>
+// inline auto Random<Half>(const Shape& shape) {
+//   return Random(shape)->cast<Half>();
+// }
+//
+// template <typename Scalar = Real>
+// auto FixedRandom(DevPtr dev, const Shape& shape) {
+//   auto x = FixedData<Scalar>(dev, shape);
+//   x->value().set_random();
+//   return x;
+// }
+
+template <int Rank, typename Scalar, typename DevicePtr>
+auto Values(DevicePtr dev, NestedInitList<Rank, Scalar> val) {
   auto x = Data<Scalar>(std::move(dev), shape_of<Size, Rank, Scalar>(val));
   x->value().template set<Rank>(val);
   return x;

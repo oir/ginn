@@ -74,6 +74,8 @@ class BaseDevice {
   virtual ~BaseDevice() = default;
 };
 
+using BaseDevPtr = std::shared_ptr<BaseDevice>;
+
 template <DeviceKind Kind>
 class Device : public BaseDevice {
  public:
@@ -352,15 +354,17 @@ inline void BaseDevice::copy(const BaseDevice& other,
     GINN_THROW("Unexpected device in Device::copy()!");
   }
 }
-template <typename NodeType>
+template <enum DeviceKind Kind, typename NodeType>
 auto best_dev(const std::vector<NodeType>& ins) {
   // Inspect devices of all the inputs, adopt the one with the highest
   // precedence.
   GINN_ASSERT(not ins.empty());
   auto max = std::max_element(ins.begin(), ins.end(), [&](auto& i, auto& j) {
-    return i->dev()->precedence() < j->dev()->precedence();
+    return i->dev_()->precedence() < j->dev_()->precedence();
   });
-  return (*max)->dev();
+  auto dev = std::dynamic_pointer_cast<Device<Kind>>((*max)->dev_());
+  GINN_ASSERT(dev);
+  return dev;
 }
 
 // Default device of the given Kind. cpu() for CPU and gpu() for GPU

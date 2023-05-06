@@ -29,65 +29,66 @@ namespace ginn {
 //   CHECK(tensor1 == Close(tensor2));
 //   in Catch, when checking approximate equality of float tensors.
 
-template <typename Scalar>
+template <typename Scalar, enum DeviceKind Kind>
 class Close {
- private:
-  const Tensor<Scalar>& value;
+  private : const Tensor<Scalar, Kind>& value;
   mutable Catch::Detail::Approx approx = Catch::Detail::Approx::custom();
 
-  bool equalityComparisonImpl(const Tensor<Scalar>& other) const {
-    if (value.shape() != other.shape()) { return false; }
-    for (Size i = 0; i < value.size(); ++i) {
-      if (other.v()[i] != approx(value.v()[i])) { return false; }
-    }
-    return true;
-  }
+  bool equalityComparisonImpl(const Tensor<Scalar, Kind>& other)
+      const {if (value.shape() != other.shape()){return false;}
+for (Size i = 0; i < value.size(); ++i) {
+  if (other.v()[i] != approx(value.v()[i])) { return false; }
+}
+return true;
+} // namespace ginn
 
- public:
-  explicit Close(const Tensor<Scalar>& value) : value(value) {}
+public:
+explicit Close(const Tensor<Scalar, Kind>& value) : value(value) {}
 
-  Close operator-() const;
+Close operator-() const;
 
-  auto& margin(double margin) {
-    approx.margin(margin);
-    return *this;
-  }
-  auto& epsilon(double eps) {
-    approx.epsilon(eps);
-    return *this;
-  }
-  auto& scale(double s) {
-    approx.scale(s);
-    return *this;
-  }
+auto& margin(double margin) {
+  approx.margin(margin);
+  return *this;
+}
+auto& epsilon(double eps) {
+  approx.epsilon(eps);
+  return *this;
+}
+auto& scale(double s) {
+  approx.scale(s);
+  return *this;
+}
 
-  Close operator()(const Tensor<Scalar>& t) const {
-    Close<Scalar> appr(t);
-    appr.approx = this->approx;
-    return appr;
-  }
+Close operator()(const Tensor<Scalar, Kind>& t) const {
+  Close<Scalar, Kind> appr(t);
+  appr.approx = this->approx;
+  return appr;
+}
 
-  friend bool operator==(const Tensor<Scalar>& lhs, Close const& rhs) {
-    return rhs.equalityComparisonImpl(lhs);
-  }
+friend bool operator==(const Tensor<Scalar, Kind>& lhs, Close const& rhs) {
+  return rhs.equalityComparisonImpl(lhs);
+}
 
-  friend bool operator==(Close const& lhs, const Tensor<Scalar>& rhs) {
-    return operator==(rhs, lhs);
-  }
+friend bool operator==(Close const& lhs, const Tensor<Scalar, Kind>& rhs) {
+  return operator==(rhs, lhs);
+}
 
-  friend bool operator!=(Tensor<Scalar> const& lhs, Close const& rhs) {
-    return !operator==(lhs, rhs);
-  }
+friend bool operator!=(Tensor<Scalar, Kind> const& lhs, Close const& rhs) {
+  return !operator==(lhs, rhs);
+}
 
-  friend bool operator!=(Close const& lhs, Tensor<Scalar> const& rhs) {
-    return !operator==(rhs, lhs);
-  }
+friend bool operator!=(Close const& lhs, Tensor<Scalar, Kind> const& rhs) {
+  return !operator==(rhs, lhs);
+}
 
-  friend std::ostream& operator<<(std::ostream& o, Close<Scalar> const& rhs) {
-    o << rhs.value;
-    return o;
-  }
-};
+friend std::ostream& operator<<(std::ostream& o,
+                                Close<Scalar, Kind> const& rhs) {
+  o << rhs.value;
+  return o;
+}
+}
+;
 
 // Compute numeric grad for gradient checks, using finite differences
 template <typename Expr, typename Weight, typename Mask>
@@ -162,7 +163,8 @@ inline void check_grad(NodeFunc f_e,
         w->has_grad()) {
       w->reset_grad();
       auto wr = dynamic_ptr_cast<Node<Real>>(w);
-      auto mask = FixedRandom(e->dev(), e->value().shape());
+      auto mask = Random(e->dev(), e->value().shape());
+      mask->set_has_grad(false);
       auto ng = numeric_grad(e, wr, mask, delta);
       auto ag = analytic_grad(e, wr, mask);
       CHECK(ag == Close(ng).scale(eps));
@@ -177,6 +179,18 @@ inline void check_grad(NodePtr<Real> e,
                        Real eps = 1e-4,
                        Real delta = 1e-4) {
   check_grad([e]() { return e; }, ins, randomize_inputs, eps, delta);
+}
+
+inline void check_grad(NodePtr<Real> e,
+                       const std::initializer_list<BaseNodePtr>& ins,
+                       bool randomize_inputs = false,
+                       Real eps = 1e-4,
+                       Real delta = 1e-4) {
+  check_grad([e]() { return e; },
+             std::vector<BaseNodePtr>(ins),
+             randomize_inputs,
+             eps,
+             delta);
 }
 
 } // namespace ginn
