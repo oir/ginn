@@ -48,17 +48,17 @@ void bind_dev(py::module_& m) {
           [](const DeviceId& a, const DeviceId& b) { return a == b; },
           py::is_operator());
 
-  py::class_<Device, std::shared_ptr<Device>>(m, "Device")
-      .def_property_readonly("kind", &Device::kind)
-      .def_property_readonly("id", &Device::id)
-      .def_property_readonly("precedence", &Device::precedence);
+  py::class_<Device<CPU>, std::shared_ptr<Device<CPU>>>(m, "BaseCpuDevice")
+      .def_property_readonly("kind", &Device<CPU>::kind)
+      .def_property_readonly("id", &Device<CPU>::id)
+      .def_property_readonly("precedence", &Device<CPU>::precedence);
 
-  py::class_<CpuDevice, Device, std::shared_ptr<CpuDevice>>(m, "CpuDevice");
+  py::class_<CpuDevice, Device<CPU>, std::shared_ptr<CpuDevice>>(m, "CpuDevice");
 
   m.def("Cpu", &Cpu, "");
   m.def("cpu", &cpu, "");
 
-  py::class_<PreallocCpuDevice, Device, std::shared_ptr<PreallocCpuDevice>>(
+  py::class_<PreallocCpuDevice, Device<CPU>, std::shared_ptr<PreallocCpuDevice>>(
       m, "PreallocCpuDevice")
       .def("clear", &PreallocCpuDevice::clear)
       .def_property_readonly("size", &PreallocCpuDevice::size)
