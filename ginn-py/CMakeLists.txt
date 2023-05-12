@@ -1,5 +1,5 @@
-set(PY_SOURCES ginn-py.cu.cpp
-        dev-py.cu.cpp
+set(PY_SOURCES ginn-py.cpp
+        dev-py.cpp
         tensor-py.cu.cpp
         node-py.cu.cpp
         node/affine-py.cu.cpp

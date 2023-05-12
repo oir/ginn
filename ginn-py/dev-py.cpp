@@ -65,26 +65,6 @@ void bind_dev(py::module_& m) {
       .def_property_readonly("used", &PreallocCpuDevice::used);
 
   m.def("PreallocCpu", &PreallocCpu, "");
-
-#ifdef GINN_ENABLE_GPU
-  py::class_<GpuDevice, Device, std::shared_ptr<GpuDevice>>(m, "GpuDevice");
-
-  m.def("Gpu", &Gpu, py::arg("gpu_idx") = 0);
-  m.def("gpu", &gpu, py::arg("gpu_idx") = 0);
-
-  py::class_<PreallocGpuDevice, Device, std::shared_ptr<PreallocGpuDevice>>(
-      m, "PreallocGpuDevice")
-      .def("clear", &PreallocGpuDevice::clear)
-      .def_property_readonly("size", &PreallocGpuDevice::size)
-      .def_property_readonly("used", &PreallocGpuDevice::used);
-
-  m.def("PreallocGpu",
-        py::overload_cast<size_t, size_t>(&PreallocGpu),
-        "idx"_a,
-        "size"_a);
-
-#endif
-
   m.def("gpus", &gpus);
 }
 

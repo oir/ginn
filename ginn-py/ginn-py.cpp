@@ -12,23 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GINN_PY_DEV_PY_H
-#define GINN_PY_DEV_PY_H
-
 #include <pybind11/pybind11.h>
 
-namespace ginn {
-namespace python {
+#include <ginn-py/dev-py.h>
+//#include <ginn-py/init-py.h>
+//#include <ginn-py/node-py.h>
+#include <ginn-py/tensor-py.h>
+//#include <ginn-py/update-py.h>
 
 namespace py = pybind11;
 
-void bind_dev(py::module_& m);
+PYBIND11_MODULE(ginn, m) {
+  using namespace ginn;
+  using namespace ginn::python;
 
-#ifdef GINN_ENABLE_GPU
-void bind_dev_gpu(py::module_& m);
-#endif
+  m.doc() = "pybind11 example plugin"; // optional module docstring
 
-} // namespace python
-} // namespace ginn
+  bind_dev(m);
 
-#endif
+  bind_tensor(m);
+  //bind_node(m);
+  //bind_init(m);
+  //bind_update(m);
+
+}

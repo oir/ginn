@@ -5,8 +5,8 @@ if py.found()
   pybind11 = subproject('pybind11').get_variable('pybind11_dep')
 
   sources = [
-    'ginn-py.cu.cpp',
-    'dev-py.cu.cpp',
+    'ginn-py.cpp',
+    'dev-py.cpp',
     #    'tensor-py.cu.cpp',
     #    'node-py.cu.cpp',
     #    'node/affine-py.cu.cpp',
@@ -23,19 +23,16 @@ if py.found()
     #    'update-py.cu.cpp',
   ]
 
+  gpu_sources = [
+    'ginn-py.cu',
+    'dev-py.cpp',
+    'dev-py.cu',
+  ]
+
 
   if gpu
-    fs = import('fs')
-    copied_sources = []
-    foreach src : sources
-      exec_name = 'cuda' + src.replace('.cu.cpp', '').replace('.cu', '')
-      copy_name = src.replace('.cu.cpp', '.copy.cu').replace('/', '__')
-      copied_src = fs.copyfile(src, copy_name)
-      copied_sources += [copied_src]
-    endforeach
-
     tgt = py.extension_module('ginn',
-                              sources : copied_sources,
+                              sources : gpu_sources,
                               include_directories : incdir,
                               dependencies : deps + [pybind11, cuda_dep],
                               cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])

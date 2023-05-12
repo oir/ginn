@@ -12,23 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GINN_PY_DEV_PY_H
-#define GINN_PY_DEV_PY_H
-
 #include <pybind11/pybind11.h>
+
+#include <ginn/dev.h>
+
+#include <ginn-py/dev-py.h>
 
 namespace ginn {
 namespace python {
 
 namespace py = pybind11;
 
-void bind_dev(py::module_& m);
+void bind_dev_gpu(py::module_& m) {
+  using namespace py::literals;
 
-#ifdef GINN_ENABLE_GPU
-void bind_dev_gpu(py::module_& m);
-#endif
+  py::class_<GpuDevice, Device<GPU>, std::shared_ptr<GpuDevice>>(m, "GpuDevice");
+
+  m.def("Gpu", &Gpu, py::arg("gpu_idx") = 0);
+  m.def("gpu", &gpu, py::arg("gpu_idx") = 0);
+
+  py::class_<PreallocGpuDevice, Device<GPU>, std::shared_ptr<PreallocGpuDevice>>(
+      m, "PreallocGpuDevice")
+      .def("clear", &PreallocGpuDevice::clear)
+      .def_property_readonly("size", &PreallocGpuDevice::size)
+      .def_property_readonly("used", &PreallocGpuDevice::used);
+
+  m.def("PreallocGpu",
+        py::overload_cast<size_t, size_t>(&PreallocGpu),
+        "idx"_a,
+        "size"_a);
+
+}
 
 } // namespace python
 } // namespace ginn
-
-#endif
