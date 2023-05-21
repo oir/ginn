@@ -23,6 +23,7 @@ namespace python {
 namespace py = pybind11;
 
 void bind_common_nodes(py::module_& m);
+void bind_common_nodes_gpu(py::module_& m);
 
 } // namespace python
 } // namespace ginn

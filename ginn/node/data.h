@@ -144,8 +144,7 @@ GINN_MAKE_TEMPLATE_FACTORY(Data);
 
 template <typename Scalar, typename DevicePtr>
 auto Data(DevicePtr dev, std::initializer_list<Size> shape) {
-  auto Kind = DevicePtr::element_type::device_kind;
-  return Data<Scalar, Kind>(dev, Shape(shape));
+  return Data<Scalar>(dev, Shape(shape));
 }
 // template <typename Scalar = Real, enum DeviceKind Kind = CPU>
 // auto FixedData(DevPtr<Kind> dev, std::initializer_list<Size> shape) {

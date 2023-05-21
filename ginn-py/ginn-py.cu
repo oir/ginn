@@ -23,17 +23,17 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(ginn, m) {
-using namespace ginn;
-using namespace ginn::python;
+  using namespace ginn;
+  using namespace ginn::python;
 
-m.doc() = "pybind11 example plugin"; // optional module docstring
+  m.doc() = "pybind11 example plugin"; // optional module docstring
 
-bind_dev(m);
-bind_dev_gpu(m);
+  bind_dev(m);
+  bind_dev_gpu(m);
 
-bind_tensor(m);
-//bind_node(m);
-//bind_init(m);
-//bind_update(m);
-
+  auto rt = bind_tensor(m);
+  bind_tensor_gpu(m, rt);
+  // bind_node(m);
+  // bind_init(m);
+  // bind_update(m);
 }

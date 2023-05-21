@@ -72,24 +72,24 @@ void print_helper(std::ostream& os,
   os << "}";
 }
 
-template <typename Scalar>
-void print(std::ostream& os, const Tensor<Scalar>& t) {
-  if (t.dev()->kind() != CPU) {
+template <typename Scalar, enum DeviceKind Kind>
+void print(std::ostream& os, const Tensor<Scalar, Kind>& t) {
+  if constexpr (Kind != CPU) {
     auto t_ = t.copy_to(cpu());
     print(os, t_);
-  }
-
-  if (t.shape().size() == 0) {
-    os << t.item();
   } else {
-    auto w = max_width(t);
-    print_helper(os, t, 0, 1, t.shape().size(), w);
+    if (t.shape().size() == 0) {
+      os << t.item();
+    } else {
+      auto w = max_width(t);
+      print_helper(os, t, 0, 1, t.shape().size(), w);
+    }
   }
 }
 
 // TODO: does this need to be exposed outside of ginn namespace?
-template <typename Scalar>
-std::ostream& operator<<(std::ostream& os, const Tensor<Scalar>& t) {
+template <typename Scalar, enum DeviceKind Kind>
+std::ostream& operator<<(std::ostream& os, const Tensor<Scalar, Kind>& t) {
   print(os, t);
   return os;
 }

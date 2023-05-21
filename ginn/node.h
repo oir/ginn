@@ -309,13 +309,15 @@ class Graph {
 //   Real.
 #define GINN_MAKE_TEMPLATE_FACTORY(f)                                          \
   template <typename Scalar, typename DevicePtr, typename... Args>             \
-  auto f(DevicePtr dev, Args&&... args) {                                      \
-    static const auto Kind = DevicePtr::element_type::device_kind;             \
+  auto f(const DevicePtr& dev, Args&&... args) {                               \
+    static const auto Kind =                                                   \
+        std::decay_t<DevicePtr>::element_type::device_kind;                    \
     return make_ptr<f##Node<Scalar, Kind>>(dev, std::forward<Args>(args)...);  \
   }                                                                            \
   template <typename Scalar, typename DevicePtr, typename... Args>             \
-  auto Fixed##f(DevicePtr dev, Args&&... args) {                               \
-    static const auto Kind = DevicePtr::element_type::device_kind;             \
+  auto Fixed##f(const DevicePtr& dev, Args&&... args) {                        \
+    static const auto Kind =                                                   \
+        std::decay_t<DevicePtr>::element_type::device_kind;                    \
     auto n =                                                                   \
         make_ptr<f##Node<Scalar, Kind>>(dev, std::forward<Args>(args)...);     \
     n->set_has_grad(false);                                                    \
@@ -334,7 +336,7 @@ class Graph {
 // Helper for forwarding the Scalar type of first arg
 #define GINN_MAKE_SCALAR_FORWARDING_FACTORY(f)                                 \
   /*If first arg is a Ptr<Node<Scalar, Kind>> for a derived node type, forward \
-   * its Scalar */                                                                     \
+   * its Scalar */                                                             \
   template <typename Arg, typename... Args>                                    \
   auto f(Arg&& arg, Args&&... args) {                                          \
     using NodePtr = std::decay_t<innermost_t<Arg>>;                            \

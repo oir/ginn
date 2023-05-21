@@ -53,19 +53,21 @@ void bind_dev(py::module_& m) {
       .def_property_readonly("id", &Device<CPU>::id)
       .def_property_readonly("precedence", &Device<CPU>::precedence);
 
-  py::class_<CpuDevice, Device<CPU>, std::shared_ptr<CpuDevice>>(m, "CpuDevice");
+  py::class_<CpuDevice, Device<CPU>, std::shared_ptr<CpuDevice>>(m,
+                                                                 "CpuDevice");
 
   m.def("Cpu", &Cpu, "");
   m.def("cpu", &cpu, "");
 
-  py::class_<PreallocCpuDevice, Device<CPU>, std::shared_ptr<PreallocCpuDevice>>(
-      m, "PreallocCpuDevice")
+  py::class_<PreallocCpuDevice,
+             Device<CPU>,
+             std::shared_ptr<PreallocCpuDevice>>(m, "PreallocCpuDevice")
       .def("clear", &PreallocCpuDevice::clear)
       .def_property_readonly("size", &PreallocCpuDevice::size)
       .def_property_readonly("used", &PreallocCpuDevice::used);
 
   m.def("PreallocCpu", &PreallocCpu, "");
-  m.def("gpus", &gpus);
+  // m.def("gpus", &gpus);
 }
 
 } // namespace python

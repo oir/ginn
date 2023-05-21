@@ -23,10 +23,7 @@ namespace python {
 namespace py = pybind11;
 
 void bind_dev(py::module_& m);
-
-#ifdef GINN_ENABLE_GPU
 void bind_dev_gpu(py::module_& m);
-#endif
 
 } // namespace python
 } // namespace ginn

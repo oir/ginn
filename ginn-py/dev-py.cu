@@ -23,16 +23,31 @@ namespace python {
 
 namespace py = pybind11;
 
+inline int gpus_() {
+  int num_gpus = -1;
+  try {
+    GINN_CUDA_CALL(cudaGetDeviceCount(&num_gpus));
+  } catch (const CudaError&) { return 0; }
+  return num_gpus;
+}
+
 void bind_dev_gpu(py::module_& m) {
   using namespace py::literals;
 
-  py::class_<GpuDevice, Device<GPU>, std::shared_ptr<GpuDevice>>(m, "GpuDevice");
+  py::class_<Device<GPU>, std::shared_ptr<Device<GPU>>>(m, "BaseGpuDevice")
+      .def_property_readonly("kind", &Device<GPU>::kind)
+      .def_property_readonly("id", &Device<GPU>::id)
+      .def_property_readonly("precedence", &Device<GPU>::precedence);
+
+  py::class_<GpuDevice, Device<GPU>, std::shared_ptr<GpuDevice>>(m,
+                                                                 "GpuDevice");
 
   m.def("Gpu", &Gpu, py::arg("gpu_idx") = 0);
   m.def("gpu", &gpu, py::arg("gpu_idx") = 0);
 
-  py::class_<PreallocGpuDevice, Device<GPU>, std::shared_ptr<PreallocGpuDevice>>(
-      m, "PreallocGpuDevice")
+  py::class_<PreallocGpuDevice,
+             Device<GPU>,
+             std::shared_ptr<PreallocGpuDevice>>(m, "PreallocGpuDevice")
       .def("clear", &PreallocGpuDevice::clear)
       .def_property_readonly("size", &PreallocGpuDevice::size)
       .def_property_readonly("used", &PreallocGpuDevice::used);
@@ -42,6 +57,7 @@ void bind_dev_gpu(py::module_& m) {
         "idx"_a,
         "size"_a);
 
+  m.def("gpus", &gpus_);
 }
 
 } // namespace python

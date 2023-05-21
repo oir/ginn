@@ -51,18 +51,43 @@ std::string scalar_name() {
   return "";
 }
 
-template <typename Scalar>
+template <enum DeviceKind Kind>
+std::string device_kind_name() {
+  if constexpr (Kind == CPU) { return "Cpu"; }
+#if GINN_ENABLE_GPU
+  if constexpr (Kind == GPU) { return "Gpu"; }
+#endif
+}
+
+template <typename Scalar, enum DeviceKind Kind>
 auto name(std::string name) {
   // is there a cheaper way to return safe (const char *)s?
   static std::vector<std::string> names;
-  names.emplace_back(scalar_name<Scalar>() + name);
+  names.emplace_back(scalar_name<Scalar>() + device_kind_name<Kind>() + name);
   return names.back().c_str();
 }
 
 // Given a template class / function such as Initer<Scalar>(), define
 //   a non-template version Initer_(..., Scalar_ s) that dispatches based on the
 //   scalar.
-#define GINN_PY_MAKE_SCALAR_DISPATCHER(F)                                      \
+#define GINN_PY_MAKE_SCALAR_DISPATCHER(F, Kind)                                \
+  template <typename... Args>                                                  \
+  py::object F##_(Args&&... args, Scalar_ scalar) {                            \
+    if (scalar == Scalar_::Real) {                                             \
+      return py::cast(F<Real, Kind>(std::forward<Args>(args)...));             \
+    } else if (scalar == Scalar_::Half) {                                      \
+      return py::cast(F<Half, Kind>(std::forward<Args>(args)...));             \
+    } else if (scalar == Scalar_::Int) {                                       \
+      return py::cast(F<Int, Kind>(std::forward<Args>(args)...));              \
+    } else if (scalar == Scalar_::Bool) {                                      \
+      return py::cast(F<bool, Kind>(std::forward<Args>(args)...));             \
+    } else {                                                                   \
+      GINN_THROW("Unexpected Scalar type!");                                   \
+      return {};                                                               \
+    }                                                                          \
+  }
+
+#define GINN_PY_MAKE_SCALAR_DISPATCHER_2(F)                                    \
   template <typename... Args>                                                  \
   py::object F##_(Args&&... args, Scalar_ scalar) {                            \
     if (scalar == Scalar_::Real) {                                             \
@@ -93,9 +118,13 @@ auto name(std::string name) {
   }
 
 // Syntactic shorthand for nodes that derive from BaseDataNode, which are many
-template <typename Scalar, template <class> typename Node>
-using PyNode =
-    py::class_<Node<Scalar>, BaseDataNode<Scalar>, Ptr<Node<Scalar>>>;
+template <typename Scalar,
+          enum DeviceKind Kind,
+          template <class, enum DeviceKind>
+          typename Node>
+using PyNode = py::class_<Node<Scalar, Kind>,
+                          BaseDataNode<Scalar, Kind>,
+                          Ptr<Node<Scalar, Kind>>>;
 
 } // namespace python
 } // namespace ginn

@@ -1,9 +1,9 @@
 set(PY_SOURCES ginn-py.cpp
         dev-py.cpp
-        tensor-py.cu.cpp
-        node-py.cu.cpp
+        tensor-py.cpp
+        node-py.cpp
         node/affine-py.cu.cpp
-        node/common-py.cu.cpp
+        node/common-py.cpp
         node/compare-py.cu.cpp
         node/nonlin-py.cu.cpp
         node/layout-py.cu.cpp
