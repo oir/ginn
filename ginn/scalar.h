@@ -7,6 +7,9 @@ template <enum DeviceKind Kind>
 struct Float {
   static const DeviceKind device_kind = Kind;
   using Raw = float;
+
+  template <enum DeviceKind OtherKind>
+  using To = Float<OtherKind>;
 };
 
 #endif

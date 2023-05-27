@@ -107,7 +107,12 @@ class Tensor {
   //}
 
   // Copy this tensor to another device
-  auto copy_to(const DevPtr& to) const { return Tensor<Scalar>(to, *this); }
+  template <typename OtherDevPtr>
+  auto copy_to(const OtherDevPtr& to) const {
+    const static auto OtherKind = OtherDevPtr::element_type::device_kind;
+    using OtherScalar = typename Scalar::template To<OtherKind>;
+    return Tensor<OtherScalar>(to, *this);
+  }
 
   // If tensor not on specified device, copy to it. Otherwise return a shallow
   // copy based on Tensor::map() which uses the same storage
