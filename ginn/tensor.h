@@ -71,13 +71,13 @@ class Tensor {
  private:
   DevPtr<Kind> dev_ = nullptr;
   Shape shape_ = {0};
-  Scalar* data_ = nullptr; // owned in most cases
+  RawScalar* data_ = nullptr; // owned in most cases
   bool owns_mem_ = true;   // whether this Tensor owns data_
 
  public:
   DevPtr<Kind> dev() const { return dev_; }
   Shape shape() const { return shape_; }
-  Scalar* data() { return data_; }
+  RawScalar* data() { return data_; }
 
   static Size size(const Shape& shape) {
     Size i = 1;
@@ -116,15 +116,22 @@ class Tensor {
 
   // If tensor not on specified device, copy to it. Otherwise return a shallow
   // copy based on Tensor::map() which uses the same storage
-  auto maybe_copy_to(const DevPtr& to) {
-    if (dev_->id() == to->id()) {
-      return Tensor<Scalar>().map(*this);
+  template <typename OtherDevPtr>
+  auto maybe_copy_to(const OtherDevPtr& to) {
+    const static auto OtherKind = OtherDevPtr::element_type::device_kind;
+
+    if constexpr (Kind == OtherKind) {
+      if (dev_->id() == to->id()) {
+        return Tensor<Scalar>().map(*this);
+      } else {
+        return copy_to(to);
+      }
     } else {
       return copy_to(to);
     }
   }
 
-  Scalar item() const {
+  RawScalar item() const {
     GINN_ASSERT(size() == 1, "item() can be invoked on size 1 tensors!");
     return copy_to(cpu()).v()[0];
   }
