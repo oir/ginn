@@ -25,12 +25,12 @@ namespace ginn {
 // TODO: Separate LeftScalar and RightScalar types and mixed precision
 //   Affine with cublasGemmEx
 
-template <typename Scalar>
-class AffineNode : public BaseDataNode<Scalar> {
+template <typename Scalar, enum DeviceKind Kind>
+class AffineNode : public BaseDataNode<Scalar, Kind> {
  private:
-  std::vector<NodePtr<Scalar>> ins_;
-  Tensor<Scalar> preactiv_, dpreactiv_;
-  std::unique_ptr<NonlinOp<Scalar>> nonlin_;
+  std::vector<NodePtr<Scalar, Kind>> ins_;
+  Tensor<Scalar, Kind> preactiv_, dpreactiv_;
+  std::unique_ptr<NonlinOp<Scalar, Kind>> nonlin_;
 
   void forward_() override {
     auto& a = ins_[0]->value();
@@ -41,11 +41,11 @@ class AffineNode : public BaseDataNode<Scalar> {
     Shape new_s = b.shape();
     new_s[0] = a.rows();
 
-    Tensor<Scalar>& affine =
+    Tensor<Scalar, Kind>& affine =
         nonlin_->backward_requires_input() ? preactiv_ : value();
     affine.resize(new_s);
 
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       affine.m() = (a.m() * b.m()).colwise() + bias.v();
       for (size_t i = 2; i < ins_.size() - 1; i += 2) {
         auto &a = ins_[i]->value(), &b = ins_[i + 1]->value();
@@ -53,7 +53,7 @@ class AffineNode : public BaseDataNode<Scalar> {
         affine.m().noalias() += a.m() * b.m();
       }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       affine = bias.t().broadcast(Index<2>{1, b.cols()});
       internal::gpu_prod(affine, a, b, internal::ProdResult::Add);
       for (size_t i = 2; i < ins_.size() - 1; i += 2) {
@@ -77,7 +77,7 @@ class AffineNode : public BaseDataNode<Scalar> {
   }
 
   void backward_() override {
-    Tensor<Scalar>& daffine = nonlin_->is_identity() ? grad() : dpreactiv_;
+    Tensor<Scalar, Kind>& daffine = nonlin_->is_identity() ? grad() : dpreactiv_;
     if (not nonlin_->is_identity()) {
       dpreactiv_.resize(grad().shape());
       dpreactiv_.set_zero();
@@ -86,7 +86,7 @@ class AffineNode : public BaseDataNode<Scalar> {
       // which is okay since NonlinOp::backward_() is _not_ using it.
     }
 
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       auto& bias = ins_.back();
       if (bias->has_grad()) {
         bias->grad().m().noalias() += daffine.m().rowwise().sum();
@@ -101,7 +101,7 @@ class AffineNode : public BaseDataNode<Scalar> {
         }
       }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       using namespace internal;
       auto& bias = ins_.back();
       if (bias->has_grad()) { bias->grad() += daffine.t().sum(Index<1>{1}); }
@@ -129,18 +129,18 @@ class AffineNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
   void set_ins(const std::vector<BaseNodePtr>& ins) override {
     BaseNode::ins_ = ins;
-    ins_ = derived_cast<Node<Scalar>>(ins);
+    ins_ = derived_cast<Node<Scalar, Kind>>(ins);
   }
 
   template <typename NonlinType>
-  AffineNode(NonlinType nonlin, const std::vector<NodePtr<Scalar>>& ins)
-      : BaseDataNode<Scalar>(ins),
+  AffineNode(NonlinType nonlin, const std::vector<NodePtr<Scalar, Kind>>& ins)
+      : BaseDataNode<Scalar, Kind>(ins),
         ins_(ins),
         preactiv_(dev()),
         dpreactiv_(dev()),
@@ -149,9 +149,9 @@ class AffineNode : public BaseDataNode<Scalar> {
     GINN_ASSERT(ins.size() % 2); // force bias for now.
   }
 
-  AffineNode(std::unique_ptr<NonlinOp<Scalar>> nonlin,
-             const std::vector<NodePtr<Scalar>>& ins)
-      : BaseDataNode<Scalar>(ins),
+  AffineNode(std::unique_ptr<NonlinOp<Scalar, Kind>> nonlin,
+             const std::vector<NodePtr<Scalar, Kind>>& ins)
+      : BaseDataNode<Scalar, Kind>(ins),
         ins_(ins),
         preactiv_(dev()),
         dpreactiv_(dev()),
@@ -160,30 +160,30 @@ class AffineNode : public BaseDataNode<Scalar> {
     GINN_ASSERT(ins.size() % 2); // force bias for now.
   }
 
-  AffineNode(const std::vector<NodePtr<Scalar>>& ins)
-      : AffineNode<Scalar>(IdentityOp<Scalar>(), ins) {}
+  AffineNode(const std::vector<NodePtr<Scalar, Kind>>& ins)
+      : AffineNode<Scalar, Kind>(IdentityOp<Scalar, Kind>(), ins) {}
 
   template <typename... Args>
-  AffineNode(const NodePtr<Scalar>& in, Args&&... args)
-      : AffineNode<Scalar>(std::vector<NodePtr<Scalar>>({in, args...})) {}
+  AffineNode(const NodePtr<Scalar, Kind>& in, Args&&... args)
+      : AffineNode<Scalar, Kind>(std::vector<NodePtr<Scalar, Kind>>({in, args...})) {}
 
   template <typename NonlinType,
             typename... Args,
             typename = std::enable_if_t<
-                std::is_base_of_v<NonlinOp<Scalar>, NonlinType>>>
-  AffineNode(NonlinType nonlin, const NodePtr<Scalar>& in, Args&&... args)
-      : AffineNode<Scalar>(nonlin,
-                           std::vector<NodePtr<Scalar>>({in, args...})) {}
+                std::is_base_of_v<NonlinOp<Scalar, Kind>, NonlinType>>>
+  AffineNode(NonlinType nonlin, const NodePtr<Scalar, Kind>& in, Args&&... args)
+      : AffineNode<Scalar, Kind>(nonlin,
+                           std::vector<NodePtr<Scalar, Kind>>({in, args...})) {}
 
   template <typename NonlinType,
             typename... Args,
             typename = std::enable_if_t<
-                std::is_base_of_v<NonlinOp<Scalar>, NonlinType>>>
+                std::is_base_of_v<NonlinOp<Scalar, Kind>, NonlinType>>>
   AffineNode(std::unique_ptr<NonlinType> nonlin,
-             const NodePtr<Scalar>& in,
+             const NodePtr<Scalar, Kind>& in,
              Args&&... args)
-      : AffineNode<Scalar>(std::move(nonlin),
-                           std::vector<NodePtr<Scalar>>({in, args...})) {}
+      : AffineNode<Scalar, Kind>(std::move(nonlin),
+                           std::vector<NodePtr<Scalar, Kind>>({in, args...})) {}
 
   std::string name() const override { return "AffineNode"; }
 };
@@ -191,9 +191,9 @@ class AffineNode : public BaseDataNode<Scalar> {
 // TODO: See if its possible to trim the ctors and factory functions for Affine,
 //   this is too much clutter.
 
-template <typename Scalar>
-auto Affine(const std::vector<NodePtr<Scalar>>& ins) {
-  return make_ptr<AffineNode<Scalar>>(ins);
+template <typename Scalar, enum DeviceKind Kind>
+auto Affine(const std::vector<NodePtr<Scalar, Kind>>& ins) {
+  return make_ptr<AffineNode<Scalar, Kind>>(ins);
 }
 
 template <typename Node,
@@ -201,47 +201,49 @@ template <typename Node,
           typename = std::enable_if_t<std::is_base_of_v<BaseNode, Node>>>
 auto Affine(Ptr<Node> in, Args&&... args) {
   using Scalar = typename Node::Scalar;
-  return make_ptr<AffineNode<Scalar>>(in, std::forward<Args>(args)...);
+  const static auto Kind = Node::device_kind;
+  return make_ptr<AffineNode<Scalar, Kind>>(in, std::forward<Args>(args)...);
 }
 
-template <typename Node,
-          typename NonlinType,
-          typename... Args,
-          typename = std::enable_if_t<
-              std::is_base_of_v<NonlinOp<typename Node::Scalar>, NonlinType>>>
-auto Affine(NonlinType nonlin, Ptr<Node> in, Args&&... args) {
-  using Scalar = typename Node::Scalar;
-  return make_ptr<AffineNode<Scalar>>(nonlin, in, std::forward<Args>(args)...);
-}
-
-template <typename Node,
-          typename NonlinType,
-          typename... Args,
-          typename = std::enable_if_t<
-              std::is_base_of_v<NonlinOp<typename Node::Scalar>, NonlinType>>>
-auto Affine(std::unique_ptr<NonlinType> nonlin, Ptr<Node> in, Args&&... args) {
-  using Scalar = typename Node::Scalar;
-  return make_ptr<AffineNode<Scalar>>(
-      std::move(nonlin), in, std::forward<Args>(args)...);
-}
-
-template <template <typename> typename Nonlin, typename Node, typename... Args>
+//template <typename Node,
+//          typename NonlinType,
+//          typename... Args,
+//          typename = std::enable_if_t<
+//              std::is_base_of_v<NonlinOp<typename Node::Scalar>, NonlinType>>>
+//auto Affine(NonlinType nonlin, Ptr<Node> in, Args&&... args) {
+//  using Scalar = typename Node::Scalar;
+//  return make_ptr<AffineNode<Scalar>>(nonlin, in, std::forward<Args>(args)...);
+//}
+//
+//template <typename Node,
+//          typename NonlinType,
+//          typename... Args,
+//          typename = std::enable_if_t<
+//              std::is_base_of_v<NonlinOp<typename Node::Scalar>, NonlinType>>>
+//auto Affine(std::unique_ptr<NonlinType> nonlin, Ptr<Node> in, Args&&... args) {
+//  using Scalar = typename Node::Scalar;
+//  return make_ptr<AffineNode<Scalar>>(
+//      std::move(nonlin), in, std::forward<Args>(args)...);
+//}
+//
+template <template <typename, enum DeviceKind> typename Nonlin, typename Node, typename... Args>
 auto Affine(Ptr<Node> in, Args&&... args) {
   using Scalar = typename Node::Scalar;
-  return make_ptr<AffineNode<Scalar>>(
-      Nonlin<Scalar>(), in, std::forward<Args>(args)...);
+  const static auto Kind = Node::device_kind;
+  return make_ptr<AffineNode<Scalar, Kind>>(
+      Nonlin<Scalar, Kind>(), in, std::forward<Args>(args)...);
 }
 
-/*
-// Convenience method to be able to call, e.g., Affine<Sigmoid> instead of
-// Affine<SigmoidOp>.
-template <auto(*NonlinFactory)(const NodePtr&)>
-auto Affine(const std::vector<NodePtr>& ins) {
-  using NonlinOp =
-      typename decltype(NonlinFactory(NodePtr()))::element_type::UnaryOp;
-  return Affine<NonlinOp>(ins);
-}
- */
+///*
+//// Convenience method to be able to call, e.g., Affine<Sigmoid> instead of
+//// Affine<SigmoidOp>.
+//template <auto(*NonlinFactory)(const NodePtr&)>
+//auto Affine(const std::vector<NodePtr>& ins) {
+//  using NonlinOp =
+//      typename decltype(NonlinFactory(NodePtr()))::element_type::UnaryOp;
+//  return Affine<NonlinOp>(ins);
+//}
+// */
 
 } // namespace ginn
 

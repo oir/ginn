@@ -10,7 +10,7 @@ if py.found()
     'tensor-py.cpp',
     'node-py.cpp',
     'node/common-py.cpp',
-    #    'node/affine-py.cu.cpp',
+    'node/affine-py.cpp',
     #    'node/compare-py.cu.cpp',
     #    'node/nonlin-py.cu.cpp',
     #    'node/layout-py.cu.cpp',
@@ -33,6 +33,8 @@ if py.found()
     'node-py.cu',
     'node/common-py.cpp',
     'node/common-py.cu',
+    'node/affine-py.cpp',
+    'node/affine-py.cu',
   ]
 
 
@@ -42,7 +44,7 @@ if py.found()
                               include_directories : incdir,
                               dependencies : deps + [pybind11, cuda_dep],
                               cpp_args : cpp_args,
-                              cuda_args : cuda_args + ['-DGINN_ENABLE_GPU', '-DEigen=GpuEigen'])
+                              cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])
   else
     tgt = py.extension_module('ginn',
                               sources : sources,

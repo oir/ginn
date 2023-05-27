@@ -15,6 +15,7 @@
 #ifndef GINN_DEF_H
 #define GINN_DEF_H
 
+#define EIGEN_USE_GPU
 #ifdef GINN_ENABLE_GPU // cuda
 #define EIGEN_USE_GPU
 #include <cublas_v2.h>

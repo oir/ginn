@@ -23,7 +23,7 @@
 //#include <ginn/node/data.h>
 //#include <ginn/node/prod.h> // need for operator*()
 
-//#include <ginn-py/node/affine-py.h>
+#include <ginn-py/node/affine-py.h>
 #include <ginn-py/node/common-py.h>
 //#include <ginn-py/node/compare-py.h>
 //#include <ginn-py/node/layout-py.h>
@@ -163,7 +163,7 @@ void bind_node(py::module_& m) {
           "values"_a);
   });
 
-  // bind_affine_nodes(m);
+  bind_affine_nodes(m);
   bind_common_nodes(m);
   // bind_compare_nodes(m);
   // bind_layout_nodes(m);

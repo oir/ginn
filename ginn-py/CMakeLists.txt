@@ -2,7 +2,7 @@ set(PY_SOURCES ginn-py.cpp
         dev-py.cpp
         tensor-py.cpp
         node-py.cpp
-        node/affine-py.cu.cpp
+        node/affine-py.cpp
         node/common-py.cpp
         node/compare-py.cu.cpp
         node/nonlin-py.cu.cpp

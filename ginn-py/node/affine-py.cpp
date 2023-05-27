@@ -13,28 +13,31 @@
 // limitations under the License.
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-#include <ginn-py/dev-py.h>
-//#include <ginn-py/init-py.h>
+#include <ginn/node/affine.h>
+
 #include <ginn-py/node-py.h>
-#include <ginn-py/tensor-py.h>
-//#include <ginn-py/update-py.h>
+#include <ginn-py/util-py.h>
+
+#include <ginn-py/node/affine-py.h>
+
+namespace ginn {
+namespace python {
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(ginn, m) {
-  using namespace ginn;
-  using namespace ginn::python;
+void bind_affine_nodes(py::module_& m) {
+  using namespace py::literals;
 
-  m.doc() = "pybind11 example plugin"; // optional module docstring
+  for_each<Real/*, Half*/>([&](auto scalar) {
+    using Scalar = decltype(scalar);
+    using Np = NodePtr<Scalar, CPU>;
 
-  bind_dev(m);
-  bind_dev_gpu(m);
-
-  auto rt = bind_tensor(m);
-  bind_tensor_gpu(m, rt);
-  bind_node(m);
-  bind_node_gpu(m);
-  // bind_init(m);
-  // bind_update(m);
+    PyNode<Scalar, CPU, AffineNode>(m, name<Scalar, CPU>("AffineNode"));
+    m.def("Affine", py::overload_cast<const std::vector<Np>&>(&Affine<Scalar, CPU>));
+  });
 }
+
+} // namespace python
+} // namespace ginn

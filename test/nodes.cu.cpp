@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <iostream>
 
-//#include <ginn/node/affine.h>
+#include <ginn/node/affine.h>
 #include <ginn/node/common.h>
 //#include <ginn/node/compare.h>
 //#include <ginn/node/inplace.h>
@@ -1126,48 +1126,61 @@ TEMPLATE_TEST_CASE("Add subtract", "[arithmetic]", Real, Half, Int) {
 //  }
 //}
 //
-//TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
-//  using Scalar = TestType;
-//  Real eps = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6; // TODO: 😢
-//  Real eps2 = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-4;
-//
-//  auto W = Values<2>({{1, 2, 3},
-//                      {4, 5, 6}})->cast<Scalar>();
-//  auto V = Values<2>({{ 0.6},
-//                      { 0.4},
-//                      {-0.2}})->cast<Scalar>();
-//  auto b = Values<2>({{0.01},
-//                      {0.02}})->cast<Scalar>();
-//
-//  SECTION("Affine")        {
-//    auto WVb = Values<2>({{0.81},
-//                          {3.22}})->cast<Scalar>();
-//    check(Affine(W, V, b), WVb, eps);
-//    check(W * V + b,       WVb, eps);
-//    CHECK_(Affine(W, V, b), {W, V, b}, true, eps2);
-//  }
-//  SECTION("AffineSigmoid") {
-//    auto sigmWVb = Values<2>({{0.692109},
-//                              {0.96158 }})->cast<Scalar>();
-//    check(Affine(SigmoidOp<Scalar>(), W, V, b), sigmWVb, eps);
-//    check(Affine<SigmoidOp>(W, V, b),           sigmWVb, eps);
-//    CHECK_(Affine(SigmoidOp<Scalar>(), W, V, b), {W, V, b}, true, eps2);
-//    CHECK_(Affine<SigmoidOp>(W, V, b),           {W, V, b}, true, eps2);
-//  }
-//  SECTION("AffineSoftmax") {
-//    auto smaxWVb = Values<2>({{0.0824133},
-//                              {0.917587 }})->cast<Scalar>();
-//    check(Affine<SoftmaxOp>(W, V, b), smaxWVb, eps);
-//    CHECK_(Affine<SoftmaxOp>(W, V, b), {W, V, b}, true, eps2);
-//  }
-//
-//  SECTION("Other nonlins") {
-//    CHECK_(Affine<TanhOp>(W, V, b), {W, V, b}, true, eps2);
-//    CHECK_(Affine<ReluOp>(W * 10, V, b), {W, V, b}, true, eps2);
-//    CHECK_(Affine<Gelu2Op>(W, V, b), {W, V, b}, true, eps2);
-//    CHECK_(Affine<GeluOp>(W, V, b), {W, V, b}, true, eps2);
-//  }
-//}
+TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
+  using Scalar = TestType;
+  Real eps = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6; // TODO: 😢
+  //Real eps2 = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-4;
+
+  auto W = Values<2>({{1, 2, 3},
+                      {4, 5, 6}})->cast<Scalar>();
+  auto V = Values<2>({{ 0.6},
+                      { 0.4},
+                      {-0.2}})->cast<Scalar>();
+  auto b = Values<2>({{0.01},
+                      {0.02}})->cast<Scalar>();
+
+  SECTION("Affine")        {
+    auto WVb = Values<2>({{0.81},
+                          {3.22}})->cast<Scalar>();
+    check(Affine(W, V, b), WVb, eps);
+#ifdef GINN_ENABLE_GPU
+    if constexpr (ginn::is_floating_point_v<Scalar>) {
+      auto W_ = W->copy_to(gpu());
+      auto V_ = V->copy_to(gpu());
+      auto b_ = b->copy_to(gpu());
+      compare_devices(Affine(W,  V,  b),  {W,  V,  b },
+                      Affine(W_, V_, b_), {W_, V_, b_});
+    }
+#else
+    if constexpr (std::is_same_v<Scalar, Real>) {
+      check_grad(Affine(W, V, b),  {W, V, b}, true);
+    }
+#endif
+    //check(W * V + b,       WVb, eps);
+    //CHECK_(Affine(W, V, b), {W, V, b}, true, eps2);
+  }
+  //SECTION("AffineSigmoid") {
+  //  auto sigmWVb = Values<2>({{0.692109},
+  //                            {0.96158 }})->cast<Scalar>();
+  //  check(Affine(SigmoidOp<Scalar>(), W, V, b), sigmWVb, eps);
+  //  check(Affine<SigmoidOp>(W, V, b),           sigmWVb, eps);
+  //  CHECK_(Affine(SigmoidOp<Scalar>(), W, V, b), {W, V, b}, true, eps2);
+  //  CHECK_(Affine<SigmoidOp>(W, V, b),           {W, V, b}, true, eps2);
+  //}
+  //SECTION("AffineSoftmax") {
+  //  auto smaxWVb = Values<2>({{0.0824133},
+  //                            {0.917587 }})->cast<Scalar>();
+  //  check(Affine<SoftmaxOp>(W, V, b), smaxWVb, eps);
+  //  CHECK_(Affine<SoftmaxOp>(W, V, b), {W, V, b}, true, eps2);
+  //}
+
+  //SECTION("Other nonlins") {
+  //  CHECK_(Affine<TanhOp>(W, V, b), {W, V, b}, true, eps2);
+  //  CHECK_(Affine<ReluOp>(W * 10, V, b), {W, V, b}, true, eps2);
+  //  CHECK_(Affine<Gelu2Op>(W, V, b), {W, V, b}, true, eps2);
+  //  CHECK_(Affine<GeluOp>(W, V, b), {W, V, b}, true, eps2);
+  //}
+}
 //
 //TEMPLATE_TEST_CASE("Affine w/ broadcast", "[affine]", Real, Half) {
 //  using Scalar = TestType;

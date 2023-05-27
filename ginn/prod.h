@@ -209,9 +209,9 @@ enum class ProdTranspose { None, First, Second, Both };
 
 // C = A * B
 template <typename Scalar>
-inline void gpu_prod(Tensor<Scalar>& c,
-                     Tensor<Scalar>& a,
-                     Tensor<Scalar>& b,
+inline void gpu_prod(Tensor<Scalar, GPU>& c,
+                     Tensor<Scalar, GPU>& a,
+                     Tensor<Scalar, GPU>& b,
                      ProdResult res = ProdResult::Assign,
                      ProdTranspose tra = ProdTranspose::None) {
   auto op1 = tra == ProdTranspose::First or tra == ProdTranspose::Both
@@ -254,13 +254,13 @@ inline void gpu_prod(Tensor<Scalar>& c,
 
 // C[:,:,i] = A[:,:,i] * B[:,:,i] ∀i
 template <typename Scalar>
-inline void gpu_batched_prod(Tensor<Scalar>& c,
-                             Tensor<Scalar>& a,
-                             Tensor<Scalar>& b,
+inline void gpu_batched_prod(Tensor<Scalar, GPU>& c,
+                             Tensor<Scalar, GPU>& a,
+                             Tensor<Scalar, GPU>& b,
                              ProdResult res = ProdResult::Assign,
                              ProdTranspose tra = ProdTranspose::None) {
-  auto shape3 = [](const Tensor<Scalar>& t) {
-    return Tensor<Scalar>::reduce(t.shape(), 3);
+  auto shape3 = [](const Tensor<Scalar, GPU>& t) {
+    return Tensor<Scalar, GPU>::reduce(t.shape(), 3);
   };
   Shape a_shape = shape3(a), b_shape = shape3(b), c_shape = shape3(c);
   Size a_rows = a_shape[0], a_cols = a_shape[1], batches = a_shape[2];
@@ -312,13 +312,13 @@ inline void gpu_batched_prod(Tensor<Scalar>& c,
 // This has to be disabled until I upgrade my cudah
 //// y[:,i] = A[:,:,i] * x[:,i] ∀i
 // template <typename Scalar>
-// inline void gpu_batched_mv_prod(Tensor<Scalar>& y,
-//                                 Tensor<Scalar>& a,
-//                                 Tensor<Scalar>& x,
+// inline void gpu_batched_mv_prod(Tensor<Scalar, GPU>& y,
+//                                 Tensor<Scalar, GPU>& a,
+//                                 Tensor<Scalar, GPU>& x,
 //                                 ProdResult res = ProdResult::Assign,
 //                                 ProdTranspose tra = ProdTranspose::None) {
-//   auto shape3 = [](const Tensor<Scalar>& t) {
-//     return Tensor<Scalar>::reduce(t.shape(), 3);
+//   auto shape3 = [](const Tensor<Scalar, GPU>& t) {
+//     return Tensor<Scalar, GPU>::reduce(t.shape(), 3);
 //   };
 //   Shape a_shape = shape3(a), x_shape = x.shape2(), y_shape = y.shape2();
 //   Size a_rows = a_shape[0], a_cols = a_shape[1], batches = a_shape[2];

@@ -31,6 +31,15 @@ inline int gpus_() {
   return num_gpus;
 }
 
+void barrier() {
+  // This is needed for proper timing since cuda calls are async and cpu code
+  // continues execution immediately.
+  for (int i = 0; i < gpus_(); i++) {
+    GINN_CUDA_CALL(cudaSetDevice(i));
+    GINN_CUDA_CALL(cudaDeviceSynchronize());
+  }
+}
+
 void bind_dev_gpu(py::module_& m) {
   using namespace py::literals;
 
@@ -58,6 +67,7 @@ void bind_dev_gpu(py::module_& m) {
         "size"_a);
 
   m.def("gpus", &gpus_);
+  m.def("barrier", &barrier);
 }
 
 } // namespace python

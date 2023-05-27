@@ -33,7 +33,7 @@ template <typename Scalar, enum DeviceKind Kind>
 auto declare_node_of(py::module_& m) {
   using namespace pybind11::literals;
 
-  auto node = py::class_<Node<Scalar, Kind>, BaseNode, Ptr<Node<Scalar>>>(
+  auto node = py::class_<Node<Scalar, Kind>, BaseNode, Ptr<Node<Scalar, Kind>>>(
                   m, name<Scalar, Kind>("Node"))
                   .def("forward", &BaseNode::forward)
                   .def("reset_forwarded", &BaseNode::reset_forwarded)

@@ -23,7 +23,7 @@
 //#include <ginn/node/data.h>
 //#include <ginn/node/prod.h> // need for operator*()
 
-//#include <ginn-py/node/affine-py.h>
+#include <ginn-py/node/affine-py.h>
 #include <ginn-py/node/common-py.h>
 //#include <ginn-py/node/compare-py.h>
 //#include <ginn-py/node/layout-py.h>
@@ -47,46 +47,46 @@ namespace py = pybind11;
 void bind_node_gpu(py::module_& m) {
   using namespace pybind11::literals;
 
-  py::class_<BaseNode, Ptr<BaseNode>>(m, "BaseNode");
-  py::class_<Graph>(m, "Graph")
-      .def(py::init<Ptr<BaseNode>>())
-      .def("forward", &Graph::forward)
-      .def("reset_forwarded", &Graph::reset_forwarded)
-      .def("reset_grad", &Graph::reset_grad)
-      .def("backward", &Graph::backward, "loss_coeff"_a);
+  //py::class_<BaseNode, Ptr<BaseNode>>(m, "BaseNode");
+  //py::class_<Graph>(m, "Graph")
+  //    .def(py::init<Ptr<BaseNode>>())
+  //    .def("forward", &Graph::forward)
+  //    .def("reset_forwarded", &Graph::reset_forwarded)
+  //    .def("reset_grad", &Graph::reset_grad)
+  //    .def("backward", &Graph::backward, "loss_coeff"_a);
 
   // making pybind know all node types first, so method docs contain the
   // appropriate python types throughout.
-  auto [rnode, rdata] = declare_node_of<Real, CPU>(m);
-  auto [inode, idata] = declare_node_of<Int, CPU>(m);
-  // auto [hnode, hdata] = declare_node_of<Half, CPU>(m);
-  auto [bnode, bdata] = declare_node_of<bool, CPU>(m);
+  auto [rnode, rdata] = declare_node_of<Real, GPU>(m);
+  auto [inode, idata] = declare_node_of<Int, GPU>(m);
+  // auto [hnode, hdata] = declare_node_of<Half, GPU>(m);
+  auto [bnode, bdata] = declare_node_of<bool, GPU>(m);
 
-  bind_node_of<Real, CPU>(rnode);
-  bind_node_of<Int, CPU>(inode);
-  // bind_node_of<Half, CPU>(hnode);
-  bind_node_of<bool, CPU>(bnode);
+  bind_node_of<Real, GPU>(rnode);
+  bind_node_of<Int, GPU>(inode);
+  // bind_node_of<Half, GPU>(hnode);
+  bind_node_of<bool, GPU>(bnode);
 
-  bind_data_of<Real, CPU>(rdata);
-  bind_data_of<Int, CPU>(idata);
-  // bind_data_of<Half, CPU>(hdata);
-  bind_data_of<bool, CPU>(bdata);
+  bind_data_of<Real, GPU>(rdata);
+  bind_data_of<Int, GPU>(idata);
+  // bind_data_of<Half, GPU>(hdata);
+  bind_data_of<bool, GPU>(bdata);
 
   for_each<Real, /*Half,*/ Int, bool>([&](auto scalar) {
     using Scalar = decltype(scalar);
     // nvcc 11.1 forces me to use an explicit static cast here.
-    m.def(name<Scalar, CPU>("Data"),
-          &Data<Scalar, const DevPtr<CPU>&, const Shape&>,
+    m.def(name<Scalar, GPU>("Data"),
+          &Data<Scalar, const DevPtr<GPU>&, const Shape&>,
           "dev"_a,
           "shape"_a);
   });
 
   m.def("Data",
-        &Data_<const DevPtr<CPU>&>,
+        &Data_<const DevPtr<GPU>&>,
         "device"_a,
         "scalar"_a = Scalar_::Real);
   m.def("Data",
-        &Data_<const DevPtr<CPU>&, const Shape&>,
+        &Data_<const DevPtr<GPU>&, const Shape&>,
         "device"_a,
         "shape"_a,
         "scalar"_a = Scalar_::Real);
@@ -94,18 +94,18 @@ void bind_node_gpu(py::module_& m) {
       "Data",
       //&Data_<const Shape&>,
       [](const Shape& shape, Scalar_ scalar) {
-        return Data_<const DevPtr<CPU>&, const Shape&>(cpu(), shape, scalar);
+        return Data_<const DevPtr<GPU>&, const Shape&>(gpu(), shape, scalar);
       },
       "shape"_a,
       "scalar"_a = Scalar_::Real);
   m.def("Data", [&](const Matrix<Real>& m) {
-    auto x = Data<Real>(cpu(), {m.rows(), m.cols()});
+    auto x = Data<Real>(gpu(), {m.rows(), m.cols()});
     x->value().m() = m;
     return x;
   });
 
   m.def("Random",
-        &Random_<const DevPtr<CPU>&, const Shape&>,
+        &Random_<const DevPtr<GPU>&, const Shape&>,
         "device"_a,
         "shape"_a,
         "scalar"_a = Scalar_::Real);
@@ -113,25 +113,25 @@ void bind_node_gpu(py::module_& m) {
       "Random",
       //&Random_<const Shape&>,
       [](const Shape& shape, Scalar_ scalar) {
-        return Random_<const DevPtr<CPU>&, const Shape&>(cpu(), shape, scalar);
+        return Random_<const DevPtr<GPU>&, const Shape&>(gpu(), shape, scalar);
       },
       "shape"_a,
       "scalar"_a = Scalar_::Real);
 
   for_range<5>([&](auto arr) {
     constexpr size_t N = arr.size();
+    //m.def("Values",
+    //      py::overload_cast<NestedInitList<N, Real>>(&Values<N, Real>),
+    //      "values"_a);
     m.def("Values",
-          py::overload_cast<NestedInitList<N, Real>>(&Values<N, Real>),
-          "values"_a);
-    m.def("Values",
-          py::overload_cast<DevPtr<CPU>, NestedInitList<N, Real>>(
-              &Values<N, Real, DevPtr<CPU>>),
+          py::overload_cast<DevPtr<GPU>, NestedInitList<N, Real>>(
+              &Values<N, Real, DevPtr<GPU>>),
           "dev"_a,
           "values"_a);
   });
 
-  // bind_affine_nodes(m);
-  bind_common_nodes(m);
+  bind_affine_nodes_gpu(m);
+  bind_common_nodes_gpu(m);
   // bind_compare_nodes(m);
   // bind_layout_nodes(m);
   // bind_nonlin_nodes(m);

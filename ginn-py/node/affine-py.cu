@@ -27,15 +27,15 @@ namespace python {
 
 namespace py = pybind11;
 
-void bind_affine_nodes(py::module_& m) {
+void bind_affine_nodes_gpu(py::module_& m) {
   using namespace py::literals;
 
-  for_each<Real, Half>([&](auto scalar) {
+  for_each<Real/*, Half*/>([&](auto scalar) {
     using Scalar = decltype(scalar);
-    using Np = NodePtr<Scalar>;
+    using Np = NodePtr<Scalar, GPU>;
 
-    PyNode<Scalar, AffineNode>(m, name<Scalar>("AffineNode"));
-    m.def("Affine", py::overload_cast<const std::vector<Np>&>(&Affine<Scalar>));
+    PyNode<Scalar, GPU, AffineNode>(m, name<Scalar, GPU>("AffineNode"));
+    m.def("Affine", py::overload_cast<const std::vector<Np>&>(&Affine<Scalar, GPU>));
   });
 }
 
