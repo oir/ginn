@@ -18,6 +18,7 @@
 #include <memory>
 
 #include <ginn/def.h>
+#include <ginn/scalar.h>
 
 #ifdef GINN_ENABLE_GPU
 #define EIGEN_USE_GPU
@@ -50,7 +51,6 @@ inline Eigen::DefaultDevice& cpu_device() {
   return dev;
 };
 
-enum DeviceKind { CPU, GPU, NULL_DEV };
 
 struct DeviceId { // to distinguish multiple gpus
   const DeviceKind kind;

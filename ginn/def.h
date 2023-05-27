@@ -26,43 +26,46 @@
 #include <ginn/except.h> // this undefines some Eigen errors, needs to be included before Eigen
 #include <unsupported/Eigen/CXX11/Tensor> // Eigen
 
+#include <ginn/scalar.h>
+
 namespace ginn {
 
-#ifdef GINN_DOUBLE_PRECISION
-using Real = double;
-#else
-using Real = float;
-#endif
-using Half = Eigen::half;
+//#ifdef GINN_DOUBLE_PRECISION
+//using Real = double;
+//#else
+//using Real = float;
+//#endif
+//using Half = Eigen::half;
 
-using Int = int;
+//using Int = int;
+
 using Size = long;
 
 template <typename Scalar>
-using Matrix = Eigen::Matrix<Scalar, -1, -1>;
+using Matrix = Eigen::Matrix<typename Scalar::Raw, -1, -1>;
 
 template <typename Scalar>
-using Vector = Eigen::Vector<Scalar, -1>;
+using Vector = Eigen::Vector<typename Scalar::Raw, -1>;
 
 template <typename Scalar>
-using RowVector = Eigen::RowVector<Scalar, -1>;
+using RowVector = Eigen::RowVector<typename Scalar::Raw, -1>;
 
 template <typename Scalar>
-using MatrixMap = Eigen::Map<Matrix<Scalar>>;
+using MatrixMap = Eigen::Map<Matrix<typename Scalar::Raw>>;
 
 template <typename Scalar>
-using VectorMap = Eigen::Map<Vector<Scalar>>;
+using VectorMap = Eigen::Map<Vector<typename Scalar::Raw>>;
 
 template <typename Scalar, int N>
-using TensorMap = Eigen::TensorMap<Eigen::Tensor<Scalar, N>>;
+using TensorMap = Eigen::TensorMap<Eigen::Tensor<Scalar::Raw, N>>;
 
 namespace literals {
 
-inline Real operator"" _r(long double x) { return x; }
-inline Real operator"" _r(unsigned long long x) { return x; }
-
-inline Half operator"" _h(long double x) { return Half{x}; }
-inline Half operator"" _h(unsigned long long x) { return Half{x}; }
+//inline Real operator"" _r(long double x) { return x; }
+//inline Real operator"" _r(unsigned long long x) { return x; }
+//
+//inline Half operator"" _h(long double x) { return Half{x}; }
+//inline Half operator"" _h(unsigned long long x) { return Half{x}; }
 
 } // namespace literals
 
