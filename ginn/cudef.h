@@ -79,11 +79,11 @@ class CurandGenerator {
     set_device();
     if (gen) { curandDestroyGenerator(*gen); }
   }
-  void uniform(Real* data, size_t size) {
+  void uniform(float* data, size_t size) {
     set_device();
     GINN_CURAND_CALL(curandGenerateUniform(*gen, data, size));
   }
-  void uniform(Int* /*data*/, size_t /*size*/) {
+  void uniform(int* /*data*/, size_t /*size*/) {
     GINN_THROW("Random generation for Int GPU tensors is not implemented yet!");
   }
 };

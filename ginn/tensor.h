@@ -50,13 +50,13 @@ Index<N> ShapeToIndex(const Shape& shape) {
 // Forward declare helper types. These are invoked when a Tensor is on the
 // lefthand side of a statement.
 
-template <typename InnerExpr>
+template <typename InnerExpr, enum DeviceKind Kind>
 class LhsExpr;
 
-template <typename InnerExpr, Size N>
+template <typename InnerExpr, Size N, enum DeviceKind Kind>
 class SliceExpr;
 
-template <typename InnerExpr, Size N>
+template <typename InnerExpr, Size N, enum DeviceKind Kind>
 class ChipExpr;
 
 // Core Tensor class, specialized as Tensor and IntTensor on ScalarType Real and
@@ -72,7 +72,7 @@ class Tensor {
   DevPtr<Kind> dev_ = nullptr;
   Shape shape_ = {0};
   RawScalar* data_ = nullptr; // owned in most cases
-  bool owns_mem_ = true;   // whether this Tensor owns data_
+  bool owns_mem_ = true;      // whether this Tensor owns data_
 
  public:
   DevPtr<Kind> dev() const { return dev_; }
@@ -88,7 +88,7 @@ class Tensor {
   Size size() const { return size(shape()); }
 
   // Move this tensor to another device
-  //auto& move_to(const DevPtr& to) {
+  // auto& move_to(const DevPtr& to) {
   //  GINN_ASSERT(owns_mem_);
   //  if (dev_ == to) { return *this; }
   //  Tensor<Scalar> from(dev_);
@@ -420,19 +420,19 @@ class Tensor {
   //     tensor.lhs() += ...
   template <unsigned long R = 2>
   auto lhs() {
-    return LhsExpr<decltype(view<R>())>(view<R>(), dev());
+    return LhsExpr<decltype(view<R>()), Kind>(view<R>(), dev());
   }
 
   template <unsigned long N>
   auto slice(const Index<N>& offsets, const Index<N>& sizes) {
     using LhsExprType = decltype(view<N>());
-    return SliceExpr<LhsExprType, N>(dev(), view<N>(), offsets, sizes);
+    return SliceExpr<LhsExprType, N, Kind>(dev(), view<N>(), offsets, sizes);
   }
 
   template <Size N>
   auto chip(Size offset, Size dim) {
     using LhsExprType = decltype(view<N>());
-    return ChipExpr<LhsExprType, N>(dev(), view<N>(), offset, dim);
+    return ChipExpr<LhsExprType, N, Kind>(dev(), view<N>(), offset, dim);
   }
 
   // Operator overloads for Eigen expressions to avoid having to use .lhs()
@@ -455,9 +455,9 @@ class Tensor {
   Size rows() const { return reduce(shape_, 2)[0]; }
   Size cols() const { return reduce(shape_, 2)[1]; }
   Shape shape2() const { return reduce(shape_, 2); }
-  void fill(Scalar c) { lhs() = t().constant(c); }
-  void set_zero() { fill(Scalar{0}); }
-  void set_ones() { fill(Scalar{1}); }
+  void fill(RawScalar c) { lhs() = t().constant(c); }
+  void set_zero() { fill(RawScalar{0}); }
+  void set_ones() { fill(RawScalar{1}); }
 
   void set_random() {
     if constexpr (std::is_same_v<Scalar, Float<CPU>>) {
@@ -586,13 +586,13 @@ auto view_impl(typename Scalar::Raw* data,
 template <typename Scalar>
 template <size_t Rank>
 TensorMap<Scalar, Rank> Tensor<Scalar>::view() {
-  return view_impl(data_, shape_, std::make_index_sequence<Rank>());
+  return view_impl<Scalar>(data_, shape_, std::make_index_sequence<Rank>());
 }
 
 template <typename Scalar>
 template <size_t Rank>
 const TensorMap<Scalar, Rank> Tensor<Scalar>::view() const {
-  return view_impl(data_, shape_, std::make_index_sequence<Rank>());
+  return view_impl<Scalar>(data_, shape_, std::make_index_sequence<Rank>());
 }
 
 template <typename Scalar>
@@ -612,11 +612,13 @@ inline const TensorMap<Scalar, 2> Tensor<Scalar>::t() const {
 //     Lhs(CPU, SomeEigenExpr) = OtherEigenExpr
 //     Lhs(GPU, SomeEigenExpr) += OtherEigenExpr
 // Lefthandside Expressions
-template <typename InnerExpr, enum DeviceKind Kind>
+
+template <typename InnerExpr, DeviceKind Kind>
 class LhsExpr {
- public : InnerExpr e; DevPtr<Kind> dev;
-  LhsExpr(InnerExpr a_e, DevPtr<Kind> a_dev) : e(a_e),
-                                               dev(std::move(a_dev)){}
+ public:
+  InnerExpr e;
+  DevPtr<Kind> dev;
+  LhsExpr(InnerExpr a_e, DevPtr<Kind> a_dev) : e(a_e), dev(std::move(a_dev)) {}
 
 #ifdef GINN_ENABLE_GPU
 #define LHSEXPR_IMPLEMENT(op)                                                  \
@@ -649,20 +651,20 @@ class LhsExpr {
   LHSEXPR_IMPLEMENT(operator-=)
 };
 
-template <typename InnerExpr>
-auto Lhs(DevPtr dev, InnerExpr e) {
-  return LhsExpr<InnerExpr>(e, std::move(dev));
+template <typename InnerExpr, enum DeviceKind Kind>
+auto Lhs(DevPtr<Kind> dev, InnerExpr e) {
+  return LhsExpr<InnerExpr, Kind>(e, std::move(dev));
 }
 
-template <typename LhsExpr, Size N>
+template <typename LhsExpr, Size N, DeviceKind Kind>
 class SliceExpr {
  private:
-  DevPtr dev_;
+  DevPtr<Kind> dev_;
   LhsExpr lhs_;
   Index<N> offsets_, sizes_;
 
  public:
-  SliceExpr(DevPtr dev, LhsExpr lhs, Index<N> offsets, Index<N> sizes)
+  SliceExpr(DevPtr<Kind> dev, LhsExpr lhs, Index<N> offsets, Index<N> sizes)
       : dev_(std::move(dev)),
         lhs_(std::move(lhs)),
         offsets_(std::move(offsets)),
@@ -677,15 +679,15 @@ class SliceExpr {
   }
 };
 
-template <typename LhsExpr, Size N>
+template <typename LhsExpr, Size N, DeviceKind Kind>
 class ChipExpr {
  private:
-  DevPtr dev_;
+  DevPtr<Kind> dev_;
   LhsExpr lhs_;
   Size offset_, dim_;
 
  public:
-  ChipExpr(DevPtr dev, LhsExpr lhs, Size offset, Size dim)
+  ChipExpr(DevPtr<Kind> dev, LhsExpr lhs, Size offset, Size dim)
       : dev_(std::move(dev)),
         lhs_(std::move(lhs)),
         offset_(offset),

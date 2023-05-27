@@ -51,13 +51,13 @@ template <typename Scalar>
 using RowVector = Eigen::RowVector<typename Scalar::Raw, -1>;
 
 template <typename Scalar>
-using MatrixMap = Eigen::Map<Matrix<typename Scalar::Raw>>;
+using MatrixMap = Eigen::Map<Matrix<Scalar>>;
 
 template <typename Scalar>
-using VectorMap = Eigen::Map<Vector<typename Scalar::Raw>>;
+using VectorMap = Eigen::Map<Vector<Scalar>>;
 
 template <typename Scalar, int N>
-using TensorMap = Eigen::TensorMap<Eigen::Tensor<Scalar::Raw, N>>;
+using TensorMap = Eigen::TensorMap<Eigen::Tensor<typename Scalar::Raw, N>>;
 
 namespace literals {
 
