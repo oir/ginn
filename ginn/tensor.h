@@ -141,17 +141,18 @@ class Tensor {
   void allocate(Size size) {
     GINN_ASSERT(data_ == nullptr);
     GINN_ASSERT(owns_mem_);
-    if (size > 0) { data_ = (Scalar*)dev_->alloc(size * sizeof(Scalar)); }
+    if (size > 0) { data_ = (RawScalar*)dev_->alloc(size * sizeof(RawScalar)); }
   }
 
-  void copy(const DevPtr& from, Scalar* other_data, Size size) {
-    dev_->copy(*from, data_, other_data, size * sizeof(Scalar));
+  template <enum DeviceKind OtherKind>
+  void copy(const DevPtr<OtherKind>& from, RawScalar* other_data, Size size) {
+    dev_->copy(*from, data_, other_data, size * sizeof(RawScalar));
   }
 
   void reallocate(Size size) {
     GINN_ASSERT(owns_mem_);
     if (size > 0) {
-      data_ = (Scalar*)dev_->realloc((void*)data_, size * sizeof(Scalar));
+      data_ = (RawScalar*)dev_->realloc((void*)data_, size * sizeof(RawScalar));
     } else {
       free();
     }
@@ -165,17 +166,17 @@ class Tensor {
 
  public:
   // Construct
-  Tensor(DevPtr dev = cpu()) : dev_(std::move(dev)) {}
-  Tensor(DevPtr dev, Shape shape)
+  Tensor(DevPtr<Kind> dev = default_dev<Kind>()) : dev_(std::move(dev)) {}
+  Tensor(DevPtr<Kind> dev, Shape shape)
       : dev_(std::move(dev)), shape_(std::move(shape)) {
     allocate(size());
   }
-  Tensor(DevPtr dev, Shape shape, Scalar val)
+  Tensor(DevPtr<Kind> dev, Shape shape, RawScalar val)
       : Tensor<Scalar>(std::move(dev), std::move(shape)) {
     fill(val);
   }
   Tensor(Shape shape) : Tensor<Scalar>(cpu(), std::move(shape)) {}
-  Tensor(Shape shape, const std::vector<Scalar>& val)
+  Tensor(Shape shape, const std::vector<RawScalar>& val)
       : Tensor<Scalar>(std::move(shape)) {
     GINN_ASSERT(size() == (Size)val.size(),
                 "Size of Shape (" + std::to_string(size()) +
@@ -184,20 +185,20 @@ class Tensor {
     auto vmap = v();
     for (size_t i = 0; i < val.size(); i++) { vmap[i] = val[i]; }
   }
-  Tensor(DevPtr dev, Shape shape, std::vector<Scalar> val)
+  Tensor(DevPtr<Kind> dev, Shape shape, std::vector<RawScalar> val)
       : Tensor<Scalar>(std::move(shape), std::move(val)) {
     move_to(dev);
   }
 
   template <int Rank>
-  Tensor(DevPtr dev, NestedInitList<Rank, Scalar> val)
-      : dev_(std::move(dev)), shape_(shape_of<Size, Rank, Scalar>(val)) {
+  Tensor(DevPtr<Kind> dev, NestedInitList<Rank, RawScalar> val)
+      : dev_(std::move(dev)), shape_(shape_of<Size, Rank, RawScalar>(val)) {
     set<Rank>(val);
   }
 
   template <int Rank>
-  Tensor(NestedInitList<Rank, Scalar> val)
-      : dev_(cpu()), shape_(shape_of<Size, Rank, Scalar>(val)) {
+  Tensor(NestedInitList<Rank, RawScalar> val)
+      : dev_(cpu()), shape_(shape_of<Size, Rank, RawScalar>(val)) {
     set<Rank>(val);
   }
 
@@ -246,7 +247,7 @@ class Tensor {
   }
 
   // Construct by copying across devices
-  Tensor(DevPtr dev, const Tensor<Scalar>& other)
+  Tensor(DevPtr<Kind> dev, const Tensor<Scalar>& other)
       : dev_(std::move(dev)), shape_(other.shape_) {
     allocate(size());
     copy(other.dev_, other.data_, size());
@@ -271,8 +272,9 @@ class Tensor {
 
   template <typename OtherScalar>
   Tensor<OtherScalar> cast() const {
+    static_assert(Kind == OtherScalar::device_kind);
     Tensor<OtherScalar> other(dev(), shape());
-    other = t().template cast<OtherScalar>();
+    other = t().template cast<OtherScalar::Raw>();
     return other;
   }
 
@@ -366,21 +368,21 @@ class Tensor {
   }
 
   // begin() and end() help with feeding tensors into generic algorithms
-  const Scalar* begin() const {
+  const RawScalar* begin() const {
     GINN_ASSERT(dev()->kind() == CPU,
                 "begin() can only be invoked on Cpu tensors!");
     return data_;
   }
 
-  const Scalar* end() const {
+  const RawScalar* end() const {
     GINN_ASSERT(dev()->kind() == CPU,
                 "end() can only be invoked on Cpu tensors!");
     return data_ + size();
   }
 
-  std::vector<Scalar> vector() const {
+  std::vector<RawScalar> vector() const {
     auto t = copy_to(cpu());
-    return std::vector<Scalar>(t.begin(), t.end());
+    return std::vector<RawScalar>(t.begin(), t.end());
   }
 
   // wrap a Rank-0 (single element) Tensor around a scalar entry of this tensor
@@ -458,41 +460,31 @@ class Tensor {
   void set_ones() { fill(Scalar{1}); }
 
   void set_random() {
-    // TODO: making a copy here for now, get rid of this
-    if constexpr (std::is_same_v<Scalar, Half> or std::is_same_v<Scalar, Int> or
-                  std::is_same_v<Scalar, bool>) {
-      // TODO: properly handle int and bool
-      Tensor<Real> tmp(dev(), shape());
-      tmp.set_random();
-      *this = tmp.cast<Scalar>();
-    } else if constexpr (std::is_same_v<Scalar, Real>) {
-      if (dev_->kind() == CPU) {
-        m().setRandom();
-      }
+    if constexpr (std::is_same_v<Scalar, Float<CPU>>) {
+      m().setRandom();
 #ifdef GINN_ENABLE_GPU
-      else if (dev_->kind() == GPU) {
-        curand_gen(dev_->id().idx).uniform(data_, size());
-        lhs() = -1 + (2 * t());
-      }
+    } else if constexpr (std::is_same_v<Scalar, Float<GPU>>) {
+      curand_gen(dev_->id().idx).uniform(data_, size());
+      lhs() = -1 + (2 * t());
 #endif
-      else {
-        GINN_THROW("Unexpected device type!");
-      }
     } else {
-      GINN_THROW("Unexpected Scalar type!");
+      // create a float tensor on same device, then cast (copy)
+      Tensor<Float<Kind>> tmp(dev(), shape());
+      tmp.set_random();
+      *this = tmp.template cast<Scalar>;
     }
   }
 
   template <typename RhsScalar>
   void set(const std::vector<RhsScalar>& vals) {
-    std::vector<Scalar> val(vals.begin(), vals.end());
-    if (dev_->kind() == CPU) {
+    std::vector<RawScalar> val(vals.begin(), vals.end());
+    if constexpr (Kind == CPU) {
       auto v_ = v();
       auto s = std::min((size_t)v_.size(), val.size());
       for (size_t i = 0; i < s; i++) { v_[i] = val[i]; }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev_->kind() == GPU) {
-      Tensor<Scalar> tmp(cpu(), shape());
+    } else if constexpr (Kind == GPU) {
+      Tensor<typename Scalar::template To<CPU>> tmp(cpu(), shape());
       tmp = *this;
       tmp.set(val);
       *this = tmp;
@@ -504,17 +496,17 @@ class Tensor {
 
   template <typename... Args>
   void set(const Args&... args) {
-    set(std::vector<Scalar>{Scalar(args)...});
+    set(std::vector<Scalar>{RawScalar(args)...});
   }
 
-  template <int Rank, typename RhsScalar = Scalar>
+  template <int Rank, typename RhsScalar = RawScalar>
   void set(NestedInitList<Rank, RhsScalar> val) {
     resize(shape_of<Size, Rank, RhsScalar>(val));
     if (dev_->kind() == CPU) {
-      assign<Rank, Scalar, RhsScalar>(view<Rank>(), val);
+      assign<Rank, RawScalar, RhsScalar>(view<Rank>(), val);
 #ifdef GINN_ENABLE_GPU
     } else if (dev_->kind() == GPU) {
-      Tensor<Scalar> tmp(cpu(), shape());
+      Tensor<Scalar::template To<CPU>> tmp(cpu(), shape());
       tmp.set<Rank, RhsScalar>(val);
       *this = tmp;
 #endif
@@ -538,6 +530,7 @@ class Tensor {
     return cp == other;
   }
 
+  // TODO: serialize Scalar type
   void save(std::ostream& out) const {
     if (dev()->kind() == CPU) {
       out << shape_.size() << std::endl;
@@ -565,7 +558,7 @@ class Tensor {
       for (Size i = 0; i < size(); i++) {
         double val;
         in >> val;
-        data_[i] = Scalar(val);
+        data_[i] = RawScalar(val);
       }
       char end_of_line;
       in.get(end_of_line);
@@ -579,7 +572,7 @@ class Tensor {
 };
 
 template <typename Scalar, size_t... Indices>
-auto view_impl(Scalar* data,
+auto view_impl(typename Scalar::Raw* data,
                const Shape& shape,
                std::index_sequence<Indices...>) {
   if constexpr (sizeof...(Indices) == 0) {
