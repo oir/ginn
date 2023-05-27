@@ -612,12 +612,11 @@ inline const TensorMap<Scalar, 2> Tensor<Scalar>::t() const {
 //     Lhs(CPU, SomeEigenExpr) = OtherEigenExpr
 //     Lhs(GPU, SomeEigenExpr) += OtherEigenExpr
 // Lefthandside Expressions
-template <typename InnerExpr>
+template <typename InnerExpr, enum DeviceKind Kind>
 class LhsExpr {
- public:
-  InnerExpr e;
-  DevPtr dev;
-  LhsExpr(InnerExpr a_e, DevPtr a_dev) : e(a_e), dev(std::move(a_dev)) {}
+ public : InnerExpr e; DevPtr<Kind> dev;
+  LhsExpr(InnerExpr a_e, DevPtr<Kind> a_dev) : e(a_e),
+                                               dev(std::move(a_dev)){}
 
 #ifdef GINN_ENABLE_GPU
 #define LHSEXPR_IMPLEMENT(op)                                                  \
