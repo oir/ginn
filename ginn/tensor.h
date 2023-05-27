@@ -61,19 +61,21 @@ class ChipExpr;
 
 // Core Tensor class, specialized as Tensor and IntTensor on ScalarType Real and
 // Int, respectively.
-template <typename ScalarType = Real>
+template <typename ScalarType = Float<CPU>>
 class Tensor {
  public:
   using Scalar = ScalarType;
+  using RawScalar = typename Scalar::Raw;
+  const static DeviceKind Kind = Scalar::device_kind;
 
  private:
-  DevPtr dev_ = nullptr;
+  DevPtr<Kind> dev_ = nullptr;
   Shape shape_ = {0};
   Scalar* data_ = nullptr; // owned in most cases
   bool owns_mem_ = true;   // whether this Tensor owns data_
 
  public:
-  DevPtr dev() const { return dev_; }
+  DevPtr<Kind> dev() const { return dev_; }
   Shape shape() const { return shape_; }
   Scalar* data() { return data_; }
 
@@ -86,23 +88,23 @@ class Tensor {
   Size size() const { return size(shape()); }
 
   // Move this tensor to another device
-  auto& move_to(const DevPtr& to) {
-    GINN_ASSERT(owns_mem_);
-    if (dev_ == to) { return *this; }
-    Tensor<Scalar> from(dev_);
-    from.data_ = data_;
-    from.shape_ = shape_; // to make sure destructor deallocates this
+  //auto& move_to(const DevPtr& to) {
+  //  GINN_ASSERT(owns_mem_);
+  //  if (dev_ == to) { return *this; }
+  //  Tensor<Scalar> from(dev_);
+  //  from.data_ = data_;
+  //  from.shape_ = shape_; // to make sure destructor deallocates this
 
-    dev_ = to;
-    data_ = nullptr;
+  //  dev_ = to;
+  //  data_ = nullptr;
 
-    if (size() > 0) {
-      allocate(size());
-      copy(from.dev(), from.data_, size());
-    }
+  //  if (size() > 0) {
+  //    allocate(size());
+  //    copy(from.dev(), from.data_, size());
+  //  }
 
-    return *this;
-  }
+  //  return *this;
+  //}
 
   // Copy this tensor to another device
   auto copy_to(const DevPtr& to) const { return Tensor<Scalar>(to, *this); }
