@@ -22,11 +22,11 @@
 namespace ginn {
 
 namespace internal {
-template <typename Scalar>
-std::string format_scalar(Scalar x, unsigned short width = 0) {
+template <typename RawScalar>
+std::string format_scalar(RawScalar x, unsigned short width = 0) {
   std::string s;
   std::string w = width == 0 ? "" : std::to_string(width);
-  if constexpr (ginn::is_floating_point_v<Scalar>) {
+  if constexpr (ginn::is_floating_point_v<RawScalar>) {
     s = fmt::format("{: " + w + ".6}", Real(x));
   } else {
     s = fmt::format("{: " + w + "}", x);
@@ -38,7 +38,7 @@ std::string format_scalar(Scalar x, unsigned short width = 0) {
 template <typename Scalar>
 unsigned short max_width(const Tensor<Scalar>& t) {
   unsigned short w = 0;
-  for (Scalar x : t) {
+  for (Raw<Scalar> x : t) {
     std::string s = internal::format_scalar(x);
     w = std::max<unsigned short>(w, s.size());
   }

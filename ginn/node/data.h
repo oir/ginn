@@ -95,7 +95,7 @@ auto copy_to(const DevicePtr& to) {
   return copy;
 }
 
-void fill(Scalar val) { value().fill(val); }
+void fill(Raw<Scalar> val) { value().fill(val); }
 void set_zero() { value().set_zero(); }
 void set_ones() { value().set_ones(); }
 void set_random() { value().set_random(); }

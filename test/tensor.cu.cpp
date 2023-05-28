@@ -76,13 +76,13 @@ using namespace ginn::literals;
                         std::is_same_v<Scalar, Half> or                        \
                         std::is_same_v<Scalar, Int>,                           \
                     "Unexpected Scalar type!");                                \
-      Scalar val;                                                              \
+      Raw<Scalar> val;                                                              \
       if constexpr (std::is_same_v<Scalar, Real>) {                            \
         val = 0.6;                                                             \
       } else if constexpr (std::is_same_v<Scalar, Int>) {                      \
         val = 4;                                                               \
       } else if constexpr (std::is_same_v<Scalar, Half>) {                     \
-        val = Half{0.6};                                                       \
+        val = Raw<Half>{0.6};                                                       \
       }                                                                        \
       TENSOR_CTOR(t, init_dev, {2, 1, 3}, val);                                \
       CHECK(t.dev()->kind() == DEV_KIND);                                      \
@@ -127,7 +127,7 @@ TEMPLATE_LIST_TEST_CASE("Resize", "[tensor]", Typelist) {
   TensorType t(dev);
   if constexpr (std::is_same_v<Scalar, Half>) {
     t = TensorType(
-        dev, Shape{2, 1, 3}, std::vector<Scalar>{1_h, 2_h, 3_h, 4_h, 5_h, 6_h});
+        dev, Shape{2, 1, 3}, std::vector<Raw<Scalar>>{1_h, 2_h, 3_h, 4_h, 5_h, 6_h});
   } else {
     t = TensorType(dev, Shape{2, 1, 3}, std::vector<Scalar>{1, 2, 3, 4, 5, 6});
   }
@@ -174,9 +174,9 @@ TEMPLATE_LIST_TEST_CASE("View", "[tensor]", Typelist) {
         eigen::ndims<std::decay_t<decltype(b)>>()) {
       return false;
     }
-    return thrust::equal(thrust::device_ptr<Scalar>(a.data()),
-                         thrust::device_ptr<Scalar>(a.data()) + a.size(),
-                         thrust::device_ptr<Scalar>(b.data()));
+    return thrust::equal(thrust::device_ptr<Raw<Scalar>>(a.data()),
+                         thrust::device_ptr<Raw<Scalar>>(a.data()) + a.size(),
+                         thrust::device_ptr<Raw<Scalar>>(b.data()));
 #endif
     return false;
   };
@@ -244,7 +244,7 @@ TEMPLATE_LIST_TEST_CASE("Set values", "[tensor]", Typelist) {
     static_assert(std::is_same_v<Scalar, Real> or std::is_same_v<Scalar, Int> or
                       std::is_same_v<Scalar, Half>,
                   "Unexpected Scalar type!");
-    Scalar val;
+    Raw<Scalar> val;
     if constexpr (std::is_same_v<Scalar, Real>) {
       val = 0.12345;
     } else if constexpr (std::is_same_v<Scalar, Int>) {
@@ -330,7 +330,7 @@ TEMPLATE_LIST_TEST_CASE("Errors", "[tensor]", Typelist) {
   }
 
   SECTION("Misshaped value ctor") {
-    CHECK_THROWS_MATCHES(t3 = TensorType(dev, {1, 3}, {Scalar(1), Scalar(2)}),
+    CHECK_THROWS_MATCHES(t3 = TensorType(dev, {1, 3}, {Raw<Scalar>(1), Raw<Scalar>(2)}),
                          ginn::RuntimeError,
                          Catch::Message("Size of Shape (3) does not match "
                                         "size of values (2)!"));

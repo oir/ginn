@@ -24,7 +24,7 @@ namespace python {
 
 GINN_PY_MAKE_SCALAR_DISPATCHER(Tensor, CPU);
 
-py::class_<Tensor<Real, CPU>> bind_tensor(py::module_& m) {
+TensorClasses bind_tensor(py::module_& m) {
   using namespace py::literals;
 
   py::enum_<Scalar_>(m, "Scalar")
@@ -62,7 +62,7 @@ py::class_<Tensor<Real, CPU>> bind_tensor(py::module_& m) {
   m.def(
       "Tensor", &Tensor_<const Shape&>, "shape"_a, "scalar"_a = Scalar_::Real);
 
-  return mr;
+  return {mr, mi, mh, mb};
 }
 
 } // namespace python

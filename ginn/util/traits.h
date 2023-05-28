@@ -32,10 +32,11 @@ template <typename T>
 constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
 
 // ginn::is_floating_point == "either std::is_floating_point, or is ginn::Half"
+// TODO: how about specializing std::is_floating_point for Eigen::half?
 template <typename T>
 struct is_floating_point {
   static constexpr bool value =
-      std::is_floating_point_v<T> or std::is_same_v<std::remove_cv_t<T>, Half>;
+      std::is_floating_point_v<T> or std::is_same_v<std::remove_cv_t<T>, Eigen::half>;
 };
 
 template <typename T>

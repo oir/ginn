@@ -31,8 +31,9 @@ PYBIND11_MODULE(ginn, m) {
   bind_dev(m);
   bind_dev_gpu(m);
 
-  auto rt = bind_tensor(m);
-  bind_tensor_gpu(m, rt);
+  auto tensor_classes = bind_tensor(m);
+  bind_tensor_gpu(m, tensor_classes);
+
   bind_node(m);
   bind_node_gpu(m);
   // bind_init(m);

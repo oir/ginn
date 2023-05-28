@@ -65,7 +65,7 @@ void bind_tensor_of(PyClass& m) {
   m.def(py::init<Shape>(), "shape"_a);
   // m.def(py::init<Shape, const std::vector<Scalar>&>(), "shape"_a, "val"_a);
   m.def(py::init<DevPtr<Kind>, Shape>(), "device"_a, "shape"_a);
-  m.def(py::init<DevPtr<Kind>, Shape, std::vector<Scalar>>(),
+  m.def(py::init<DevPtr<Kind>, Shape, std::vector<Raw<Scalar>>>(),
         "device"_a,
         "shape"_a,
         "val"_a);
@@ -131,8 +131,14 @@ void bind_tensor_of(PyClass& m) {
       py::is_operator());
 }
 
-py::class_<Tensor<Real, CPU>> bind_tensor(py::module_& m);
-void bind_tensor_gpu(py::module_& m, py::class_<Tensor<Real, CPU>>&);
+using TensorClasses =
+    std::tuple<py::class_<Tensor<Real, CPU>>,
+               py::class_<Tensor<Half, CPU>>,
+               py::class_<Tensor<Int, CPU>>,
+               py::class_<Tensor<bool, CPU>>>;
+
+TensorClasses bind_tensor(py::module_& m);
+void bind_tensor_gpu(py::module_& m, TensorClasses&);
 
 } // namespace python
 } // namespace ginn

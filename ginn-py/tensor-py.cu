@@ -24,15 +24,8 @@ namespace python {
 
 GINN_PY_MAKE_SCALAR_DISPATCHER(Tensor, GPU);
 
-void bind_tensor_gpu(py::module_& m, py::class_<Tensor<Real, CPU>>& rt) {
+void bind_tensor_gpu(py::module_& m, TensorClasses& tc) {
   using namespace py::literals;
-
-  // py::enum_<Scalar_>(m, "Scalar")
-  //     .value("Real", Scalar_::Real)
-  //     .value("Half", Scalar_::Half)
-  //     .value("Int", Scalar_::Int)
-  //     .value("Bool", Scalar_::Bool)
-  //     .export_values();
 
   // making pybind know all tensor types first, so method docs contain the
   // appropriate python types throughout.
@@ -46,9 +39,18 @@ void bind_tensor_gpu(py::module_& m, py::class_<Tensor<Real, CPU>>& rt) {
   bind_tensor_of<Half, GPU>(mh);
   bind_tensor_of<bool, GPU>(mb);
 
-  rt.def("copy_to",
-         &Tensor<Real, CPU>::template copy_to<std::shared_ptr<GpuDevice>>,
-         "device"_a);
+  auto add_cross_device_copy = [](auto& t, auto scalar) {
+    using Scalar = decltype(scalar);
+    t.def("copy_to",
+          &Tensor<Scalar, CPU>::template copy_to<std::shared_ptr<GpuDevice>>,
+          "device"_a);
+  };
+
+  auto& [rt, ht, it, bt] = tc;
+  add_cross_device_copy(rt, Real());
+  add_cross_device_copy(ht, Half());
+  add_cross_device_copy(it, Int());
+  add_cross_device_copy(bt, bool());
 
   // Why is &Tensor_<> an unknown type? -- might be a nvcc11.1 thing.
   // m.def("Tensor",

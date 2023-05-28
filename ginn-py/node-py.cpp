@@ -92,20 +92,20 @@ void bind_node(py::module_& m) {
   // appropriate python types throughout.
   auto [rnode, rdata] = declare_node_of<Real, CPU>(m);
   auto [inode, idata] = declare_node_of<Int, CPU>(m);
-  // auto [hnode, hdata] = declare_node_of<Half, CPU>(m);
+  auto [hnode, hdata] = declare_node_of<Half, CPU>(m);
   auto [bnode, bdata] = declare_node_of<bool, CPU>(m);
 
   bind_node_of<Real, CPU>(rnode);
   bind_node_of<Int, CPU>(inode);
-  // bind_node_of<Half, CPU>(hnode);
+  bind_node_of<Half, CPU>(hnode);
   bind_node_of<bool, CPU>(bnode);
 
   bind_data_of<Real, CPU>(rdata);
   bind_data_of<Int, CPU>(idata);
-  // bind_data_of<Half, CPU>(hdata);
+  bind_data_of<Half, CPU>(hdata);
   bind_data_of<bool, CPU>(bdata);
 
-  for_each<Real, /*Half,*/ Int, bool>([&](auto scalar) {
+  for_each<Real, Half, Int, bool>([&](auto scalar) {
     using Scalar = decltype(scalar);
     // nvcc 11.1 forces me to use an explicit static cast here.
     m.def(name<Scalar, CPU>("Data"),

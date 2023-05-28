@@ -204,7 +204,7 @@ class Node : public BaseNode {
     if (has_grad()) { grad().set_zero(); }
   }
 
-  Scalar item() const { return value().item(); }
+  Raw<Scalar> item() const { return value().item(); }
 };
 
 template <typename Scalar = Real, enum DeviceKind Kind = CPU>
@@ -248,7 +248,7 @@ class Graph {
     } else if (auto sink = dynamic_ptr_cast<Node<Half, CPU>>(list_.back())) {
       GINN_ASSERT(sink->has_grad());
       // TODO: should i constrain this to have shape {1} ?
-      sink->grad().fill(Half(loss_coeff)); // assume scalar loss.
+      sink->grad().fill(Raw<Half>(loss_coeff)); // assume scalar loss.
 #ifdef GINN_ENABLE_GPU
     } else if (auto sink = dynamic_ptr_cast<Node<Real, GPU>>(list_.back())) {
       GINN_ASSERT(sink->has_grad());
@@ -257,7 +257,7 @@ class Graph {
     } else if (auto sink = dynamic_ptr_cast<Node<Half, GPU>>(list_.back())) {
       GINN_ASSERT(sink->has_grad());
       // TODO: should i constrain this to have shape {1} ?
-      sink->grad().fill(Half(loss_coeff)); // assume scalar loss.
+      sink->grad().fill(Raw<Half>(loss_coeff)); // assume scalar loss.
 #endif
     } else {
       GINN_THROW("Unexpected scalar type in sink node!");
