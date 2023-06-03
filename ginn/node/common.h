@@ -94,64 +94,67 @@ namespace ginn {
 //   return make_ptr<SubtractScalarNode<Scalar>>(a, std::move(b));
 // }
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 class AddNode : public BaseDataNode<Scalar, Kind> {
-  protected : std::vector<NodePtr<Scalar, Kind>> ins_;
+ protected:
+  std::vector<NodePtr<Scalar, Kind>> ins_;
 
   // Helper to add N input tensors like:
   // in(0)->value().t() + ... + in(N-1)->value().t().
   // Eigen benefits from compile time unrolling of this sum.
   template <size_t... N>
-  auto add_helper(size_t i, std::integer_sequence<size_t, N...>){
-      return (ins_[i + N]->value().t() + ...);}
+  auto add_helper(size_t i, std::integer_sequence<size_t, N...>) {
+    return (ins_[i + N]->value().t() + ...);
+  }
 
-template <size_t N>
-auto add_helper(size_t i) {
-  return add_helper(i, std::make_integer_sequence<size_t, N>());
-}
+  template <size_t N>
+  auto add_helper(size_t i) {
+    return add_helper(i, std::make_integer_sequence<size_t, N>());
+  }
 
-void forward_() override {
-  value().resize(ins_[0]->value().shape());
+  void forward_() override {
+    value().resize(ins_[0]->value().shape());
 
-  auto compute = [&](const auto& rhs, bool accumulate) {
-    accumulate ? (value() += rhs) : (value() = rhs);
-  };
+    auto compute = [&](const auto& rhs, bool accumulate) {
+      accumulate ? (value() += rhs) : (value() = rhs);
+    };
 
-  for (size_t i = 0; i < ins_.size(); i += 4) {
-    size_t remaining = std::min(ins_.size() - i, (size_t)4);
-    if (remaining == 0) { remaining = 4; }
-    switch (remaining) {
-    case 1: compute(ins_[i]->value().t(), i > 0); break;
-    case 2: compute(add_helper<2>(i), i > 0); break;
-    case 3: compute(add_helper<3>(i), i > 0); break;
-    case 4: compute(add_helper<4>(i), i > 0); break;
+    for (size_t i = 0; i < ins_.size(); i += 4) {
+      size_t remaining = std::min(ins_.size() - i, (size_t)4);
+      if (remaining == 0) { remaining = 4; }
+      switch (remaining) {
+      case 1: compute(ins_[i]->value().t(), i > 0); break;
+      case 2: compute(add_helper<2>(i), i > 0); break;
+      case 3: compute(add_helper<3>(i), i > 0); break;
+      case 4: compute(add_helper<4>(i), i > 0); break;
+      }
     }
   }
-}
 
-void backward_() override {
-  for (size_t i = 0; i < ins_.size(); i++) {
-    if (ins_[i]->has_grad()) { ins_[i]->grad() += grad().t(); }
+  void backward_() override {
+    for (size_t i = 0; i < ins_.size(); i++) {
+      if (ins_[i]->has_grad()) { ins_[i]->grad() += grad().t(); }
+    }
   }
-}
 
-public:
-using Base = BaseDataNode<Scalar, Kind>;
-using Base::grad;
-using Base::value;
+ public:
+  using Base = BaseDataNode<Scalar, Kind>;
+  using Base::grad;
+  using Base::value;
 
-AddNode(const std::vector<NodePtr<Scalar, Kind>>& ins) : Base(ins), ins_(ins) {}
+  AddNode(const std::vector<NodePtr<Scalar, Kind>>& ins)
+      : Base(ins), ins_(ins) {}
 
-template <typename... Args>
-AddNode(const NodePtr<Scalar, Kind>& in, const Args&... args)
-    : AddNode(std::vector<NodePtr<Scalar, Kind>>{in, args...}) {}
+  template <typename... Args>
+  AddNode(const NodePtr<Scalar, Kind>& in, const Args&... args)
+      : AddNode(std::vector<NodePtr<Scalar, Kind>>{in, args...}) {}
 
-void set_ins(const std::vector<BaseNodePtr>& ins) override {
-  BaseNode::ins_ = ins;
-  ins_ = derived_cast<Node<Scalar, Kind>>(ins);
-}
+  void set_ins(const std::vector<BaseNodePtr>& ins) override {
+    BaseNode::ins_ = ins;
+    ins_ = derived_cast<Node<Scalar, Kind>>(ins);
+  }
 
-std::string name() const override { return "Add"; }
+  std::string name() const override { return "Add"; }
 }; // namespace ginn
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(Add);
@@ -212,29 +215,30 @@ GINN_MAKE_SCALAR_FORWARDING_FACTORY(Add);
 //
 // GINN_MAKE_SCALAR_FORWARDING_FACTORY(ProdScalar);
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 class CwiseProdNode : public BaseDataNode<Scalar, Kind> {
-  protected : NodePtr<Scalar, Kind> a_,
-  b_;
+ protected:
+  NodePtr<Scalar, Kind> a_, b_;
 
-  void forward_() override{value().resize(a_->value().shape());
-                           value() = a_->value().t() * b_->value().t();}
+  void forward_() override {
+    value().resize(a_->value().shape());
+    value() = a_->value().t() * b_->value().t();
+  }
 
-void backward_() override {
-  if (a_->has_grad()) { a_->grad() += grad().t() * b_->value().t(); }
-  if (b_->has_grad()) { b_->grad() += grad().t() * a_->value().t(); }
-}
+  void backward_() override {
+    if (a_->has_grad()) { a_->grad() += grad().t() * b_->value().t(); }
+    if (b_->has_grad()) { b_->grad() += grad().t() * a_->value().t(); }
+  }
 
-public:
-using BaseDataNode<Scalar, Kind>::value;
-using BaseDataNode<Scalar, Kind>::grad;
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-CwiseProdNode(const NodePtr<Scalar, Kind>& a, const NodePtr<Scalar, Kind>& b)
-    : BaseDataNode<Scalar, Kind>({a, b}), a_(a), b_(b) {}
+  CwiseProdNode(const NodePtr<Scalar, Kind>& a, const NodePtr<Scalar, Kind>& b)
+      : BaseDataNode<Scalar, Kind>(std::vector{a, b}), a_(a), b_(b) {}
 
-std::string name() const override { return "CwiseProd"; }
-}
-;
+  std::string name() const override { return "CwiseProd"; }
+}; // namespace ginn
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(CwiseProd);
 

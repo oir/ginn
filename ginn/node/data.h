@@ -16,9 +16,26 @@
 #define GINN_NODE_DATA_H
 
 #include <ginn/node.h>
+#include <ginn/util/traits.h>
 #include <ginn/util/util.h>
 
 namespace ginn {
+
+template <typename Iterable>
+auto best_dev(const Iterable& ins) {
+  // Inspect devices of all the inputs, adopt the one with the highest
+  // precedence.
+
+  static_assert(is_node_ptr_v<std::decay_t<decltype(*ins.begin())>>,
+                "Elements should be node pointers!");
+  GINN_ASSERT(ins.end() != ins.begin(), "Empty iterable!");
+
+  auto dev = (*ins.begin())->dev();
+  for (auto&& in : ins) {
+    if (in->dev()->precedence() > dev->precedence()) { dev = in->dev(); }
+  }
+  return dev;
+}
 
 // Base type for the most common use case where an expression has a value, and
 // the corresponding gradient with respect to that. Since many operations fit
@@ -39,11 +56,9 @@ class BaseDataNode : public Node<Scalar, Kind> {
                const std::vector<BaseNodePtr>& ins)
       : Node<Scalar, Kind>(ins), fx_(dev, shape), dfx_(dev) {}
 
-  template <typename NodeType>
-  BaseDataNode(std::vector<NodeType> ins)
-      : Node<Scalar, Kind>(std::move(ins)),
-        fx_(best_dev<Kind>(this->ins_)),
-        dfx_(fx_.dev()) {}
+  template <typename Inputs>
+  BaseDataNode(const Inputs& ins)
+      : Node<Scalar, Kind>(ins), fx_(best_dev(ins)), dfx_(fx_.dev()) {}
 
   BaseDataNode(DevPtr<Kind> dev = default_dev<Kind>()) : fx_(dev), dfx_(dev) {}
   BaseDataNode(const Shape& shape)
@@ -51,10 +66,11 @@ class BaseDataNode : public Node<Scalar, Kind> {
   BaseDataNode(DevPtr<Kind> dev, const Shape& shape)
       : fx_(dev, shape), dfx_(dev) {}
 
-  BaseDataNode(const std::initializer_list<BaseNodePtr>& ins)
-      : BaseDataNode(std::vector<BaseNodePtr>(ins)) {}
-  BaseDataNode(DevPtr<Kind> dev, const std::initializer_list<BaseNodePtr>& ins)
-      : BaseDataNode(dev, std::vector<BaseNodePtr>(ins)) {}
+  // BaseDataNode(const std::initializer_list<BaseNodePtr>& ins)
+  //     : BaseDataNode(std::vector<BaseNodePtr>(ins)) {}
+  // BaseDataNode(DevPtr<Kind> dev, const std::initializer_list<BaseNodePtr>&
+  // ins)
+  //     : BaseDataNode(dev, std::vector<BaseNodePtr>(ins)) {}
 
  private:
   bool has_grad_ = true;

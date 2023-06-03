@@ -29,30 +29,30 @@ namespace internal {
 // TODO: Maybe make these static functions of Tensor class, and get rid of
 //   data() method of Tensor? This file is the only thing that uses that method.
 
-template <typename Scalar>
+template <typename RawScalar>
 inline void gpu_gemm(cublasHandle_t& handle,
-                     const Scalar* A,
-                     const Scalar* B,
-                     Scalar* C,
+                     const RawScalar* A,
+                     const RawScalar* B,
+                     RawScalar* C,
                      const int lda,
                      const int ldb,
                      const int ldc,
                      const int m,
                      const int k,
                      const int n,
-                     const Scalar bet = 0,
+                     const RawScalar bet = 0,
                      const cublasOperation_t& op1 = CUBLAS_OP_N,
                      const cublasOperation_t& op2 = CUBLAS_OP_N) {
   // C = AB
   // A is mxk, B is kxn, C is mxn
-  const Scalar alf(1);
-  const Scalar* alpha = &alf;
-  const Scalar* beta = &bet;
+  const RawScalar alf(1);
+  const RawScalar* alpha = &alf;
+  const RawScalar* beta = &bet;
 
-  if constexpr (std::is_same_v<Scalar, float>) {
+  if constexpr (std::is_same_v<RawScalar, float>) {
     GINN_CUBLAS_CALL(cublasSgemm(
         handle, op1, op2, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc));
-  } else if constexpr (std::is_same_v<Scalar, Half>) {
+  } else if constexpr (std::is_same_v<RawScalar, Eigen::half>) {
     auto alpha_ = reinterpret_cast<const __half*>(alpha);
     auto beta_ = reinterpret_cast<const __half*>(beta);
     auto A_ = reinterpret_cast<const __half*>(A);
@@ -61,15 +61,15 @@ inline void gpu_gemm(cublasHandle_t& handle,
     GINN_CUBLAS_CALL(cublasHgemm(
         handle, op1, op2, m, n, k, alpha_, A_, lda, B_, ldb, beta_, C_, ldc));
   } else {
-    GINN_THROW("Unexpected Scalar type in gpu_gemm!");
+    GINN_THROW("Unexpected RawScalar type in gpu_gemm!");
   }
 }
 
-template <typename Scalar>
+template <typename RawScalar>
 inline void gpu_batched_gemm(cublasHandle_t& handle,
-                             const Scalar* A,
-                             const Scalar* B,
-                             Scalar* C,
+                             const RawScalar* A,
+                             const RawScalar* B,
+                             RawScalar* C,
                              const int lda,
                              const int ldb,
                              const int ldc,
@@ -80,12 +80,12 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
                              const int k,
                              const int n,
                              const int batches,
-                             const Scalar bet = Scalar(0),
+                             const RawScalar bet = RawScalar(0),
                              const cublasOperation_t& op1 = CUBLAS_OP_N,
                              const cublasOperation_t& op2 = CUBLAS_OP_N) {
-  const Scalar alf(1);
-  const Scalar* alpha = &alf;
-  const Scalar* beta = &bet;
+  const RawScalar alf(1);
+  const RawScalar* alpha = &alf;
+  const RawScalar* beta = &bet;
   /*
   <T>gemmStridedBatched(cublasHandle_t handle,
                       cublasOperation_t transA, cublasOperation_t transB,
@@ -98,7 +98,7 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
                       int batchCount)
   */
 
-  if constexpr (std::is_same_v<Scalar, float>) {
+  if constexpr (std::is_same_v<RawScalar, float>) {
     // clang-format off
     GINN_CUBLAS_CALL(cublasSgemmStridedBatched(
           handle,
@@ -111,7 +111,7 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
           C, ldc, sC,
           batches));
     // clang-format on
-  } else if constexpr (std::is_same_v<Scalar, Half>) {
+  } else if constexpr (std::is_same_v<RawScalar, Eigen::half>) {
     auto alpha_ = reinterpret_cast<const __half*>(alpha);
     auto beta_ = reinterpret_cast<const __half*>(beta);
     auto A_ = reinterpret_cast<const __half*>(A);
@@ -130,15 +130,15 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
           batches));
     // clang-format on
   } else {
-    GINN_THROW("Unexpected Scalar type in gpu_batched_gemm!");
+    GINN_THROW("Unexpected RawScalar type in gpu_batched_gemm!");
   }
 }
 
-// template <typename Scalar>
+// template <typename RawScalar>
 // inline void gpu_batched_gemv(cublasHandle_t& handle,
-//                              const Scalar* A,
-//                              const Scalar* x,
-//                              Scalar* y,
+//                              const RawScalar* A,
+//                              const RawScalar* x,
+//                              RawScalar* y,
 //                              const int lda,
 //                              const int incx,
 //                              const int incy,
@@ -148,11 +148,11 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
 //                              const int m,
 //                              const int n,
 //                              const int batches,
-//                              const Scalar bet = Scalar(0),
+//                              const RawScalar bet = RawScalar(0),
 //                              const cublasOperation_t& op = CUBLAS_OP_N) {
-//   const Scalar alf(1);
-//   const Scalar* alpha = &alf;
-//   const Scalar* beta = &bet;
+//   const RawScalar alf(1);
+//   const RawScalar* alpha = &alf;
+//   const RawScalar* beta = &bet;
 //   /*
 // cublasStatus_t cublasSgemvStridedBatched(cublasHandle_t handle,
 //                                          cublasOperation_t trans,
@@ -168,7 +168,7 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
 //                                          int batchCount)
 //   */
 //
-//   if constexpr (std::is_same_v<Scalar, float>) {
+//   if constexpr (std::is_same_v<RawScalar, float>) {
 //     // clang-format off
 //                      cublasSgemvStridedBatched
 //     GINN_CUBLAS_CALL(cublasSgemvStridedBatched(
@@ -182,7 +182,7 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
 //           y, incy, sy,
 //           batches));
 //     // clang-format on
-//   } else if constexpr (std::is_same_v<Scalar, Half>) {
+//   } else if constexpr (std::is_same_v<RawScalar, Eigen::half>) {
 //     // TODO: mixed precision versions
 //     auto A_ = reinterpret_cast<const __half*>(A);
 //     auto x_ = reinterpret_cast<const __half*>(x);
@@ -200,7 +200,7 @@ inline void gpu_batched_gemm(cublasHandle_t& handle,
 //           batches));
 //     // clang-format on
 //   } else {
-//     GINN_THROW("Unexpected Scalar type in gpu_batched_gemv!");
+//     GINN_THROW("Unexpected RawScalar type in gpu_batched_gemv!");
 //   }
 // }
 
@@ -237,7 +237,7 @@ inline void gpu_prod(Tensor<Scalar, GPU>& c,
   GINN_ASSERT(a_outer == c.rows());
   GINN_ASSERT(b_outer == c.cols());
 
-  gpu_gemm<Scalar>(cublas_handle(c.dev()->id().idx),
+  gpu_gemm<Raw<Scalar>>(cublas_handle(c.dev()->id().idx),
                    a.data(),
                    b.data(),
                    c.data(),
@@ -247,7 +247,7 @@ inline void gpu_prod(Tensor<Scalar, GPU>& c,
                    /* m */ a_outer,
                    /* k */ a_inner,
                    /* n */ b_outer,
-                   res == ProdResult::Add ? Scalar(1.) : Scalar(0.),
+                   res == ProdResult::Add ? Raw<Scalar>(1.) : Raw<Scalar>(0.),
                    op1,
                    op2);
 }
@@ -290,7 +290,7 @@ inline void gpu_batched_prod(Tensor<Scalar, GPU>& c,
   GINN_ASSERT(a_outer == c_rows);
   GINN_ASSERT(b_outer == c_cols);
 
-  gpu_batched_gemm<Scalar>(cublas_handle(c.dev()->id().idx),
+  gpu_batched_gemm<Raw<Scalar>>(cublas_handle(c.dev()->id().idx),
                            a.data(),
                            b.data(),
                            c.data(),
@@ -304,7 +304,7 @@ inline void gpu_batched_prod(Tensor<Scalar, GPU>& c,
                            /* k */ a_inner,
                            /* n */ b_outer,
                            batches,
-                           res == ProdResult::Add ? Scalar(1.) : Scalar(0.),
+                           res == ProdResult::Add ? Raw<Scalar>(1.) : Raw<Scalar>(0.),
                            op1,
                            op2);
 }

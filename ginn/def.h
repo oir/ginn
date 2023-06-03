@@ -15,6 +15,13 @@
 #ifndef GINN_DEF_H
 #define GINN_DEF_H
 
+// Intellisense parsing bug on M1, see:
+// https://github.com/microsoft/vscode-cpptools/issues/7413#issuecomment-827172897
+#if __INTELLISENSE__
+#undef __ARM_NEON
+#undef __ARM_NEON__
+#endif
+
 #ifdef GINN_ENABLE_GPU // cuda
 #define EIGEN_USE_GPU
 #include <cublas_v2.h>
@@ -45,10 +52,19 @@ template <typename Scalar>
 using MatrixMap = Eigen::Map<Matrix<Scalar>>;
 
 template <typename Scalar>
+using ConstMatrixMap = Eigen::Map<const Matrix<Scalar>>;
+
+template <typename Scalar>
 using VectorMap = Eigen::Map<Vector<Scalar>>;
+
+template <typename Scalar>
+using ConstVectorMap = Eigen::Map<const Vector<Scalar>>;
 
 template <typename Scalar, int N>
 using TensorMap = Eigen::TensorMap<Eigen::Tensor<Raw<Scalar>, N>>;
+
+template <typename Scalar, int N>
+using ConstTensorMap = Eigen::TensorMap<const Eigen::Tensor<Raw<Scalar>, N>>;
 
 namespace literals {
 
@@ -56,7 +72,9 @@ inline Real operator"" _r(long double x) { return x; }
 inline Real operator"" _r(unsigned long long x) { return x; }
 
 inline Eigen::half operator"" _h(long double x) { return Eigen::half{x}; }
-inline Eigen::half operator"" _h(unsigned long long x) { return Eigen::half{x}; }
+inline Eigen::half operator"" _h(unsigned long long x) {
+  return Eigen::half{x};
+}
 
 } // namespace literals
 

@@ -131,11 +131,10 @@ void bind_tensor_of(PyClass& m) {
       py::is_operator());
 }
 
-using TensorClasses =
-    std::tuple<py::class_<Tensor<Real, CPU>>,
-               py::class_<Tensor<Half, CPU>>,
-               py::class_<Tensor<Int, CPU>>,
-               py::class_<Tensor<bool, CPU>>>;
+using TensorClasses = std::tuple<py::class_<Tensor<Real, CPU>>,
+                                 py::class_<Tensor<Half, CPU>>,
+                                 py::class_<Tensor<Int, CPU>>,
+                                 py::class_<Tensor<bool, CPU>>>;
 
 TensorClasses bind_tensor(py::module_& m);
 void bind_tensor_gpu(py::module_& m, TensorClasses&);

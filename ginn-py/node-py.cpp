@@ -19,20 +19,20 @@
 
 #include <ginn/node.h>
 #include <ginn/node/common.h>
-//#include <ginn/node/compare.h> // need for operator<(), etc
-//#include <ginn/node/data.h>
-//#include <ginn/node/prod.h> // need for operator*()
+// #include <ginn/node/compare.h> // need for operator<(), etc
+// #include <ginn/node/data.h>
+// #include <ginn/node/prod.h> // need for operator*()
 
 #include <ginn-py/node/affine-py.h>
 #include <ginn-py/node/common-py.h>
-//#include <ginn-py/node/compare-py.h>
-//#include <ginn-py/node/layout-py.h>
-//#include <ginn-py/node/nonlin-py.h>
-//#include <ginn-py/node/pick-py.h>
-//#include <ginn-py/node/prod-py.h>
-//#include <ginn-py/node/reduce-py.h>
-//#include <ginn-py/node/select-py.h>
-//#include <ginn-py/node/weight-py.h>
+// #include <ginn-py/node/compare-py.h>
+// #include <ginn-py/node/layout-py.h>
+// #include <ginn-py/node/nonlin-py.h>
+// #include <ginn-py/node/pick-py.h>
+// #include <ginn-py/node/prod-py.h>
+// #include <ginn-py/node/reduce-py.h>
+// #include <ginn-py/node/select-py.h>
+// #include <ginn-py/node/weight-py.h>
 
 #include <ginn-py/node-py.h>
 

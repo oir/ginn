@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//#include <pybind11/operators.h>
-// NOTE: Using py::self way of operator binding yields template type deduction
-// errors in the particular nvcc I'm using.
+// #include <pybind11/operators.h>
+//  NOTE: Using py::self way of operator binding yields template type deduction
+//  errors in the particular nvcc I'm using.
 #include <pybind11/pybind11.h>
 
 #include <ginn/dev.h>

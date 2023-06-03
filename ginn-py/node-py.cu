@@ -19,20 +19,20 @@
 
 #include <ginn/node.h>
 #include <ginn/node/common.h>
-//#include <ginn/node/compare.h> // need for operator<(), etc
-//#include <ginn/node/data.h>
-//#include <ginn/node/prod.h> // need for operator*()
+// #include <ginn/node/compare.h> // need for operator<(), etc
+// #include <ginn/node/data.h>
+// #include <ginn/node/prod.h> // need for operator*()
 
 #include <ginn-py/node/affine-py.h>
 #include <ginn-py/node/common-py.h>
-//#include <ginn-py/node/compare-py.h>
-//#include <ginn-py/node/layout-py.h>
-//#include <ginn-py/node/nonlin-py.h>
-//#include <ginn-py/node/pick-py.h>
-//#include <ginn-py/node/prod-py.h>
-//#include <ginn-py/node/reduce-py.h>
-//#include <ginn-py/node/select-py.h>
-//#include <ginn-py/node/weight-py.h>
+// #include <ginn-py/node/compare-py.h>
+// #include <ginn-py/node/layout-py.h>
+// #include <ginn-py/node/nonlin-py.h>
+// #include <ginn-py/node/pick-py.h>
+// #include <ginn-py/node/prod-py.h>
+// #include <ginn-py/node/reduce-py.h>
+// #include <ginn-py/node/select-py.h>
+// #include <ginn-py/node/weight-py.h>
 
 #include <ginn-py/tensor-py.h>
 #include <ginn-py/util-py.h>
@@ -47,13 +47,13 @@ namespace py = pybind11;
 void bind_node_gpu(py::module_& m) {
   using namespace pybind11::literals;
 
-  //py::class_<BaseNode, Ptr<BaseNode>>(m, "BaseNode");
-  //py::class_<Graph>(m, "Graph")
-  //    .def(py::init<Ptr<BaseNode>>())
-  //    .def("forward", &Graph::forward)
-  //    .def("reset_forwarded", &Graph::reset_forwarded)
-  //    .def("reset_grad", &Graph::reset_grad)
-  //    .def("backward", &Graph::backward, "loss_coeff"_a);
+  // py::class_<BaseNode, Ptr<BaseNode>>(m, "BaseNode");
+  // py::class_<Graph>(m, "Graph")
+  //     .def(py::init<Ptr<BaseNode>>())
+  //     .def("forward", &Graph::forward)
+  //     .def("reset_forwarded", &Graph::reset_forwarded)
+  //     .def("reset_grad", &Graph::reset_grad)
+  //     .def("backward", &Graph::backward, "loss_coeff"_a);
 
   // making pybind know all node types first, so method docs contain the
   // appropriate python types throughout.
@@ -120,9 +120,9 @@ void bind_node_gpu(py::module_& m) {
 
   for_range<5>([&](auto arr) {
     constexpr size_t N = arr.size();
-    //m.def("Values",
-    //      py::overload_cast<NestedInitList<N, Real>>(&Values<N, Real>),
-    //      "values"_a);
+    // m.def("Values",
+    //       py::overload_cast<NestedInitList<N, Real>>(&Values<N, Real>),
+    //       "values"_a);
     m.def("Values",
           py::overload_cast<DevPtr<GPU>, NestedInitList<N, Real>>(
               &Values<N, Real, DevPtr<GPU>>),

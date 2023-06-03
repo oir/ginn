@@ -24,16 +24,16 @@
 
 #include <ginn/node/affine.h>
 #include <ginn/node/common.h>
-//#include <ginn/node/compare.h>
-//#include <ginn/node/inplace.h>
-//#include <ginn/node/layernorm.h>
-//#include <ginn/node/layout.h>
-//#include <ginn/node/nlnode.h>
-//#include <ginn/node/pick.h>
-//#include <ginn/node/prod.h>
-//#include <ginn/node/reduce.h>
-//#include <ginn/node/select.h>
-//#include <ginn/node/weight.h>
+// #include <ginn/node/compare.h>
+// #include <ginn/node/inplace.h>
+// #include <ginn/node/layernorm.h>
+#include <ginn/node/layout.h>
+// #include <ginn/node/nlnode.h>
+// #include <ginn/node/pick.h>
+// #include <ginn/node/prod.h>
+// #include <ginn/node/reduce.h>
+// #include <ginn/node/select.h>
+// #include <ginn/node/weight.h>
 
 #include "check_node.h"
 #include "testutil.h"
@@ -44,110 +44,147 @@ auto Dev = cpu();
 
 // clang-format off
 
-//TEMPLATE_TEST_CASE("Dim", "[layout]", Real, Int, Half, void) {
-//  BaseNodePtr x;
-//  if constexpr(std::is_same_v<TestType, void>) {
-//    x = Random(Dev, {3, 2, 1});
-//  } else {
-//    x = Random<TestType>(Dev, {3, 2, 1});
-//  }
-//  auto d0 = Dim(x, 0);
-//  auto d1 = Dim(x, 1);
-//  auto d2 = Dim(x, 2);
-//  SECTION("Basic") {
-//    Graph(d0).forward();
-//    Graph(d1).forward();
-//    Graph(d2).forward();
-//    CHECK(d0->value() == 3);
-//    CHECK(d1->value() == 2);
-//    CHECK(d2->value() == 1);
-//  }
-//}
-//
-//TEMPLATE_TEST_CASE("Stack", "[forward] [layout]", Real, Int, Half) {
-//  using Scalar = TestType;
-//
-//  SECTION("of rank-1") {
-//    auto a = Values<1>({ 1,  2,  3,  4})->cast<Scalar>();
-//    auto b = Values<1>({ 5,  6,  7,  8})->cast<Scalar>();
-//    auto c = Values<1>({ 9, 10, 11, 12})->cast<Scalar>();
-//    auto d = Values<1>({13, 14, 15, 16})->cast<Scalar>();
-//    auto e = Values<1>({17, 18, 19, 20})->cast<Scalar>();
-//    auto f = Values<1>({21, 22, 23, 24})->cast<Scalar>();
-//
-//    auto expected = Values<3>({{{1, 5}, {9, 13}, {17, 21}},
-//                               {{2, 6}, {10, 14}, {18, 22}},
-//                               {{3, 7}, {11, 15}, {19, 23}},
-//                               {{4, 8}, {12, 16}, {20, 24}}})->cast<Scalar>();
-//
-//    check(Stack<Scalar>({{a, b}, {c, d}, {e, f}}), expected);
-//    CHECK_(Stack<Scalar>({{a, b}}),                 {a, b}            , true);
-//    CHECK_(Stack<Scalar>({{a, b}, {c, d}}),         {a, b, c, d}      );
-//    CHECK_(Stack<Scalar>({{a, b}, {c, d}, {e, f}}), {a, b, c, d, e, f});
-//    CHECK_(Stack<Scalar>({{a, b}, {a, b}}),         {a, b}            );
-//    CHECK_(Stack<Scalar>({{a, a}, {a, a}, {a, a}}), {a}               );
-//  }
-//
-//  SECTION("of rank-2") {
-//    auto a = Values<2>({{ 1,  2}, { 3,  4}})->cast<Scalar>();
-//    auto b = Values<2>({{ 5,  6}, { 7,  8}})->cast<Scalar>();
-//    auto c = Values<2>({{ 9, 10}, {11, 12}})->cast<Scalar>();
-//    auto d = Values<2>({{13, 14}, {15, 16}})->cast<Scalar>();
-//    auto e = Values<2>({{17, 18}, {19, 20}})->cast<Scalar>();
-//    auto f = Values<2>({{21, 22}, {23, 24}})->cast<Scalar>();
-//
-//    auto expected = Values<4>({{{{1, 5}, {9, 13}, {17, 21}},
-//                                {{2, 6}, {10, 14}, {18, 22}}},
-//                               {{{3, 7}, {11, 15}, {19, 23}},
-//                                {{4, 8}, {12, 16}, {20, 24}}}})->cast<Scalar>();
-//
-//    check(Stack<Scalar>({{a, b}, {c, d}, {e, f}}), expected);
-//    CHECK_(Stack<Scalar>({{a, b}}),                 {a, b}            );
-//    CHECK_(Stack<Scalar>({{a, b}, {c, d}}),         {a, b, c, d}      );
-//    CHECK_(Stack<Scalar>({{a, b}, {c, d}, {e, f}}), {a, b, c, d, e, f});
-//    CHECK_(Stack<Scalar>({{a, b}, {a, b}}),         {a, b}            );
-//    CHECK_(Stack<Scalar>({{a, a}, {a, a}, {a, a}}), {a}               );
-//  }
-//
-//  SECTION("Errors") {
-//    auto a = Values<1>({ 1,  2,  3,  4});
-//    auto b = Values<1>({ 5,  6,  7,  8});
-//    auto c = Values<1>({ 9, 10, 11, 12});
-//    auto d = Values<1>({13, 14, 15, 16});
-//    auto e = Values<1>({17, 18, 19});
-//    auto f = Values<1>({21, 22, 23, 24});
-//
-//    CHECK_THROWS(Stack<Real>({{a, b}, {c, d}, {e, f}})->forward());
-//    CHECK_THROWS(Stack<Real>({{a, b}, {c, d}, {f}})->forward());
-//    CHECK_THROWS(Stack<Real>({})->forward());
-//    CHECK_THROWS(Stack<Real>({{}})->forward());
-//  }
-//}
-//
-//TEMPLATE_TEST_CASE("Cat", "[forward] [layout]", Real, Int, Half) {
-//  auto Vals = [](NestedInitList<2, Int> vals) {
-//    return Values<2, Int>(vals)->template cast<TestType>();
-//  };
-//  auto a = Vals({{1, 2}});
-//  auto b = Vals({{3, 4},
-//                 {5, 6}});
-//  auto c = Vals({{7, 8},
-//                 {9, 0}});
-//
-//  auto cat = Cat(a, b, c);
-//
-//  auto res = Vals({{1, 2},
-//                   {3, 4},
-//                   {5, 6},
-//                   {7, 8},
-//                   {9, 0}});
-//
-//  check(cat, res);
-//  CHECK_(Cat(a, b, c), {a, b, c}, true);
-//  CHECK_(Cat(a, b, a), {a, b},    true);
-//  CHECK_(Cat(a, b),    {a, b},    true);
-//  CHECK_(Cat(a, a, a), {a},       true);
-//}
+TEMPLATE_TEST_CASE("Dim", "[layout]", Real, Int, Half, void) {
+  BaseNodePtr x;
+  if constexpr(std::is_same_v<TestType, void>) {
+    x = Random(Dev, {3, 2, 1});
+  } else {
+    x = Random<TestType>(Dev, {3, 2, 1});
+  }
+  auto d0 = Dim(x, 0);
+  auto d1 = Dim(x, 1);
+  auto d2 = Dim(x, 2);
+  SECTION("Basic") {
+    Graph(d0).forward();
+    Graph(d1).forward();
+    Graph(d2).forward();
+    CHECK(d0->value() == 3);
+    CHECK(d1->value() == 2);
+    CHECK(d2->value() == 1);
+  }
+}
+
+TEMPLATE_TEST_CASE("Stack", "[forward] [layout]", Real, Int, Half) {
+  using Scalar = TestType;
+
+  DataPtr<Scalar> a, b, c, d, e, f, expected;
+
+  SECTION("Rank 1") {
+    a = Values<1>({ 1,  2,  3,  4})->cast<Scalar>();
+    b = Values<1>({ 5,  6,  7,  8})->cast<Scalar>();
+    c = Values<1>({ 9, 10, 11, 12})->cast<Scalar>();
+    d = Values<1>({13, 14, 15, 16})->cast<Scalar>();
+    e = Values<1>({17, 18, 19, 20})->cast<Scalar>();
+    f = Values<1>({21, 22, 23, 24})->cast<Scalar>();
+
+    expected = Values<3>({{{1, 5}, {9,  13}, {17, 21}},
+                          {{2, 6}, {10, 14}, {18, 22}},
+                          {{3, 7}, {11, 15}, {19, 23}},
+                          {{4, 8}, {12, 16}, {20, 24}}})->cast<Scalar>();
+  }
+
+  SECTION("Rank 2") {
+    a = Values<2>({{ 1,  2}, { 3,  4}})->cast<Scalar>();
+    b = Values<2>({{ 5,  6}, { 7,  8}})->cast<Scalar>();
+    c = Values<2>({{ 9, 10}, {11, 12}})->cast<Scalar>();
+    d = Values<2>({{13, 14}, {15, 16}})->cast<Scalar>();
+    e = Values<2>({{17, 18}, {19, 20}})->cast<Scalar>();
+    f = Values<2>({{21, 22}, {23, 24}})->cast<Scalar>();
+
+    expected = Values<4>({{{{1, 5}, {9,  13}, {17, 21}},
+                           {{2, 6}, {10, 14}, {18, 22}}},
+                          {{{3, 7}, {11, 15}, {19, 23}},
+                           {{4, 8}, {12, 16}, {20, 24}}}})->cast<Scalar>();
+  }
+
+  check(Stack({{a, b}, {c, d}, {e, f}}), expected);
+
+#ifdef GINN_ENABLE_GPU
+  if constexpr(ginn::is_floating_point_v<Scalar>) {
+    for (auto& x : {a, b, c, d, e, f}) {
+      x->value() = x->value().t() * Raw<Scalar>(0.1);
+    }
+    auto a_ = a->copy_to(gpu());
+    auto b_ = b->copy_to(gpu());
+    auto c_ = c->copy_to(gpu());
+    auto d_ = d->copy_to(gpu());
+    auto e_ = e->copy_to(gpu());
+    auto f_ = f->copy_to(gpu());
+    compare_devices(Stack({{a,  b }}),                     {a,  b, }, 
+                    Stack({{a_, b_}}),                     {a_, b_,});
+    compare_devices(Stack({{a,  b }, {c,  d }}),           {a,  b,  c,  d, }, 
+                    Stack({{a_, b_}, {c_, d_}}),           {a_, b_, c_, d_,});
+    //compare_devices(Stack({{a,  b }, {c,  d }, {e,  f }}), {a,  b,  c,  d,  e,  f }, 
+    //                Stack({{a_, b_}, {c_, d_}, {e_, f_}}), {a_, b_, c_, d_, e_, f_});
+    compare_devices(Stack({{a,  b }, {a,  b }}),           {a,  b,}, 
+                    Stack({{a_, b_}, {a_, b_}}),           {a_, b_});
+    compare_devices(Stack({{a,  a }, {a,  a }, {a,  a }}), {a, }, 
+                    Stack({{a_, a_}, {a_, a_}, {a_, a_}}), {a_,});
+  }
+#else
+  if constexpr (std::is_same_v<Scalar, Real>) {
+    check_grad(Stack({{a, b}}),                 {a, b}            );
+    check_grad(Stack({{a, b}, {c, d}}),         {a, b, c, d}      );
+    check_grad(Stack({{a, b}, {c, d}, {e, f}}), {a, b, c, d, e, f});
+    check_grad(Stack({{a, b}, {a, b}}),         {a, b}            );
+    check_grad(Stack({{a, a}, {a, a}, {a, a}}), {a}               );
+  }
+#endif
+}
+
+TEMPLATE_TEST_CASE("Stack errors", "[forward] [layout]", Real, Int, Half) {
+  using Scalar = TestType;
+
+  auto a = Values<1>({ 1,  2,  3,  4})->cast<Scalar>();
+  auto b = Values<1>({ 5,  6,  7,  8})->cast<Scalar>();
+  auto c = Values<1>({ 9, 10, 11, 12})->cast<Scalar>();
+  auto d = Values<1>({13, 14, 15, 16})->cast<Scalar>();
+  auto e = Values<1>({17, 18, 19})->cast<Scalar>();
+  auto f = Values<1>({21, 22, 23, 24})->cast<Scalar>();
+
+  CHECK_THROWS(Stack({{a, b}, {c, d}, {e, f}})->forward());
+  CHECK_THROWS(Stack({{a, b}, {c, d}, {f}})->forward());
+  CHECK_THROWS(Stack(std::vector<std::vector<NodePtr<Scalar, CPU>>>{})->forward());
+  CHECK_THROWS(Stack(std::vector<std::vector<NodePtr<Scalar, CPU>>>{{}})->forward());
+}
+
+TEMPLATE_TEST_CASE("Cat", "[forward] [layout]", Real, Int, Half) {
+  using Scalar = TestType;
+  auto Vals = [](NestedInitList<2, Int> vals) {
+    return Values<2, Int>(vals)->template cast<Scalar>();
+  };
+
+  auto a = Vals({{1, 2}});
+  auto b = Vals({{3, 4},
+                 {5, 6}});
+  auto c = Vals({{7, 8},
+                 {9, 0}});
+
+  auto res = Vals({{1, 2},
+                   {3, 4},
+                   {5, 6},
+                   {7, 8},
+                   {9, 0}});
+
+  check(Cat(a, b, c), res);
+#ifdef GINN_ENABLE_GPU
+  if constexpr(std::is_floating_point_v<Scalar>) {
+    auto a_ = a->copy_to(gpu());
+    auto b_ = b->copy_to(gpu());
+    auto c_ = c->copy_to(gpu());
+
+    compare_devices(Cat(a,  b,  c ), {a,  b,  c },
+                    Cat(a_, b_, c_), {a_, b_, c_}); 
+  }
+#else
+  if constexpr(std::is_same_v<Scalar, Real>) {
+    check_grad(Cat(a, b, c), {a, b, c}, true);
+    check_grad(Cat(a, b, a), {a, b},    true);
+    check_grad(Cat(a, b),    {a, b},    true);
+    check_grad(Cat(a, a, a), {a},       true);
+  }
+#endif
+}
 //
 //TEMPLATE_TEST_CASE("RowwiseCat", "[layout]", Real, Int, Half) {
 //  using Scalar = TestType;
@@ -1129,7 +1166,7 @@ TEMPLATE_TEST_CASE("Add subtract", "[arithmetic]", Real, Half, Int) {
 TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
   using Scalar = TestType;
   Real eps = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6; // TODO: 😢
-  //Real eps2 = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-4;
+  Real eps2 = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-4;
 
   auto W = Values<2>({{1, 2, 3},
                       {4, 5, 6}})->cast<Scalar>();
@@ -1149,7 +1186,7 @@ TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
       auto V_ = V->copy_to(gpu());
       auto b_ = b->copy_to(gpu());
       compare_devices(Affine(W,  V,  b),  {W,  V,  b },
-                      Affine(W_, V_, b_), {W_, V_, b_});
+                      Affine(W_, V_, b_), {W_, V_, b_}, eps2);
     }
 #else
     if constexpr (std::is_same_v<Scalar, Real>) {

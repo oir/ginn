@@ -50,29 +50,29 @@ Index<N> ShapeToIndex(const Shape& shape) {
 // Forward declare helper types. These are invoked when a Tensor is on the
 // lefthand side of a statement.
 
-template <typename InnerExpr, enum DeviceKind>
+template <typename, DeviceKind>
 class LhsExpr;
 
-template <typename InnerExpr, Size N, enum DeviceKind>
+template <typename, Size, DeviceKind>
 class SliceExpr;
 
-template <typename InnerExpr, Size N, enum DeviceKind>
+template <typename, Size, DeviceKind>
 class ChipExpr;
 
 // Core Tensor class, specialized as Tensor and IntTensor on ScalarType Real and
 // Int, respectively.
-template <typename ScalarType = Real, enum DeviceKind Kind = CPU>
+template <typename ScalarType = Real, DeviceKind Kind = CPU>
 class Tensor {
  public:
   using Scalar = ScalarType;
   using RawScalar = Raw<Scalar>;
-  static const auto device_kind = Kind;
+  static constexpr auto device_kind = Kind;
 
  private:
   DevPtr<Kind> dev_ = nullptr;
   Shape shape_ = {0};
   RawScalar* data_ = nullptr; // owned in most cases
-  bool owns_mem_ = true;   // whether this Tensor owns data_
+  bool owns_mem_ = true;      // whether this Tensor owns data_
 
  public:
   DevPtr<Kind> dev() const { return dev_; }
@@ -142,7 +142,7 @@ class Tensor {
     if (size > 0) { data_ = (RawScalar*)dev_->alloc(size * sizeof(RawScalar)); }
   }
 
-  template <enum DeviceKind OtherKind>
+  template <DeviceKind OtherKind>
   void copy(const DevPtr<OtherKind>& from, RawScalar* other_data, Size size) {
     dev_->copy(*from, data_, other_data, size * sizeof(RawScalar));
   }
@@ -229,7 +229,7 @@ class Tensor {
   }
 
   // Copy & Move assign
-  template <enum DeviceKind OtherKind>
+  template <DeviceKind OtherKind>
   auto& operator=(const Tensor<Scalar, OtherKind>& other) {
     if constexpr (Kind == OtherKind) {
       if (this == &other) { return *this; }
@@ -266,7 +266,7 @@ class Tensor {
   }
 
   // Construct by copying across devices
-  template <enum DeviceKind OtherKind>
+  template <DeviceKind OtherKind>
   Tensor(DevPtr<Kind> dev, const Tensor<Scalar, OtherKind>& other)
       : dev_(std::move(dev)), shape_(other.shape_) {
     allocate(size());
@@ -367,12 +367,11 @@ class Tensor {
     auto dims = reduce(shape_, 2);
     return MatrixMap<Scalar>(data_, dims[0], dims[1]);
   }
-  // TODO: should there be a Map type to const? Or const type is sufficient?
-  const MatrixMap<Scalar> m() const {
+  ConstMatrixMap<Scalar> m() const {
     GINN_ASSERT(dev()->kind() == CPU,
                 "m() can only be invoked on Cpu tensors!");
     auto dims = reduce(shape_, 2);
-    return MatrixMap<Scalar>(data_, dims[0], dims[1]);
+    return ConstMatrixMap<Scalar>(data_, dims[0], dims[1]);
   }
 
   VectorMap<Scalar> v() {
@@ -381,11 +380,11 @@ class Tensor {
     auto dims = reduce(shape_, 1);
     return VectorMap<Scalar>(data_, dims[0]);
   }
-  const VectorMap<Scalar> v() const {
+  ConstVectorMap<Scalar> v() const {
     GINN_ASSERT(dev()->kind() == CPU,
                 "v() can only be invoked on Cpu tensors!");
     auto dims = reduce(shape_, 1);
-    return VectorMap<Scalar>(data_, dims[0]);
+    return ConstVectorMap<Scalar>(data_, dims[0]);
   }
 
   // begin() and end() help with feeding tensors into generic algorithms
@@ -429,11 +428,11 @@ class Tensor {
   template <size_t Rank>
   TensorMap<Scalar, Rank> view();
   template <size_t Rank>
-  const TensorMap<Scalar, Rank> view() const;
+  ConstTensorMap<Scalar, Rank> view() const;
 
   // View as rank 2 tensor
   TensorMap<Scalar, 2> t();
-  TensorMap<Scalar, 2> const t() const;
+  ConstTensorMap<Scalar, 2> t() const;
 
   // This helper method is used to simplify device (CPU/GPU) based dispatching
   // of evaluators, such as :
@@ -441,7 +440,7 @@ class Tensor {
   //     tensor.lhs() += ...
   template <unsigned long R = 2>
   auto lhs() {
-    return LhsExpr<decltype(view<R>()), Kind>(view<R>(), dev());
+    return LhsExpr(view<R>(), dev());
   }
 
   template <unsigned long N>
@@ -546,7 +545,7 @@ class Tensor {
     }
   }
 
-  template <enum DeviceKind OtherKind>
+  template <DeviceKind OtherKind>
   bool operator==(const Tensor<Scalar, OtherKind>& other) const {
     if (dev()->kind() == CPU) {
       if (other.dev()->kind() == CPU) {
@@ -601,7 +600,7 @@ class Tensor {
     }
   }
 
-  template <typename OtherScalar, enum DeviceKind Other>
+  template <typename OtherScalar, DeviceKind Other>
   friend class Tensor;
 };
 
@@ -617,25 +616,38 @@ auto view_impl(Raw<Scalar>* data,
   //}
 }
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, size_t... Indices>
+auto const_view_impl(const Raw<Scalar>* data,
+                     const Shape& shape,
+                     std::index_sequence<Indices...>) {
+  if constexpr (sizeof...(Indices) == 0) {
+    return ConstTensorMap<Scalar, 0>(data);
+  } /*else {*/
+  auto dims = Tensor<Scalar, CPU>::reduce(shape, sizeof...(Indices));
+  return ConstTensorMap<Scalar, sizeof...(Indices)>(data, (dims[Indices])...);
+  //}
+}
+
+template <typename Scalar, DeviceKind Kind>
 template <size_t Rank>
 TensorMap<Scalar, Rank> Tensor<Scalar, Kind>::view() {
   return view_impl<Scalar>(data_, shape_, std::make_index_sequence<Rank>());
 }
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 template <size_t Rank>
-const TensorMap<Scalar, Rank> Tensor<Scalar, Kind>::view() const {
-  return view_impl<Scalar>(data_, shape_, std::make_index_sequence<Rank>());
+ConstTensorMap<Scalar, Rank> Tensor<Scalar, Kind>::view() const {
+  return const_view_impl<Scalar>(
+      data_, shape_, std::make_index_sequence<Rank>());
 }
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 inline TensorMap<Scalar, 2> Tensor<Scalar, Kind>::t() {
   return view<2>();
 }
 
-template <typename Scalar, enum DeviceKind Kind>
-inline const TensorMap<Scalar, 2> Tensor<Scalar, Kind>::t() const {
+template <typename Scalar, DeviceKind Kind>
+inline ConstTensorMap<Scalar, 2> Tensor<Scalar, Kind>::t() const {
   return view<2>();
 }
 

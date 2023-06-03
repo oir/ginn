@@ -44,6 +44,11 @@ constexpr auto ndims() {
 }
 
 template <typename Expression>
+constexpr auto ndims(const Expression&) {
+  return Eigen::internal::traits<Expression>::NumDimensions;
+}
+
+template <typename Expression>
 auto dsizes(const Expression& expr) {
   return TensorRefLike<Expression>(expr).dimensions();
 }

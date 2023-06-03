@@ -50,7 +50,7 @@ inline Eigen::DefaultDevice& cpu_device() {
   return dev;
 };
 
-enum DeviceKind { CPU, GPU, NULL_DEV };
+enum DeviceKind { CPU, GPU };
 
 struct DeviceId { // to distinguish multiple gpus
   const DeviceKind kind;
@@ -85,22 +85,6 @@ class Device : public BaseDevice {
 
 template <DeviceKind Kind>
 using DevPtr = std::shared_ptr<Device<Kind>>;
-
-// For nodes that don't allocate anything and not use any device
-// TODO: Reevaluate if this is really needed or not.
-class NullDevice : public Device<NULL_DEV> {
- public:
-  void* alloc(size_t /*size*/) override { return nullptr; }
-  void* realloc(void* /*data*/, size_t /*size*/) override { return nullptr; }
-  void free(void* /*data*/) override {}
-  DeviceId id() const override { return {NULL_DEV, 0}; }
-  short precedence() const override { return -1; }
-};
-
-inline auto null_dev() {
-  static auto dev = std::make_shared<NullDevice>();
-  return dev;
-}
 
 class CpuDevice : public Device<CPU> {
  public:
@@ -354,18 +338,6 @@ inline void BaseDevice::copy(const BaseDevice& other,
     GINN_THROW("Unexpected device in Device::copy()!");
   }
 }
-template <enum DeviceKind Kind, typename NodeType>
-auto best_dev(const std::vector<NodeType>& ins) {
-  // Inspect devices of all the inputs, adopt the one with the highest
-  // precedence.
-  GINN_ASSERT(not ins.empty());
-  auto max = std::max_element(ins.begin(), ins.end(), [&](auto& i, auto& j) {
-    return i->dev_()->precedence() < j->dev_()->precedence();
-  });
-  auto dev = std::dynamic_pointer_cast<Device<Kind>>((*max)->dev_());
-  GINN_ASSERT(dev);
-  return dev;
-}
 
 // Default device of the given Kind. cpu() for CPU and gpu() for GPU
 template <DeviceKind Kind>
@@ -377,7 +349,7 @@ DevPtr<Kind> default_dev() {
     return gpu();
 #endif
   } else {
-    return null_dev();
+    return {};
   }
 }
 

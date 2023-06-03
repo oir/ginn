@@ -136,14 +136,11 @@ class BaseNode {
   }
 
   // Construct
-  BaseNode(std::vector<BaseNodePtr> ins) : ins_(std::move(ins)) {}
-
-  template <typename DerivedNodePtr>
-  BaseNode(std::vector<DerivedNodePtr> ins) : ins_(base_cast(std::move(ins))) {}
+  template <typename Iterable>
+  BaseNode(const Iterable& ins) : ins_(ins.begin(), ins.end()) {}
 
   virtual ~BaseNode() = default;
 
-  virtual BaseDevPtr dev_() const = 0;
   virtual Shape shape() const = 0;
   Shape shape2() const { return Tensor<>::reduce(shape(), 2); }
   Size rows() const { return shape2()[0]; }
@@ -189,7 +186,6 @@ class Node : public BaseNode {
   }
 
   virtual DevPtr<Kind> dev() const { return value().dev(); }
-  BaseDevPtr dev_() const override { return dev(); }
 
   Shape shape() const override { return value().shape(); }
 

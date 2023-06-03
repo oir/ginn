@@ -30,12 +30,13 @@ namespace py = pybind11;
 void bind_affine_nodes(py::module_& m) {
   using namespace py::literals;
 
-  for_each<Real/*, Half*/>([&](auto scalar) {
+  for_each<Real /*, Half*/>([&](auto scalar) {
     using Scalar = decltype(scalar);
     using Np = NodePtr<Scalar, CPU>;
 
     PyNode<Scalar, CPU, AffineNode>(m, name<Scalar, CPU>("AffineNode"));
-    m.def("Affine", py::overload_cast<const std::vector<Np>&>(&Affine<Scalar, CPU>));
+    m.def("Affine",
+          py::overload_cast<const std::vector<Np>&>(&Affine<Scalar, CPU>));
   });
 }
 

@@ -15,10 +15,10 @@
 #include <pybind11/pybind11.h>
 
 #include <ginn-py/dev-py.h>
-//#include <ginn-py/init-py.h>
+// #include <ginn-py/init-py.h>
 #include <ginn-py/node-py.h>
 #include <ginn-py/tensor-py.h>
-//#include <ginn-py/update-py.h>
+// #include <ginn-py/update-py.h>
 
 namespace py = pybind11;
 

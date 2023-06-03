@@ -36,7 +36,8 @@ constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
 template <typename T>
 struct is_floating_point {
   static constexpr bool value =
-      std::is_floating_point_v<T> or std::is_same_v<std::remove_cv_t<T>, Eigen::half>;
+      std::is_floating_point_v<T> or
+      std::is_same_v<std::remove_cv_t<T>, Half>;
 };
 
 template <typename T>

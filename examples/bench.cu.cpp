@@ -14,8 +14,8 @@
 
 #include <ginn/dev.h>
 #include <ginn/node/affine.h>
-//#include <ginn/node/layout.h>
-//#include <ginn/nonlin.h>
+// #include <ginn/node/layout.h>
+// #include <ginn/nonlin.h>
 #include <ginn/prod.h>
 #include <ginn/tensor.h>
 #include <ginn/util/cli2.h>
@@ -142,7 +142,6 @@ void barrier() {
 #endif
 }
 
-
 void affine() {
 #ifdef GINN_ENABLE_GPU
   auto dev = gpu();
@@ -160,8 +159,8 @@ void affine() {
 
   for (Size hdim : {1024, 2048}) {
     for (Size batches : {1024, 2048}) {
-  //for (Size hdim : {1, 10, 100, 250, 500, 1000, 4000}) {
-  //  for (Size batches : {1, 10, 100, 250, 500, 1000, 4000, 16000}) {
+      // for (Size hdim : {1, 10, 100, 250, 500, 1000, 4000}) {
+      //   for (Size batches : {1, 10, 100, 250, 500, 1000, 4000, 16000}) {
       for (size_t i = 0; i < num_repeat; i++) {
         auto x = Data<Real>(dev, Shape{hdim, batches});
         auto W = Data<Real>(dev, Shape{batches, hdim});
@@ -177,14 +176,14 @@ void affine() {
           g.forward();
           barrier();
         });
-        //timer::time(prefix + " rg", [&]() {
-        //  g.reset_grad();
-        //  barrier();
-        //});
-        //timer::time(prefix + " bwd", [&]() {
-        //  g.backward(1.);
-        //  barrier();
-        //});
+        // timer::time(prefix + " rg", [&]() {
+        //   g.reset_grad();
+        //   barrier();
+        // });
+        // timer::time(prefix + " bwd", [&]() {
+        //   g.backward(1.);
+        //   barrier();
+        // });
       }
     }
   }
@@ -193,16 +192,15 @@ void affine() {
   timer::reset();
 }
 
-
 int main(int argc, char** argv) {
   using namespace ginn;
 
   std::unordered_map<std::string, void (*)()> benchmarks{
- //     {"cpu-matmul", compare_cpu_matmuls},
- //     {"gelu", compare_gelus},
+      //     {"cpu-matmul", compare_cpu_matmuls},
+      //     {"gelu", compare_gelus},
       {"affine", affine},
- //     {"matmul", compare_matmuls},
- //     {"multi-gpu", multi_gpu},
+      //     {"matmul", compare_matmuls},
+      //     {"multi-gpu", multi_gpu},
   };
 
   std::vector<std::string> keys;
