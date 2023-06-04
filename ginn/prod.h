@@ -238,18 +238,19 @@ inline void gpu_prod(Tensor<Scalar, GPU>& c,
   GINN_ASSERT(b_outer == c.cols());
 
   gpu_gemm<Raw<Scalar>>(cublas_handle(c.dev()->id().idx),
-                   a.data(),
-                   b.data(),
-                   c.data(),
-                   /* lda */ a.rows(),
-                   /* ldb */ b.rows(),
-                   /* ldc */ c.rows(),
-                   /* m */ a_outer,
-                   /* k */ a_inner,
-                   /* n */ b_outer,
-                   res == ProdResult::Add ? Raw<Scalar>(1.) : Raw<Scalar>(0.),
-                   op1,
-                   op2);
+                        a.data(),
+                        b.data(),
+                        c.data(),
+                        /* lda */ a.rows(),
+                        /* ldb */ b.rows(),
+                        /* ldc */ c.rows(),
+                        /* m */ a_outer,
+                        /* k */ a_inner,
+                        /* n */ b_outer,
+                        res == ProdResult::Add ? Raw<Scalar>(1.)
+                                               : Raw<Scalar>(0.),
+                        op1,
+                        op2);
 }
 
 // C[:,:,i] = A[:,:,i] * B[:,:,i] ∀i
@@ -291,22 +292,23 @@ inline void gpu_batched_prod(Tensor<Scalar, GPU>& c,
   GINN_ASSERT(b_outer == c_cols);
 
   gpu_batched_gemm<Raw<Scalar>>(cublas_handle(c.dev()->id().idx),
-                           a.data(),
-                           b.data(),
-                           c.data(),
-                           /* lda */ a_rows,
-                           /* ldb */ b_rows,
-                           /* ldc */ c_rows,
-                           /* sA */ a_rows * a_cols,
-                           /* sB */ b_rows * b_cols,
-                           /* sC */ a_outer * b_outer,
-                           /* m */ a_outer,
-                           /* k */ a_inner,
-                           /* n */ b_outer,
-                           batches,
-                           res == ProdResult::Add ? Raw<Scalar>(1.) : Raw<Scalar>(0.),
-                           op1,
-                           op2);
+                                a.data(),
+                                b.data(),
+                                c.data(),
+                                /* lda */ a_rows,
+                                /* ldb */ b_rows,
+                                /* ldc */ c_rows,
+                                /* sA */ a_rows * a_cols,
+                                /* sB */ b_rows * b_cols,
+                                /* sC */ a_outer * b_outer,
+                                /* m */ a_outer,
+                                /* k */ a_inner,
+                                /* n */ b_outer,
+                                batches,
+                                res == ProdResult::Add ? Raw<Scalar>(1.)
+                                                       : Raw<Scalar>(0.),
+                                op1,
+                                op2);
 }
 
 // This has to be disabled until I upgrade my cudah

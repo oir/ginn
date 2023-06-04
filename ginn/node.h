@@ -235,6 +235,13 @@ class Graph {
     return *this;
   }
 
+  auto& backward_() {
+    for (auto e = list_.rbegin(); e != list_.rend(); e++) {
+      if ((*e)->has_grad()) { (*e)->backward(); }
+    }
+    return *this;
+  }
+
   auto& backward(double loss_coeff = 1) {
     // TODO: Come back here for Gpu nodes!!!
     if (auto sink = dynamic_ptr_cast<Node<Real, CPU>>(list_.back())) {
@@ -259,10 +266,7 @@ class Graph {
       GINN_THROW("Unexpected scalar type in sink node!");
     }
 
-    for (auto e = list_.rbegin(); e != list_.rend(); e++) {
-      if ((*e)->has_grad()) { (*e)->backward(); }
-    }
-    return *this;
+    return backward_();
   }
 
   auto& init_grad() {

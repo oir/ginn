@@ -207,9 +207,11 @@ auto Random(DevicePtr dev, const Shape& shape) {
 }
 template <typename DevicePtr>
 auto Random(DevicePtr dev, const Shape& shape) {
-  auto x = Data<Real>(dev, shape);
-  x->value().set_random();
-  return x;
+  return Random<Real, DevicePtr>(dev, shape);
+}
+template <typename Scalar = Real>
+auto Random(const Shape& shape) {
+  return Random<Scalar>(cpu(), shape);
 }
 
 // template <typename Scalar = Real>

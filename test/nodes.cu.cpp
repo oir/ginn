@@ -40,16 +40,21 @@
 
 using namespace ginn;
 
-auto Dev = cpu();
+#ifdef GINN_ENABLE_GPU
+template <typename... Args>
+auto to_gpu(Args&&... args) {
+  return std::make_tuple(args->copy_to(gpu())...);
+}
+#endif
 
 // clang-format off
 
 TEMPLATE_TEST_CASE("Dim", "[layout]", Real, Int, Half, void) {
   BaseNodePtr x;
   if constexpr(std::is_same_v<TestType, void>) {
-    x = Random(Dev, {3, 2, 1});
+    x = Random({3, 2, 1});
   } else {
-    x = Random<TestType>(Dev, {3, 2, 1});
+    x = Random<TestType>({3, 2, 1});
   }
   auto d0 = Dim(x, 0);
   auto d1 = Dim(x, 1);
@@ -101,25 +106,21 @@ TEMPLATE_TEST_CASE("Stack", "[forward] [layout]", Real, Int, Half) {
 
 #ifdef GINN_ENABLE_GPU
   if constexpr(ginn::is_floating_point_v<Scalar>) {
+    auto eps = std::is_same_v<Scalar, Half> ? 2e-2 : 1e-4;
     for (auto& x : {a, b, c, d, e, f}) {
       x->value() = x->value().t() * Raw<Scalar>(0.1);
     }
-    auto a_ = a->copy_to(gpu());
-    auto b_ = b->copy_to(gpu());
-    auto c_ = c->copy_to(gpu());
-    auto d_ = d->copy_to(gpu());
-    auto e_ = e->copy_to(gpu());
-    auto f_ = f->copy_to(gpu());
+    auto [a_, b_, c_, d_, e_, f_] = to_gpu(a, b, c, d, e, f);
     compare_devices(Stack({{a,  b }}),                     {a,  b, }, 
                     Stack({{a_, b_}}),                     {a_, b_,});
     compare_devices(Stack({{a,  b }, {c,  d }}),           {a,  b,  c,  d, }, 
                     Stack({{a_, b_}, {c_, d_}}),           {a_, b_, c_, d_,});
-    //compare_devices(Stack({{a,  b }, {c,  d }, {e,  f }}), {a,  b,  c,  d,  e,  f }, 
-    //                Stack({{a_, b_}, {c_, d_}, {e_, f_}}), {a_, b_, c_, d_, e_, f_});
+    compare_devices(Stack({{a,  b }, {c,  d }, {e,  f }}), {a,  b,  c,  d,  e,  f }, 
+                    Stack({{a_, b_}, {c_, d_}, {e_, f_}}), {a_, b_, c_, d_, e_, f_});
     compare_devices(Stack({{a,  b }, {a,  b }}),           {a,  b,}, 
                     Stack({{a_, b_}, {a_, b_}}),           {a_, b_});
     compare_devices(Stack({{a,  a }, {a,  a }, {a,  a }}), {a, }, 
-                    Stack({{a_, a_}, {a_, a_}, {a_, a_}}), {a_,});
+                    Stack({{a_, a_}, {a_, a_}, {a_, a_}}), {a_,}, eps);
   }
 #else
   if constexpr (std::is_same_v<Scalar, Real>) {
@@ -169,10 +170,7 @@ TEMPLATE_TEST_CASE("Cat", "[forward] [layout]", Real, Int, Half) {
   check(Cat(a, b, c), res);
 #ifdef GINN_ENABLE_GPU
   if constexpr(std::is_floating_point_v<Scalar>) {
-    auto a_ = a->copy_to(gpu());
-    auto b_ = b->copy_to(gpu());
-    auto c_ = c->copy_to(gpu());
-
+    auto [a_, b_, c_] = to_gpu(a, b, c);
     compare_devices(Cat(a,  b,  c ), {a,  b,  c },
                     Cat(a_, b_, c_), {a_, b_, c_}); 
   }
@@ -1166,7 +1164,9 @@ TEMPLATE_TEST_CASE("Add subtract", "[arithmetic]", Real, Half, Int) {
 TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
   using Scalar = TestType;
   Real eps = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6; // TODO: 😢
+#ifdef GINN_ENABLE_GPU
   Real eps2 = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-4;
+#endif
 
   auto W = Values<2>({{1, 2, 3},
                       {4, 5, 6}})->cast<Scalar>();

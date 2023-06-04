@@ -38,9 +38,7 @@ void bind_dev(py::module_& m) {
       .def("__repr__",
            [](const DeviceId& i) -> std::string {
              return std::string("<DeviceId with kind: ") +
-                    (i.kind == 0     ? "CPU"
-                     : (i.kind == 1) ? "GPU"
-                                     : "NULL_DEV") +
+                    (i.kind == 0 ? "CPU" : (i.kind == 1) ? "GPU" : "NULL_DEV") +
                     ", idx: " + std::to_string(i.idx) + ">";
            })
       .def(

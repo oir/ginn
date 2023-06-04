@@ -16,10 +16,12 @@
 #define GINN_TESTUTIL_H
 
 #include <catch2/catch.hpp>
+#include <cppitertools/zip.hpp>
 
 #include <ginn/node/common.h>
 #include <ginn/node/reduce.h>
 #include <ginn/node/weight.h>
+#include <ginn/util/stdcontainerio.h>
 #include <ginn/util/tensorio.h>
 #include <ginn/util/traits.h>
 
@@ -29,66 +31,69 @@ namespace ginn {
 //   CHECK(tensor1 == Close(tensor2));
 //   in Catch, when checking approximate equality of float tensors.
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
+bool equals(const Tensor<Scalar, Kind>& left,
+            const Tensor<Scalar, Kind>& right,
+            const Catch::Detail::Approx& approx) {
+  if (left.shape() != right.shape()) { return false; }
+  for (auto [a, b] : iter::zip(left, right)) {
+    if (b != approx(a)) { return false; }
+  }
+  return true;
+}
+
+bool equals(const std::vector<Real>& left,
+            const std::vector<Real>& right,
+            const Catch::Detail::Approx& approx) {
+  if (left.size() != right.size()) { return false; }
+  for (auto [a, b] : iter::zip(left, right)) {
+    if (b != approx(a)) { return false; }
+  }
+  return true;
+}
+
+// NOTE: the following is what I used to do for compare_devices
+// auto check_close(Real a, Real b, Real eps) {
+//  using namespace Catch::Matchers;
+//  CHECK_THAT(a,
+//             WithinRel(b, eps) or
+//                 (WithinAbs(0., 2e-3) and WithinAbs(b, 0.1 * eps)));
+//}
+
+template <typename T>
 class Close {
-  private : const Tensor<Scalar, Kind>& value;
-  mutable Catch::Detail::Approx approx = Catch::Detail::Approx::custom();
+ private:
+  const T& val_;
+  mutable Catch::Detail::Approx approx_ = Catch::Detail::Approx::custom();
 
-  bool equalityComparisonImpl(const Tensor<Scalar, Kind>& other)
-      const {if (value.shape() != other.shape()){return false;}
-for (Size i = 0; i < value.size(); ++i) {
-  if (other.v()[i] != approx(value.v()[i])) { return false; }
-}
-return true;
-} // namespace ginn
+ public:
+  explicit Close(const T& val) : val_(val) {}
 
-public:
-explicit Close(const Tensor<Scalar, Kind>& value) : value(value) {}
+  auto& margin(double m) {
+    approx_.margin(m);
+    return *this;
+  }
+  auto& epsilon(double eps) {
+    approx_.epsilon(eps);
+    return *this;
+  }
+  auto& scale(double s) {
+    approx_.scale(s);
+    return *this;
+  }
 
-Close operator-() const;
+  friend bool operator==(const T& l, const Close& r) {
+    return equals(l, r.val_, r.approx_);
+  }
+  friend bool operator==(const Close& l, const T& r) { return r == l; }
+  friend bool operator!=(const T& l, Close const& r) { return not(l == r); }
+  friend bool operator!=(const Close& l, const T& r) { return not(r == l); }
 
-auto& margin(double margin) {
-  approx.margin(margin);
-  return *this;
-}
-auto& epsilon(double eps) {
-  approx.epsilon(eps);
-  return *this;
-}
-auto& scale(double s) {
-  approx.scale(s);
-  return *this;
-}
-
-Close operator()(const Tensor<Scalar, Kind>& t) const {
-  Close<Scalar, Kind> appr(t);
-  appr.approx = this->approx;
-  return appr;
-}
-
-friend bool operator==(const Tensor<Scalar, Kind>& lhs, Close const& rhs) {
-  return rhs.equalityComparisonImpl(lhs);
-}
-
-friend bool operator==(Close const& lhs, const Tensor<Scalar, Kind>& rhs) {
-  return operator==(rhs, lhs);
-}
-
-friend bool operator!=(Tensor<Scalar, Kind> const& lhs, Close const& rhs) {
-  return !operator==(lhs, rhs);
-}
-
-friend bool operator!=(Close const& lhs, Tensor<Scalar, Kind> const& rhs) {
-  return !operator==(rhs, lhs);
-}
-
-friend std::ostream& operator<<(std::ostream& o,
-                                Close<Scalar, Kind> const& rhs) {
-  o << rhs.value;
-  return o;
-}
-}
-;
+  friend std::ostream& operator<<(std::ostream& o, const Close<T>& rhs) {
+    o << rhs.val_;
+    return o;
+  }
+};
 
 // Compute numeric grad for gradient checks, using finite differences
 template <typename Expr, typename Weight, typename Mask>

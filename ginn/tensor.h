@@ -290,12 +290,16 @@ class Tensor {
     shape_ = shape;
   }
 
+  // Convert to tensor with other Scalar type
   template <typename OtherScalar>
   Tensor<OtherScalar, Kind> cast() const {
     Tensor<OtherScalar, Kind> other(dev(), shape());
     other = t().template cast<Raw<OtherScalar>>();
     return other;
   }
+
+  // TODO: maybe add these shorthands for all Scalar types
+  Tensor<Real, Kind> real() const { return cast<Real>(); }
 
   // Views on Tensors
 
