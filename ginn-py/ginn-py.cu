@@ -22,6 +22,8 @@
 
 namespace py = pybind11;
 
+static_assert(std::is_same_v<ginn::Real, float>);
+
 PYBIND11_MODULE(ginn, m) {
   using namespace ginn;
   using namespace ginn::python;

@@ -49,7 +49,8 @@ if py.found()
     tgt = py.extension_module('ginn',
                               sources : sources,
                               include_directories : incdir,
-                              dependencies : deps + [pybind11])
+                              dependencies : deps + [pybind11],
+                              cpp_args : cpp_args)
   endif
 
   message('Python target name: ' + tgt.name())

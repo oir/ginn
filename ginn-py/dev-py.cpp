@@ -31,8 +31,7 @@ void bind_dev(py::module_& m) {
 
   py::enum_<DeviceKind>(m, "DeviceType")
       .value("CPU", CPU)
-      .value("GPU", GPU)
-      .value("NULL_DEV", NULL_DEV);
+      .value("GPU", GPU);
 
   py::class_<DeviceId>(m, "DeviceId")
       .def("__repr__",

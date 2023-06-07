@@ -19,6 +19,7 @@
 #include <ginn/nonlin.h>
 #include <ginn/prod.h>
 #include <ginn/util/fmt.h>
+#include <ginn/util/timer.h>
 
 namespace ginn {
 
@@ -33,6 +34,9 @@ class AffineNode : public BaseDataNode<Scalar, Kind> {
   std::unique_ptr<NonlinOp<Scalar, Kind>> nonlin_;
 
   void forward_() override {
+    if constexpr (Kind == CPU) {
+      timer::tic("affine fwd");
+    }
     auto& a = ins_[0]->value();
     auto& b = ins_[1]->value();
     auto& bias = ins_.back()->value();
@@ -74,6 +78,10 @@ class AffineNode : public BaseDataNode<Scalar, Kind> {
     if (not nonlin_->is_identity()) {
       nonlin_->forward(value(), affine);
     } // else, affine _is_ value() and value() already holds the result.
+
+    if constexpr (Kind == CPU) {
+      std::cout << timer::toc("affine fwd") << "\n";
+    }
   }
 
   void backward_() override {

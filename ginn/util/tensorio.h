@@ -26,7 +26,7 @@ template <typename RawScalar>
 std::string format_scalar(RawScalar x, unsigned short width = 0) {
   std::string s;
   std::string w = width == 0 ? "" : std::to_string(width);
-  if constexpr (std::is_floating_point_v<RawScalar>) {
+  if constexpr (std::is_floating_point_v<RawScalar> or std::is_same_v<RawScalar, Eigen::half>) {
     s = fmt::format("{: " + w + ".6}", Real(x));
   } else {
     s = fmt::format("{: " + w + "}", x);

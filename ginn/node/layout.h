@@ -210,60 +210,60 @@ class CatNode : public BaseDataNode<Scalar, Kind> {
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(Cat);
-//
-//// This is helpful when batching. In most cases we can assume that the
-//// 'column' dimension of a rank 2 view is the batch dimension.
-// template <typename Scalar>
-// class RowwiseCatNode : public BaseDataNode<Scalar> {
-//  private:
-//   std::vector<NodePtr<Scalar>> ins_;
-//   std::vector<Size> offsets_, extents_;
-//
-//   void forward_() override {
-//     Size cols = 0;
-//     for (auto in : ins_) { cols += in->value().cols(); }
-//     value().resize({(Size)ins_[0]->value().rows(), cols});
-//
-//     cols = 0;
-//     for (auto in : ins_) {
-//       auto dim = in->value().shape2();
-//       value().slice(Index<2>{0, cols}, Index<2>{dim[0], dim[1]}) =
-//           in->value().t();
-//       offsets_.push_back(cols);
-//       extents_.push_back(dim[1]);
-//       cols += dim[1];
-//     }
-//   }
-//
-//   void backward_() override {
-//     Size cols = 0;
-//     for (auto in : ins_) {
-//       auto dim = in->grad().shape2();
-//       if (in->has_grad()) {
-//         in->grad() +=
-//             grad().t().slice(Index<2>{0, cols}, Index<2>{dim[0], dim[1]});
-//       }
-//       cols += dim[1];
-//     }
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   const std::vector<Size>& offsets() const { return offsets_; }
-//   const std::vector<Size>& extents() const { return extents_; }
-//
-//   RowwiseCatNode(const std::vector<NodePtr<Scalar>>& ins)
-//       : BaseDataNode<Scalar>(ins), ins_(ins) {}
-//   template <typename... Args>
-//   RowwiseCatNode(const NodePtr<Scalar>& in, Args&&... args)
-//       : RowwiseCatNode(std::vector<NodePtr<Scalar>>{in, args...}) {}
-//
-//   std::string name() const override { return "RowwiseCat"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowwiseCat);
+
+// This is helpful when batching. In most cases we can assume that the
+// 'column' dimension of a rank 2 view is the batch dimension.
+template <typename Scalar, DeviceKind Kind>
+class RowwiseCatNode : public BaseDataNode<Scalar, Kind> {
+ private:
+  std::vector<NodePtr<Scalar, Kind>> ins_;
+  std::vector<Size> offsets_, extents_;
+
+  void forward_() override {
+    Size cols = 0;
+    for (auto in : ins_) { cols += in->value().cols(); }
+    value().resize({(Size)ins_[0]->value().rows(), cols});
+
+    cols = 0;
+    for (auto in : ins_) {
+      auto dim = in->value().shape2();
+      value().slice(Index<2>{0, cols}, Index<2>{dim[0], dim[1]}) =
+          in->value().t();
+      offsets_.push_back(cols);
+      extents_.push_back(dim[1]);
+      cols += dim[1];
+    }
+  }
+
+  void backward_() override {
+    Size cols = 0;
+    for (auto in : ins_) {
+      auto dim = in->grad().shape2();
+      if (in->has_grad()) {
+        in->grad() +=
+            grad().t().slice(Index<2>{0, cols}, Index<2>{dim[0], dim[1]});
+      }
+      cols += dim[1];
+    }
+  }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  const std::vector<Size>& offsets() const { return offsets_; }
+  const std::vector<Size>& extents() const { return extents_; }
+
+  RowwiseCatNode(const std::vector<NodePtr<Scalar, Kind>>& ins)
+      : BaseDataNode<Scalar, Kind>(ins), ins_(ins) {}
+  template <typename... Args>
+  RowwiseCatNode(const NodePtr<Scalar, Kind>& in, Args&&... args)
+      : RowwiseCatNode(std::vector<NodePtr<Scalar, Kind>>{in, args...}) {}
+
+  std::string name() const override { return "RowwiseCat"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowwiseCat);
 //
 //// RowwiseUncatNode is meant to be used during autobatching. Autobatching
 //// mechanism needs to know where each instance came from during RowwiseCat, to

@@ -33,17 +33,6 @@
 namespace ginn {
 namespace timer {
 
-void barrier() {
-#ifdef GINN_ENABLE_GPU
-  // This is needed for proper timing since cuda calls are async and cpu code
-  // continues execution immediately.
-  for (int i = 0; i < gpus(); i++) {
-    GINN_CUDA_CALL(cudaSetDevice(i));
-    GINN_CUDA_CALL(cudaDeviceSynchronize());
-  }
-#endif
-}
-
 using Duration = std::chrono::microseconds;
 using Rep = decltype(Duration().count());
 using Clock = std::chrono::system_clock;
@@ -54,14 +43,14 @@ namespace internal {
 template <typename Key, typename Value>
 using Map = std::unordered_map<Key, Value>;
 
-Map<std::string, TimePoint> tic_starts;
-Map<std::string, Duration> totals;
-Map<std::string, unsigned long long> count;
+static Map<std::string, TimePoint> tic_starts;
+static Map<std::string, Duration> totals;
+static Map<std::string, unsigned long long> count;
 
-TimePoint total_start;
-Duration total;
+static TimePoint total_start;
+static Duration total;
 
-std::string simplify(Rep micros) {
+inline std::string simplify(Rep micros) {
   auto us = micros;
   auto ms = us / 1000;
   us = us % 1000;
@@ -103,7 +92,7 @@ std::string simplify(Rep micros) {
   return ss.str();
 }
 
-std::string make_bar(float percent, int width = 20) {
+inline std::string make_bar(float percent, int width = 20) {
   const std::array<std::string, 8> parts{
       "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"};
 
@@ -127,14 +116,14 @@ std::string make_bar(float percent, int width = 20) {
 
 } // namespace internal
 
-void tic(const std::string& name = "") {
+inline void tic(const std::string& name = "") {
   using namespace internal;
   auto now = Clock::now();
   if (tic_starts.empty()) { total_start = now; }
   tic_starts[name] = now;
 }
 
-auto toc(const std::string& name = "") {
+inline auto toc(const std::string& name = "") {
   using namespace internal;
   auto now = Clock::now();
   auto duration = now - tic_starts[name];
@@ -148,7 +137,7 @@ auto toc(const std::string& name = "") {
   return std::chrono::duration_cast<Duration>(duration).count();
 }
 
-auto get(const std::string& name = "") {
+inline auto get(const std::string& name = "") {
   return internal::totals.at(name).count();
 }
 
@@ -157,10 +146,10 @@ enum Readability { HumanReadable };
 
 enum class TimerSort { Duration, Name };
 
-std::string toc(std::string name, Readability) {
+inline std::string toc(std::string name, Readability) {
   return internal::simplify(toc(name));
 }
-std::string toc(Readability) { return internal::simplify(toc()); }
+inline std::string toc(Readability) { return internal::simplify(toc()); }
 
 template <typename Duration = std::chrono::microseconds>
 void print(TimerSort sort_by = TimerSort::Duration,
@@ -216,7 +205,7 @@ void print(std::ostream& out, bool simple = true) {
   print(TimerSort::Duration, out, simple);
 }
 
-void reset() {
+inline void reset() {
   using namespace internal;
   tic_starts.clear();
   totals.clear();
@@ -224,7 +213,7 @@ void reset() {
   count.clear();
 }
 
-const std::string date_time(const std::string format = "%Y-%m-%d_%H.%M.%S") {
+inline const std::string date_time(const std::string format = "%Y-%m-%d_%H.%M.%S") {
   std::time_t tt = Clock::to_time_t(Clock::now());
   char buff[50];
   strftime(buff, 50, format.c_str(), localtime(&tt));
@@ -242,10 +231,8 @@ void time(const std::string& name, Func f) {
 } // end namespace ginn
 
 #define GINN_TIME(e)                                                           \
-  ginn::timer::barrier();                                                      \
   ginn::timer::tic(#e);                                                        \
   e;                                                                           \
-  ginn::timer::barrier();                                                      \
   ginn::timer::toc(#e)
 
 #endif
