@@ -7,6 +7,7 @@ sources = [
   'include.cpp',
   'model.cpp',
   'nodes.cu.cpp',
+  'nodes_layout.cu.cpp',
   'sample.cpp',
   'tensor.cu.cpp',
   'util.cpp',
@@ -17,6 +18,7 @@ cuda_sources = [
   'dev.cu.cpp',
   'dropoutnodes.cu.cpp',
   'nodes.cu.cpp',
+  'nodes_layout.cu.cpp',
   'tensor.cu.cpp',
 ]
 

@@ -318,6 +318,11 @@ std::vector<T> iota(size_t size) {
   return v;
 }
 
+template <typename Iterable>
+auto vector(Iterable&& x) {
+  return std::vector(x.begin(), x.end());
+}
+
 } // end namespace ginn
 
 #endif

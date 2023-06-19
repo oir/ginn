@@ -138,7 +138,7 @@ class Tensor {
   // Manage memory
   void allocate(Size size) {
     GINN_ASSERT(data_ == nullptr);
-    GINN_ASSERT(owns_mem_);
+    GINN_ASSERT(owns_mem_, "Attempted to allocate when not owning memory!");
     if (size > 0) { data_ = (RawScalar*)dev_->alloc(size * sizeof(RawScalar)); }
   }
 
@@ -148,7 +148,7 @@ class Tensor {
   }
 
   void reallocate(Size size) {
-    GINN_ASSERT(owns_mem_);
+    GINN_ASSERT(owns_mem_, "Attempted to reallocate when not owning memory!");
     if (size > 0) {
       data_ = (RawScalar*)dev_->realloc((void*)data_, size * sizeof(RawScalar));
     } else {
@@ -157,7 +157,7 @@ class Tensor {
   }
 
   void free() {
-    GINN_ASSERT(owns_mem_);
+    GINN_ASSERT(owns_mem_, "Attempted to free when not owning memory!");
     if (size() > 0) { dev_->free(data_); }
     data_ = nullptr;
   }
@@ -247,15 +247,14 @@ class Tensor {
   }
 
   auto& operator=(Tensor<Scalar, Kind>&& other) {
-    if (dev_ == other.dev_) {
+    if (dev_ == other.dev_ and owns_mem_) { // only then moving is possible
       free();
       shape_ = other.shape_;
       data_ = other.data_;
       dev_ = other.dev_;
       other.data_ = nullptr;
       other.shape_ = {0};
-    } else {
-      // operator= is defined to keep the device, therefore move is not possible
+    } else { // otherwise defer back to copying
       *this = other;
     }
     return *this;

@@ -35,11 +35,16 @@ template <typename Scalar, DeviceKind Kind>
 bool equals(const Tensor<Scalar, Kind>& left,
             const Tensor<Scalar, Kind>& right,
             const Catch::Detail::Approx& approx) {
-  if (left.shape() != right.shape()) { return false; }
-  for (auto [a, b] : iter::zip(left, right)) {
-    if (b != approx(a)) { return false; }
+  if (left.shape() != right.shape()) {
+    return false;
+  } else if constexpr (Kind != CPU) {
+    return equals(left.copy_to(cpu()), right.copy_to(cpu()), approx);
+  } else {
+    for (auto [a, b] : iter::zip(left, right)) {
+      if (b != approx(a)) { return false; }
+    }
+    return true;
   }
-  return true;
 }
 
 bool equals(const std::vector<Real>& left,
@@ -197,6 +202,13 @@ inline void check_grad(NodePtr<Real> e,
              eps,
              delta);
 }
+
+#ifdef GINN_ENABLE_GPU
+template <typename... Args>
+auto to_gpu(Args&&... args) {
+  return std::make_tuple(args->copy_to(gpu())...);
+}
+#endif
 
 } // namespace ginn
 

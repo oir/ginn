@@ -16,6 +16,7 @@
 #define GINN_NODE_LAYOUT_H
 
 #include <cppitertools/chain.hpp>
+#include <cppitertools/imap.hpp>
 
 #include <ginn/node.h>
 #include <ginn/node/data.h>
@@ -264,51 +265,54 @@ class RowwiseCatNode : public BaseDataNode<Scalar, Kind> {
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowwiseCat);
-//
-//// RowwiseUncatNode is meant to be used during autobatching. Autobatching
-//// mechanism needs to know where each instance came from during RowwiseCat, to
-//// be able to redistribute them after batched operations.
-// template <typename Scalar>
-// class RowwiseUncatNode : public BaseDataNode<Scalar> {
-//  private:
-//   NodePtr<Scalar> in_;
-//   Size index_;
-//   Ptr<RowwiseCatNode<Scalar>> cat_;
-//
-//   void forward_() override {
-//     Size offset = cat_->offsets().at(index_);
-//     Size extent = cat_->extents().at(index_);
-//     Size rows = in_->value().rows();
-//
-//     value().map(in_->value(), {rows, extent}, rows * offset);
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   bool has_grad() const override { return in_->has_grad(); }
-//
-//   void init_grad() override {
-//     if (has_grad()) {
-//       Size offset = cat_->offsets().at(index_);
-//       Size extent = cat_->extents().at(index_);
-//       Size rows = in_->value().rows();
-//
-//       grad().map(in_->grad(), {rows, extent}, rows * offset);
-//     }
-//   }
-//
-//   RowwiseUncatNode(NodePtr<Scalar> x,
-//                    Size index,
-//                    Ptr<RowwiseCatNode<Scalar>> cat)
-//       : BaseDataNode<Scalar>({x, cat}), in_(x), index_(index), cat_(cat) {}
-//
-//   std::string name() const override { return "RowwiseUncat"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowwiseUncat);
-//
+
+// RowwiseUncatNode is meant to be used during autobatching. Autobatching
+// mechanism needs to know where each instance came from during RowwiseCat, to
+// be able to redistribute them after batched operations.
+template <typename Scalar, DeviceKind Kind>
+class RowwiseUncatNode : public BaseDataNode<Scalar, Kind> {
+ private:
+  NodePtr<Scalar, Kind> in_;
+  Size index_;
+  Ptr<RowwiseCatNode<Scalar, Kind>> cat_;
+
+  void forward_() override {
+    Size offset = cat_->offsets().at(index_);
+    Size extent = cat_->extents().at(index_);
+    Size rows = in_->value().rows();
+
+    value().map(in_->value(), {rows, extent}, rows * offset);
+  }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  bool has_grad() const override { return in_->has_grad(); }
+
+  void init_grad() override {
+    if (has_grad()) {
+      Size offset = cat_->offsets().at(index_);
+      Size extent = cat_->extents().at(index_);
+      Size rows = in_->value().rows();
+
+      grad().map(in_->grad(), {rows, extent}, rows * offset);
+    }
+  }
+
+  RowwiseUncatNode(NodePtr<Scalar, Kind> x,
+                   Size index,
+                   Ptr<RowwiseCatNode<Scalar, Kind>> cat)
+      : BaseDataNode<Scalar, Kind>({x, cat}),
+        in_(x),
+        index_(index),
+        cat_(cat) {}
+
+  std::string name() const override { return "RowwiseUncat"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowwiseUncat);
+
 template <typename NestedContainer>
 auto flatten(NestedContainer&& mat) {
   return iter::chain.from_iterable(std::forward<NestedContainer>(mat));
@@ -471,232 +475,227 @@ auto Stack(std::initializer_list<std::initializer_list<T>> ins) {
   return Stack(v);
 }
 
-//
-// template <typename Scalar>
-// class ReshapeNode : public BaseDataNode<Scalar> {
-// public:
-//  using LazyShape = std::vector<DimPtr>;
-//
-// private:
-//  NodePtr<Scalar> in_;
-//  LazyShape s_;
-//
-//  static Shape make_shape(const LazyShape& ls) {
-//    Shape s;
-//    for (auto& d : ls) { s.push_back(d->value()); }
-//    return s;
-//  }
-//
-//  static LazyShape make_lazy_shape(const Shape& s) {
-//    std::vector<DimPtr> ls;
-//    for (auto d : s) { ls.push_back(Dim(d)); }
-//    return ls;
-//  }
-//
-//  void forward_() override { value().map(in_->value(), make_shape(s_)); }
-//
-// public:
-//  using BaseDataNode<Scalar>::value;
-//  using BaseDataNode<Scalar>::grad;
-//
-//  ReshapeNode(NodePtr<Scalar> in, Shape s)
-//      : ReshapeNode(std::move(in), make_lazy_shape(std::move(s))) {}
-//
-//  ReshapeNode(const NodePtr<Scalar>& in, const LazyShape& s)
-//      : BaseDataNode<Scalar>(std::vector<BaseNodePtr>{in} + base_cast(s)),
-//        in_(in),
-//        s_(s) {}
-//
-//  bool has_grad() const override { return in_->has_grad(); }
-//
-//  // TODO: I think the following method fails for composing consecutive
-//  //   Reshape nodes. Either fix or disallow.
-//  void init_grad() override {
-//    if (has_grad()) {
-//      in_->init_grad();
-//      grad().map(in_->grad(), make_shape(s_));
-//    }
-//  }
-//
-//  std::string name() const override { return "Reshape"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(Reshape);
-//
-// template <typename Node>
-// auto Reshape(Ptr<Node> in, std::initializer_list<DimPtr> s) {
-//  return Reshape(in, std::vector<DimPtr>(s));
-//}
-//
-// template <typename Scalar>
-// class RankViewNode : public BaseDataNode<Scalar> {
-//  // TODO: Handle rank-0 case
-// private:
-//  NodePtr<Scalar> in_;
-//  Size rank_;
-//
-//  void forward_() override {
-//    value().map(in_->value(), Tensor<Scalar>::reduce(in_->shape(), rank_));
-//  }
-//
-//  void backward_() override {}
-//
-// public:
-//  RankViewNode(NodePtr<Scalar> in, Size rank)
-//      : BaseDataNode<Scalar>(in->dev(), {in}), in_(in), rank_(rank) {}
-//
-//  using BaseDataNode<Scalar>::value;
-//  using BaseDataNode<Scalar>::grad;
-//  using BaseDataNode<Scalar>::has_grad;
-//
-//  bool has_grad() const override { return in_->has_grad(); }
-//
-//  void init_grad() override {
-//    if (has_grad()) {
-//      in_->init_grad();
-//      grad().map(in_->grad(), Tensor<Scalar>::reduce(in_->shape(), rank_));
-//    }
-//  }
-//
-//  std::string name() const override { return "RankView"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(RankView);
-//
-// template <typename Scalar>
-// class SliceNode : public BaseDataNode<Scalar> {
-// private:
-//  NodePtr<Scalar> in_;
-//  Shape offsets_, sizes_;
-//
-//  template <int N>
-//  void forward_helper() {
-//    value() = in_->value().template view<N>().slice(ShapeToIndex<N>(offsets_),
-//                                                    ShapeToIndex<N>(sizes_));
-//  }
-//
-//  template <int N>
-//  void backward_helper() {
-//    in_->grad().slice(ShapeToIndex<N>(offsets_), ShapeToIndex<N>(sizes_)) +=
-//        grad().template view<N>();
-//  }
-//
-//  void forward_() override {
-//    value().resize(sizes_);
-//    switch (sizes_.size()) {
-//    case 1: forward_helper<1>(); break;
-//    case 2: forward_helper<2>(); break;
-//    case 3: forward_helper<3>(); break;
-//    case 4: forward_helper<4>(); break;
-//    case 5: forward_helper<5>(); break;
-//    case 6: forward_helper<6>(); break;
-//    case 7: forward_helper<7>(); break;
-//    case 8: forward_helper<8>(); break;
-//    default: GINN_THROW("Unexpected number of indices in Slice!");
-//    }
-//  }
-//
-//  void backward_() override {
-//    if (in_->has_grad()) {
-//      switch (sizes_.size()) {
-//      case 1: backward_helper<1>(); break;
-//      case 2: backward_helper<2>(); break;
-//      case 3: backward_helper<3>(); break;
-//      case 4: backward_helper<4>(); break;
-//      case 5: backward_helper<5>(); break;
-//      case 6: backward_helper<6>(); break;
-//      case 7: backward_helper<7>(); break;
-//      case 8: backward_helper<8>(); break;
-//      default: GINN_THROW("Unexpected number of indices in Slice!");
-//      }
-//    }
-//  }
-//
-// public:
-//  using BaseDataNode<Scalar>::value;
-//  using BaseDataNode<Scalar>::grad;
-//  using BaseDataNode<Scalar>::has_grad;
-//
-//  SliceNode(const NodePtr<Scalar>& x, Shape offsets, Shape sizes)
-//      : BaseDataNode<Scalar>({x}),
-//        in_(x),
-//        offsets_(std::move(offsets)),
-//        sizes_(std::move(sizes)) {
-//    GINN_ASSERT(offsets_.size() == sizes_.size());
-//  }
-//
-//  std::string name() const override { return "Slice"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(Slice);
-//
-// template <typename Scalar>
-// class ChipNode : public BaseDataNode<Scalar> {
-//  // TODO: If chipping from rightmost dimension, we can simply map into the
-//  // original input tensor instead of making a copy.
-// private:
-//  NodePtr<Scalar> in_;
-//  Size offset_, dim_;
-//
-//  template <int N>
-//  void forward_helper() {
-//    value() = in_->value().template view<N>().chip(offset_, dim_);
-//  }
-//
-//  template <int N>
-//  void backward_helper() {
-//    in_->grad().template chip<N>(offset_, dim_) +=
-//        grad().template view<N - 1>();
-//  }
-//
-//  void forward_() override {
-//    GINN_ASSERT(dim_ >= 0 and size_t(dim_) < in_->shape().size());
-//    GINN_ASSERT(offset_ >= 0 and offset_ < in_->shape()[dim_]);
-//
-//    Shape s = in_->shape();
-//    s.erase(s.begin() + dim_);
-//    value().resize(s);
-//
-//    switch (in_->shape().size()) {
-//    // case 1: forward_helper<1>(); break;
-//    case 2: forward_helper<2>(); break;
-//    case 3: forward_helper<3>(); break;
-//    case 4: forward_helper<4>(); break;
-//    case 5: forward_helper<5>(); break;
-//    case 6: forward_helper<6>(); break;
-//    case 7: forward_helper<7>(); break;
-//    case 8: forward_helper<8>(); break;
-//    default: GINN_THROW("Unexpected input rank in Chip!");
-//    }
-//  }
-//
-//  void backward_() override {
-//    if (in_->has_grad()) {
-//      switch (in_->shape().size()) {
-//      // case 1: backward_helper<1>(); break;
-//      case 2: backward_helper<2>(); break;
-//      case 3: backward_helper<3>(); break;
-//      case 4: backward_helper<4>(); break;
-//      case 5: backward_helper<5>(); break;
-//      case 6: backward_helper<6>(); break;
-//      case 7: backward_helper<7>(); break;
-//      case 8: backward_helper<8>(); break;
-//      default: GINN_THROW("Unexpected number of indices in Slice!");
-//      }
-//    }
-//  }
-//
-// public:
-//  using BaseDataNode<Scalar>::value;
-//  using BaseDataNode<Scalar>::grad;
-//
-//  ChipNode(const NodePtr<Scalar>& x, Size offset, Size dim)
-//      : BaseDataNode<Scalar>({x}), in_(x), offset_(offset), dim_(dim) {}
-//
-//  std::string name() const override { return "Chip"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(Chip);
+template <typename Scalar, DeviceKind Kind>
+class ReshapeNode : public BaseDataNode<Scalar, Kind> {
+ public:
+  using LazyShape = std::vector<DimPtr>;
+
+ private:
+  NodePtr<Scalar, Kind> in_;
+  LazyShape s_;
+
+  static Shape to_shape(const LazyShape& ls) {
+    return vector(iter::imap([](auto&& x) { return x->value(); }, ls));
+  }
+
+  static LazyShape to_lazy_shape(const Shape& s) {
+    return vector(iter::imap([](auto d) { return Dim(d); }, s));
+  }
+
+  void forward_() override { value().map(in_->value(), to_shape(s_)); }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  ReshapeNode(NodePtr<Scalar, Kind> in, Shape s)
+      : ReshapeNode(std::move(in), to_lazy_shape(std::move(s))) {}
+
+  ReshapeNode(const NodePtr<Scalar, Kind>& in, const LazyShape& s)
+      : BaseDataNode<Scalar, Kind>(in), in_(in), s_(s) {
+    for (auto& x : s_) { BaseNode::ins_.push_back(x); }
+  }
+
+  bool has_grad() const override { return in_->has_grad(); }
+
+  // TODO: I think the following method fails for composing consecutive
+  //   Reshape nodes. Either fix or disallow.
+  void init_grad() override {
+    if (has_grad()) {
+      in_->init_grad();
+      grad().map(in_->grad(), to_shape(s_));
+    }
+  }
+
+  std::string name() const override { return "Reshape"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(Reshape);
+
+template <typename Node>
+auto Reshape(Ptr<Node> in, std::initializer_list<DimPtr> s) {
+  return Reshape(in, std::vector<DimPtr>(s));
+}
+
+template <typename Scalar, DeviceKind Kind>
+class RankViewNode : public BaseDataNode<Scalar, Kind> {
+  // TODO: Handle rank-0 case
+ private:
+  NodePtr<Scalar, Kind> in_;
+  Size rank_;
+
+  void forward_() override {
+    value().map(in_->value(), Tensor<>::reduce(in_->shape(), rank_));
+  }
+
+  void backward_() override {}
+
+ public:
+  RankViewNode(NodePtr<Scalar, Kind> in, Size rank)
+      : BaseDataNode<Scalar, Kind>(in), in_(in), rank_(rank) {}
+
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+  using BaseDataNode<Scalar, Kind>::has_grad;
+
+  bool has_grad() const override { return in_->has_grad(); }
+
+  void init_grad() override {
+    if (has_grad()) {
+      in_->init_grad();
+      grad().map(in_->grad(), Tensor<>::reduce(in_->shape(), rank_));
+    }
+  }
+
+  std::string name() const override { return "RankView"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(RankView);
+
+template <typename Scalar, DeviceKind Kind>
+class SliceNode : public BaseDataNode<Scalar, Kind> {
+ private:
+  NodePtr<Scalar, Kind> in_;
+  Shape offsets_, sizes_;
+
+  template <int N>
+  void forward_helper() {
+    value() = in_->value().template view<N>().slice(ShapeToIndex<N>(offsets_),
+                                                    ShapeToIndex<N>(sizes_));
+  }
+
+  template <int N>
+  void backward_helper() {
+    in_->grad().slice(ShapeToIndex<N>(offsets_), ShapeToIndex<N>(sizes_)) +=
+        grad().template view<N>();
+  }
+
+  void forward_() override {
+    value().resize(sizes_);
+    switch (sizes_.size()) {
+    case 1: forward_helper<1>(); break;
+    case 2: forward_helper<2>(); break;
+    case 3: forward_helper<3>(); break;
+    case 4: forward_helper<4>(); break;
+    case 5: forward_helper<5>(); break;
+    case 6: forward_helper<6>(); break;
+    case 7: forward_helper<7>(); break;
+    case 8: forward_helper<8>(); break;
+    default: GINN_THROW("Unexpected number of indices in Slice!");
+    }
+  }
+
+  void backward_() override {
+    if (in_->has_grad()) {
+      switch (sizes_.size()) {
+      case 1: backward_helper<1>(); break;
+      case 2: backward_helper<2>(); break;
+      case 3: backward_helper<3>(); break;
+      case 4: backward_helper<4>(); break;
+      case 5: backward_helper<5>(); break;
+      case 6: backward_helper<6>(); break;
+      case 7: backward_helper<7>(); break;
+      case 8: backward_helper<8>(); break;
+      default: GINN_THROW("Unexpected number of indices in Slice!");
+      }
+    }
+  }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+  using BaseDataNode<Scalar, Kind>::has_grad;
+
+  SliceNode(const NodePtr<Scalar, Kind>& x, Shape offsets, Shape sizes)
+      : BaseDataNode<Scalar, Kind>(x),
+        in_(x),
+        offsets_(std::move(offsets)),
+        sizes_(std::move(sizes)) {
+    GINN_ASSERT(offsets_.size() == sizes_.size());
+  }
+
+  std::string name() const override { return "Slice"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(Slice);
+
+template <typename Scalar, DeviceKind Kind>
+class ChipNode : public BaseDataNode<Scalar, Kind> {
+  // TODO: If chipping from rightmost dimension, we can simply map into the
+  // original input tensor instead of making a copy.
+ private:
+  NodePtr<Scalar, Kind> in_;
+  Size offset_, dim_;
+
+  template <int N>
+  void forward_helper() {
+    value() = in_->value().template view<N>().chip(offset_, dim_);
+  }
+
+  template <int N>
+  void backward_helper() {
+    in_->grad().template chip<N>(offset_, dim_) +=
+        grad().template view<N - 1>();
+  }
+
+  void forward_() override {
+    GINN_ASSERT(dim_ >= 0 and size_t(dim_) < in_->shape().size());
+    GINN_ASSERT(offset_ >= 0 and offset_ < in_->shape()[dim_]);
+
+    Shape s = in_->shape();
+    s.erase(s.begin() + dim_);
+    value().resize(s);
+
+    switch (in_->shape().size()) {
+    // case 1: forward_helper<1>(); break;
+    case 2: forward_helper<2>(); break;
+    case 3: forward_helper<3>(); break;
+    case 4: forward_helper<4>(); break;
+    case 5: forward_helper<5>(); break;
+    case 6: forward_helper<6>(); break;
+    case 7: forward_helper<7>(); break;
+    case 8: forward_helper<8>(); break;
+    default: GINN_THROW("Unexpected input rank in Chip!");
+    }
+  }
+
+  void backward_() override {
+    if (in_->has_grad()) {
+      switch (in_->shape().size()) {
+      // case 1: backward_helper<1>(); break;
+      case 2: backward_helper<2>(); break;
+      case 3: backward_helper<3>(); break;
+      case 4: backward_helper<4>(); break;
+      case 5: backward_helper<5>(); break;
+      case 6: backward_helper<6>(); break;
+      case 7: backward_helper<7>(); break;
+      case 8: backward_helper<8>(); break;
+      default: GINN_THROW("Unexpected grad rank in Chip!");
+      }
+    }
+  }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  ChipNode(const NodePtr<Scalar, Kind>& x, Size offset, Size dim)
+      : BaseDataNode<Scalar, Kind>(x), in_(x), offset_(offset), dim_(dim) {}
+
+  std::string name() const override { return "Chip"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(Chip);
 //
 // template <typename Scalar>
 // class MapNode : public BaseDataNode<Scalar> {
@@ -723,244 +722,242 @@ auto Stack(std::initializer_list<std::initializer_list<T>> ins) {
 //
 // GINN_MAKE_SCALAR_FORWARDING_FACTORY(Map);
 //
-// template <typename Scalar>
-// class PermuteNode : public BaseDataNode<Scalar> {
-// protected:
-//  NodePtr<Scalar> in_;
-//  Shape indices_;
-//  bool overwrite_ = false; // to be used with InPlacePermuteNode derived class
-//
-//  // inverse permutation of a shape
-//  static Shape inverse(const Shape& perm) {
-//    Shape inv(perm.size());
-//    for (size_t i = 0; i < perm.size(); i++) { inv[perm[i]] = i; }
-//    return inv;
-//  }
-//
-//  // check if a shape is a permutation of 0, 1, ..., N-1
-//  bool check_permutation() {
-//    Shape incr(indices_.size());
-//    std::iota(incr.begin(), incr.end(), 0);
-//    return std::is_permutation(indices_.begin(), indices_.end(),
-//    incr.begin());
-//  }
-//
-//  static Shape permute(const Shape& s, const Shape& perm) {
-//    Shape new_s(s.size());
-//    std::transform(
-//        perm.begin(), perm.end(), new_s.begin(), [&](Size i) { return s[i];
-//        });
-//    return new_s;
-//  }
-//
-//  template <Size N>
-//  void forward_helper() {
-//    if (overwrite_) {
-//      value() = in_->value()
-//                    .template view<N>()
-//                    .shuffle(ShapeToIndex<N>(indices_))
-//                    .eval();
-//    } else {
-//      value() =
-//          in_->value().template view<N>().shuffle(ShapeToIndex<N>(indices_));
-//    }
-//  }
-//  template <Size N>
-//  void backward_helper() {
-//    if (overwrite_) { // This case is meant for InPlacePermuteNode
-//      in_->grad() = grad()
-//                        .template view<N>()
-//                        .shuffle(ShapeToIndex<N>(inverse(indices_)))
-//                        .eval();
-//    } else {
-//      in_->grad() +=
-//          grad().template
-//          view<N>().shuffle(ShapeToIndex<N>(inverse(indices_)));
-//    }
-//  }
-//
-//  void forward_() override {
-//    GINN_ASSERT(indices_.size() == in_->shape().size());
-//    GINN_ASSERT(check_permutation(),
-//                "Indices are not a proper permutation in Permute!");
-//
-//    Shape s = permute(in_->shape(), indices_);
-//    value().resize(s);
-//
-//    switch (indices_.size()) {
-//    case 2: forward_helper<2>(); break;
-//    case 3: forward_helper<3>(); break;
-//    case 4: forward_helper<4>(); break;
-//    case 5: forward_helper<5>(); break;
-//    case 6: forward_helper<6>(); break;
-//    case 7: forward_helper<7>(); break;
-//    case 8: forward_helper<8>(); break;
-//    default: GINN_THROW("Unexpected number of indices in Permute!");
-//    }
-//  }
-//
-//  void backward_() override {
-//    if (in_->has_grad()) {
-//      switch (indices_.size()) {
-//      case 2: backward_helper<2>(); break;
-//      case 3: backward_helper<3>(); break;
-//      case 4: backward_helper<4>(); break;
-//      case 5: backward_helper<5>(); break;
-//      case 6: backward_helper<6>(); break;
-//      case 7: backward_helper<7>(); break;
-//      case 8: backward_helper<8>(); break;
-//      default: GINN_THROW("Unexpected number of indices in Permute!");
-//      }
-//    }
-//  }
-//
-// public:
-//  using BaseDataNode<Scalar>::value;
-//  using BaseDataNode<Scalar>::grad;
-//
-//  PermuteNode(const NodePtr<Scalar>& in, Shape indices)
-//      : BaseDataNode<Scalar>({in}), in_(in), indices_(std::move(indices)) {}
-//
-//  std::string name() const override { return "Permute"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(Permute);
-//
-// template <typename NodePtrType>
-// auto Transpose(NodePtrType x, Size i, Size j) {
-//  Shape indices(x->shape().size());
-//  std::iota(indices.begin(), indices.end(), 0);
-//  std::swap(indices.at(i), indices.at(j));
-//  return Permute(std::move(x), std::move(indices));
-//}
-//
-// template <typename Scalar>
-// class RowBroadcastNode : public BaseDataNode<Scalar> {
-// private:
-//  NodePtr<Scalar> in_;
-//  DimPtr rows_;
-//
-//  virtual void forward_() override {
-//    auto& x = in_->value();
-//    GINN_ASSERT(x.shape().size() == 2);
-//    GINN_ASSERT(x.rows() == 1);
-//
-//    Size rows = rows_->value();
-//    this->value().resize({rows, x.cols()});
-//    this->value() = x.t().broadcast(Index<2>{rows, 1});
-//  }
-//
-//  virtual void backward_() override {
-//    if (in_->has_grad()) { in_->grad() += this->grad().t().sum(Index<1>{0}); }
-//  }
-//
-// public:
-//  RowBroadcastNode(NodePtr<Scalar> in, DimPtr rows)
-//      : BaseDataNode<Scalar>(std::vector<BaseNodePtr>{in, rows}),
-//        in_(in),
-//        rows_(rows) {}
-//  RowBroadcastNode(NodePtr<Scalar> in, Size rows)
-//      : RowBroadcastNode(in, make_ptr<DimNode>(rows)) {}
-//
-//  std::string name() const override { return "RowBroadcast"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowBroadcast);
-//
-// template <typename Scalar>
-// class ColBroadcastNode : public BaseDataNode<Scalar> {
-// private:
-//  NodePtr<Scalar> in_;
-//  DimPtr cols_;
-//
-//  virtual void forward_() override {
-//    auto& x = in_->value();
-//    GINN_ASSERT(x.cols() == 1);
-//
-//    Size cols = cols_->value();
-//    if (cols > 1) {
-//      value().resize({x.rows(), cols});
-//      value() = x.t().broadcast(Index<2>{1, cols});
-//    } else { // No need to make a copy. Refer to the input instead.
-//      value().map(in_->value(), in_->value().shape());
-//    }
-//  }
-//
-//  void backward_() override {
-//    if (in_->has_grad() and cols_->value() > 1) {
-//      in_->grad() += grad().t().sum(Index<1>{1});
-//    }
-//  }
-//
-// public:
-//  ColBroadcastNode(NodePtr<Scalar> in, DimPtr cols)
-//      : BaseDataNode<Scalar>(std::vector<BaseNodePtr>{in, cols}),
-//        in_(in),
-//        cols_(cols) {}
-//  ColBroadcastNode(NodePtr<Scalar> in, Size cols)
-//      : ColBroadcastNode(in, make_ptr<DimNode>(cols)) {}
-//
-//  using BaseDataNode<Scalar>::value;
-//  using BaseDataNode<Scalar>::grad;
-//
-//  bool has_grad() const override {
-//    if (cols_->value() == 1) { return in_->has_grad(); }
-//    return BaseDataNode<Scalar>::has_grad();
-//  }
-//
-//  void init_grad() override {
-//    if (has_grad()) {
-//      if (cols_->value() > 1) {
-//        if (grad().shape() != value().shape()) {
-//          grad().resize(value().shape());
-//        }
-//      } else {
-//        grad().map(in_->grad(), in_->grad().shape());
-//      }
-//    }
-//  }
-//
-//  std::string name() const override { return "ColBroadcast"; }
-//};
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(ColBroadcast);
-//
-// template <typename Scalar = Real>
-// class UpperTriNode : public BaseDataNode<Scalar> {
-// public:
-//  using BaseDataNode<Scalar>::value;
-//
-// private:
-//  DimPtr size_; // value() is of shape {size_, size_} (i.e. matrix)
-//
-//  void forward_() override {
-//    auto s = size_->value();
-//    value().resize({s, s});
-//    if (this->dev()->kind() == CPU) {
-//      value().set_ones();
-//      value().m() = value().m().template triangularView<Eigen::Upper>();
-// #ifdef GINN_ENABLE_GPU
-//    } else if (this->dev()->kind() == GPU) {
-//      auto begin = thrust::device_ptr<Scalar>(value().data());
-//      auto end = begin + value().size();
-//      thrust::tabulate(begin, end, UpperTriHelper<Scalar>{s});
-// #endif
-//    } else {
-//      GINN_THROW("Unexpected device!");
-//    }
-//  }
-//
-// public:
-//  bool has_grad() const override { return false; }
-//
-//  UpperTriNode(DevPtr dev, DimPtr size)
-//      : BaseDataNode<Scalar>(dev, {size}), size_(size) {}
-//  UpperTriNode(DevPtr dev, Size size) : UpperTriNode(dev, Dim(size)) {}
-//
-//  std::string name() const override { return "UpperTri"; }
-//};
-//
-// GINN_MAKE_TEMPLATE_FACTORY(UpperTri);
+template <typename Scalar, DeviceKind Kind>
+class PermuteNode : public BaseDataNode<Scalar, Kind> {
+ protected:
+  NodePtr<Scalar, Kind> in_;
+  Shape indices_;
+  bool overwrite_ = false; // to be used with InPlacePermuteNode derived class
+
+  // inverse permutation of a shape
+  static Shape inverse(const Shape& perm) {
+    Shape inv(perm.size());
+    for (size_t i = 0; i < perm.size(); i++) { inv[perm[i]] = i; }
+    return inv;
+  }
+
+  // check if a shape is a permutation of 0, 1, ..., N-1
+  bool check_permutation() {
+    Shape incr(indices_.size());
+    std::iota(incr.begin(), incr.end(), 0);
+    return std::is_permutation(indices_.begin(), indices_.end(), incr.begin());
+  }
+
+  static Shape permute(const Shape& s, const Shape& perm) {
+    Shape new_s(s.size());
+    std::transform(
+        perm.begin(), perm.end(), new_s.begin(), [&](Size i) { return s[i]; });
+    return new_s;
+  }
+
+  template <Size N>
+  void forward_helper() {
+    if (overwrite_) {
+      value() = in_->value()
+                    .template view<N>()
+                    .shuffle(ShapeToIndex<N>(indices_))
+                    .eval();
+    } else {
+      value() =
+          in_->value().template view<N>().shuffle(ShapeToIndex<N>(indices_));
+    }
+  }
+  template <Size N>
+  void backward_helper() {
+    if (overwrite_) { // This case is meant for InPlacePermuteNode
+      in_->grad() = grad()
+                        .template view<N>()
+                        .shuffle(ShapeToIndex<N>(inverse(indices_)))
+                        .eval();
+    } else {
+      in_->grad() +=
+          grad().template view<N>().shuffle(ShapeToIndex<N>(inverse(indices_)));
+    }
+  }
+
+  void forward_() override {
+    GINN_ASSERT(indices_.size() == in_->shape().size());
+    GINN_ASSERT(check_permutation(),
+                "Indices are not a proper permutation in Permute!");
+
+    Shape s = permute(in_->shape(), indices_);
+    value().resize(s);
+
+    switch (indices_.size()) {
+    case 2: forward_helper<2>(); break;
+    case 3: forward_helper<3>(); break;
+    case 4: forward_helper<4>(); break;
+    case 5: forward_helper<5>(); break;
+    case 6: forward_helper<6>(); break;
+    case 7: forward_helper<7>(); break;
+    case 8: forward_helper<8>(); break;
+    default: GINN_THROW("Unexpected number of indices in Permute!");
+    }
+  }
+
+  void backward_() override {
+    if (in_->has_grad()) {
+      switch (indices_.size()) {
+      case 2: backward_helper<2>(); break;
+      case 3: backward_helper<3>(); break;
+      case 4: backward_helper<4>(); break;
+      case 5: backward_helper<5>(); break;
+      case 6: backward_helper<6>(); break;
+      case 7: backward_helper<7>(); break;
+      case 8: backward_helper<8>(); break;
+      default: GINN_THROW("Unexpected number of indices in Permute!");
+      }
+    }
+  }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  PermuteNode(const NodePtr<Scalar, Kind>& in, Shape indices)
+      : BaseDataNode<Scalar, Kind>(in), in_(in), indices_(std::move(indices)) {}
+
+  std::string name() const override { return "Permute"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(Permute);
+
+template <typename NodePtrType>
+auto Transpose(const NodePtrType& x, Size i, Size j) {
+  Shape indices(x->shape().size());
+  std::iota(indices.begin(), indices.end(), 0);
+  std::swap(indices.at(i), indices.at(j));
+  return Permute(std::move(x), std::move(indices));
+}
+
+template <typename Scalar, DeviceKind Kind>
+class RowBroadcastNode : public BaseDataNode<Scalar, Kind> {
+ private:
+  NodePtr<Scalar, Kind> in_;
+  DimPtr rows_;
+
+  virtual void forward_() override {
+    auto& x = in_->value();
+    GINN_ASSERT(x.shape().size() == 2);
+    GINN_ASSERT(x.rows() == 1);
+
+    Size rows = rows_->value();
+    this->value().resize({rows, x.cols()});
+    this->value() = x.t().broadcast(Index<2>{rows, 1});
+  }
+
+  virtual void backward_() override {
+    if (in_->has_grad()) { in_->grad() += this->grad().t().sum(Index<1>{0}); }
+  }
+
+ public:
+  RowBroadcastNode(const NodePtr<Scalar, Kind>& in, DimPtr rows)
+      : BaseDataNode<Scalar, Kind>(in), in_(in), rows_(std::move(rows)) {
+    BaseNode::ins_.push_back(rows_);
+  }
+  RowBroadcastNode(NodePtr<Scalar, Kind> in, Size rows)
+      : RowBroadcastNode(std::move(in), make_ptr<DimNode>(rows)) {}
+
+  std::string name() const override { return "RowBroadcast"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(RowBroadcast);
+
+template <typename Scalar, DeviceKind Kind>
+class ColBroadcastNode : public BaseDataNode<Scalar, Kind> {
+ private:
+  NodePtr<Scalar, Kind> in_;
+  DimPtr cols_;
+
+  virtual void forward_() override {
+    auto& x = in_->value();
+    GINN_ASSERT(x.cols() == 1);
+
+    Size cols = cols_->value();
+    if (cols > 1) {
+      value().resize({x.rows(), cols});
+      value() = x.t().broadcast(Index<2>{1, cols});
+    } else { // No need to make a copy. Refer to the input instead.
+      value().map(in_->value(), in_->value().shape());
+    }
+  }
+
+  void backward_() override {
+    if (in_->has_grad() and cols_->value() > 1) {
+      in_->grad() += grad().t().sum(Index<1>{1});
+    }
+  }
+
+ public:
+  ColBroadcastNode(const NodePtr<Scalar, Kind>& in, DimPtr cols)
+      : BaseDataNode<Scalar, Kind>(in), in_(in), cols_(std::move(cols)) {
+    BaseNode::ins_.push_back(cols_);
+  }
+  ColBroadcastNode(NodePtr<Scalar, Kind> in, Size cols)
+      : ColBroadcastNode(std::move(in), make_ptr<DimNode>(cols)) {}
+
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  bool has_grad() const override {
+    if (cols_->value() == 1) { return in_->has_grad(); }
+    return BaseDataNode<Scalar, Kind>::has_grad();
+  }
+
+  void init_grad() override {
+    if (has_grad()) {
+      if (cols_->value() > 1) {
+        if (grad().shape() != value().shape()) {
+          grad().resize(value().shape());
+        }
+      } else {
+        grad().map(in_->grad(), in_->grad().shape());
+      }
+    }
+  }
+
+  std::string name() const override { return "ColBroadcast"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(ColBroadcast);
+
+template <typename Scalar, DeviceKind Kind>
+class UpperTriNode : public BaseDataNode<Scalar, Kind> {
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+
+ private:
+  DimPtr size_; // value() is of shape {size_, size_} (i.e. matrix)
+
+  void forward_() override {
+    auto s = size_->value();
+    value().resize({s, s});
+    if (this->dev()->kind() == CPU) {
+      value().set_ones();
+      value().m() = value().m().template triangularView<Eigen::Upper>();
+#ifdef GINN_ENABLE_GPU
+    } else if (this->dev()->kind() == GPU) {
+      auto begin = thrust::device_ptr<Scalar>(value().data());
+      auto end = begin + value().size();
+      thrust::tabulate(begin, end, UpperTriHelper<Scalar>{s});
+#endif
+    } else {
+      GINN_THROW("Unexpected device!");
+    }
+  }
+
+ public:
+  bool has_grad() const override { return false; }
+
+  UpperTriNode(DevPtr<Kind> dev, DimPtr size)
+      : BaseDataNode<Scalar, Kind>(std::move(dev), {size}), size_(size) {}
+  UpperTriNode(DevPtr<Kind> dev, Size size)
+      : UpperTriNode(std::move(dev), Dim(size)) {}
+
+  std::string name() const override { return "UpperTri"; }
+};
+
+GINN_MAKE_TEMPLATE_FACTORY(UpperTri);
 
 } // namespace ginn
 

@@ -96,9 +96,9 @@ using innermost_t = typename innermost<T>::type;
 } // namespace ginn
 
 // Specialize std::is_floating_point for Eigen::half
-//namespace std {
-//template <>
-//struct is_floating_point<Eigen::half> {
+// namespace std {
+// template <>
+// struct is_floating_point<Eigen::half> {
 //  static constexpr bool value = true;
 //};
 //} // namespace std

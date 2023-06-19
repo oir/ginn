@@ -213,7 +213,8 @@ inline void reset() {
   count.clear();
 }
 
-inline const std::string date_time(const std::string format = "%Y-%m-%d_%H.%M.%S") {
+inline const std::string
+date_time(const std::string format = "%Y-%m-%d_%H.%M.%S") {
   std::time_t tt = Clock::to_time_t(Clock::now());
   char buff[50];
   strftime(buff, 50, format.c_str(), localtime(&tt));

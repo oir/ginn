@@ -137,7 +137,7 @@ class BaseNode {
 
   // Construct
   template <typename Iterable>
-  BaseNode(const Iterable& ins) : ins_(ins.begin(), ins.end()) {}
+  BaseNode(Iterable&& ins) : ins_(ins.begin(), ins.end()) {}
 
   virtual ~BaseNode() = default;
 

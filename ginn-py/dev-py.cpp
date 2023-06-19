@@ -29,9 +29,7 @@ namespace py = pybind11;
 void bind_dev(py::module_& m) {
   using namespace py::literals;
 
-  py::enum_<DeviceKind>(m, "DeviceType")
-      .value("CPU", CPU)
-      .value("GPU", GPU);
+  py::enum_<DeviceKind>(m, "DeviceType").value("CPU", CPU).value("GPU", GPU);
 
   py::class_<DeviceId>(m, "DeviceId")
       .def("__repr__",

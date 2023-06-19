@@ -44,7 +44,7 @@ if py.found()
                               include_directories : incdir,
                               dependencies : deps + [pybind11, cuda_dep],
                               cpp_args : cpp_args,
-                              cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])
+                              cuda_args : cuda_args + ['-DGINN_ENABLE_GPU', '-DEigen=GpuEigen'])
   else
     tgt = py.extension_module('ginn',
                               sources : sources,

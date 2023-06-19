@@ -45,6 +45,8 @@ if gpu
                 #   ./ginn/tensor.h(184): warning #445-D: constant "Rank" is not used in declaring the parameter types of function template "ginn::Tensor<ScalarType>::Tensor<Rank>(ginn::NestedInitList<Rank, ScalarType>)"
                 # which looks clearly wrong? is it a nvcc issue?
                 '-Xcudafe', '--diag_suppress=445',
+                # the following warnings come from right after an eigen_internal_assert about array bounds...
+                '-Xcompiler', '-Wno-array-bounds',
               ]
   cuda_dep = dependency('cuda',
                         version : '>=11.1',
