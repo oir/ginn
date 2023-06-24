@@ -22,18 +22,8 @@
 #include <algorithm>
 #include <iostream>
 
-#include <ginn/node/affine.h>
 #include <ginn/node/common.h>
-// #include <ginn/node/compare.h>
-// #include <ginn/node/inplace.h>
-// #include <ginn/node/layernorm.h>
 #include <ginn/node/layout.h>
-// #include <ginn/node/nlnode.h>
-// #include <ginn/node/pick.h>
-// #include <ginn/node/prod.h>
-// #include <ginn/node/reduce.h>
-// #include <ginn/node/select.h>
-// #include <ginn/node/weight.h>
 
 #include "check_node.h"
 #include "testutil.h"
@@ -206,41 +196,48 @@ TEMPLATE_TEST_CASE("RowwiseCat", "[layout]", Real, Int, Half) {
     CHECK(cat->offsets() == std::vector<Size>{0, 1, 3});
     CHECK(cat->extents() == std::vector<Size>{1, 2, 3});
 
-    //auto m = cat + Scalar(1);
-    //auto uncat0 = RowwiseUncat(m, 0, cat);
-    //auto uncat1 = RowwiseUncat(m, 1, cat);
-    //auto uncat2 = RowwiseUncat(m, 2, cat);
+    auto m = cat + 1;
+    auto uncat0 = RowwiseUncat(m, 0, cat);
+    auto uncat1 = RowwiseUncat(m, 1, cat);
+    auto uncat2 = RowwiseUncat(m, 2, cat);
 
-    //auto a_ = Vals({{2},
-    //                {3}});
-    //auto b_ = Vals({{4, 5},
-    //                {6, 7}});
-    //auto c_ = Vals({{8, 9, 10},
-    //                {1, 2,  3}});
+    auto a_ = Vals({{2},
+                    {3}});
+    auto b_ = Vals({{4, 5},
+                    {6, 7}});
+    auto c_ = Vals({{8, 9, 10},
+                    {1, 2,  3}});
 
-    //check(uncat0, a_);
-    //check(uncat1, b_);
-    //check(uncat2, c_);
+    check(uncat0, a_);
+    check(uncat1, b_);
+    check(uncat2, c_);
   }
 
   SECTION("Grad or cuda") {
 #ifndef GINN_ENABLE_GPU
     if constexpr(std::is_same_v<Scalar, Real>) {
       check_grad(RowwiseCat(a, b, c), {a, b, c}, true);
+      for (size_t i = 0; i < 3; i++) {
+        auto cat = RowwiseCat(a, b, c);
+        auto rwu = RowwiseUncat(cat + 1, i, cat);
+        check_grad(rwu, {a, b, c}, true);
+      }
     }
 #else
     if constexpr(ginn::is_floating_point_v<Scalar>) {
       auto [a_, b_, c_] = to_gpu(a, b, c);
       compare_devices(RowwiseCat(a , b , c ), {a , b , c },
                       RowwiseCat(a_, b_, c_), {a_, b_, c_});
+      for (size_t i = 0; i < 3; i++) {
+        auto cat = RowwiseCat(a, b, c);
+        auto rwu = RowwiseUncat(cat + 1, i, cat);
+        auto cat_ = RowwiseCat(a_, b_, c_);
+        auto rwu_ = RowwiseUncat(cat_ + 1, i, cat_);
+        compare_devices(rwu , {a , b , c },
+                        rwu_, {a_, b_, c_});
+      }
     }
 #endif
-    //for (size_t i = 0; i < 3; i++) {
-    //  check_expr([&]() {
-    //    auto cat = RowwiseCat(a, b, c);
-    //    return RowwiseUncat(cat + 1, i, cat);
-    //  }, {a, b, c}, true);
-    //}
   }
 }
 

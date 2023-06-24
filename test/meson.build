@@ -7,7 +7,8 @@ sources = [
   'include.cpp',
   'model.cpp',
   'nodes.cu.cpp',
-  'nodes_layout.cu.cpp',
+  'nodes-common.cu.cpp',
+  'nodes-layout.cu.cpp',
   'sample.cpp',
   'tensor.cu.cpp',
   'util.cpp',
@@ -18,7 +19,8 @@ cuda_sources = [
   'dev.cu.cpp',
   'dropoutnodes.cu.cpp',
   'nodes.cu.cpp',
-  'nodes_layout.cu.cpp',
+  'nodes-common.cu.cpp',
+  'nodes-layout.cu.cpp',
   'tensor.cu.cpp',
 ]
 
@@ -26,7 +28,7 @@ tests = []
 cudatests = []
 
 foreach src : sources
-  exec_name = src.replace('.cu.cpp', '').replace('.cpp', '') + 'test'
+  exec_name = src.replace('.cu.cpp', '').replace('.cpp', '') + '-test'
   exe = executable(exec_name,
                    src,
                    include_directories : incdir,
@@ -38,7 +40,7 @@ endforeach
 if gpu
   fs = import('fs')
   foreach src : cuda_sources
-    exec_name = 'cuda' + src.replace('.cu.cpp', '').replace('.cu', '') + 'test'
+    exec_name = 'cuda-' + src.replace('.cu.cpp', '').replace('.cu', '') + '-test'
     copy_name = src.replace('.cu.cpp', '.copy.cu')
     copied_src = fs.copyfile(src, copy_name)
 

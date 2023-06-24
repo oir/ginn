@@ -300,13 +300,15 @@ class RowwiseUncatNode : public BaseDataNode<Scalar, Kind> {
     }
   }
 
-  RowwiseUncatNode(NodePtr<Scalar, Kind> x,
+  RowwiseUncatNode(const NodePtr<Scalar, Kind>& in,
                    Size index,
                    Ptr<RowwiseCatNode<Scalar, Kind>> cat)
-      : BaseDataNode<Scalar, Kind>({x, cat}),
-        in_(x),
+      : BaseDataNode<Scalar, Kind>(in),
+        in_(in),
         index_(index),
-        cat_(cat) {}
+        cat_(std::move(cat)) {
+    BaseNode::ins_.push_back(cat_);
+  }
 
   std::string name() const override { return "RowwiseUncat"; }
 };

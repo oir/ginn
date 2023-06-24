@@ -21,37 +21,36 @@
 
 namespace ginn {
 
-// template <typename Scalar>
-// class AddScalarNode : public BaseDataNode<Scalar> {
-//   static_assert(not std::is_same_v<Scalar, bool>);
-//   static_assert(ginn::is_arithmetic_v<Scalar>);
-//
-//  protected:
-//   NodePtr<Scalar> in_;
-//   Scalar val_;
-//
-//   void forward_() override {
-//     value().resize(in_->value().shape());
-//     value() = in_->value().t() + val_;
-//   }
-//
-//   void backward_() override {
-//     if (in_->has_grad()) { in_->grad() += grad().t(); }
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   template <typename RightScalar,
-//             typename = std::enable_if_t<ginn::is_arithmetic_v<RightScalar>>>
-//   AddScalarNode(const NodePtr<Scalar>& a, RightScalar b)
-//       : BaseDataNode<Scalar>({a}), in_(a), val_(Scalar(b)) {}
-//
-//   std::string name() const override { return "AddScalar"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(AddScalar);
+template <typename Scalar, DeviceKind Kind>
+class AddScalarNode : public BaseDataNode<Scalar, Kind> {
+  static_assert(not std::is_same_v<Scalar, bool>);
+  static_assert(ginn::is_arithmetic_v<Scalar>);
+
+ protected:
+  NodePtr<Scalar, Kind> in_;
+  Raw<Scalar> val_;
+
+  void forward_() override {
+    value().resize(in_->value().shape());
+    value() = in_->value().t() + val_;
+  }
+
+  void backward_() override {
+    if (in_->has_grad()) { in_->grad() += grad().t(); }
+  }
+
+ public:
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
+
+  template <typename RightScalar>
+  AddScalarNode(const NodePtr<Scalar, Kind>& a, RightScalar b)
+      : BaseDataNode<Scalar, Kind>(a), in_(a), val_(Raw<Scalar>(b)) {}
+
+  std::string name() const override { return "AddScalar"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(AddScalar);
 //
 //// To be used when scalar is on the left e.g. 1 - x, otherwise we can use
 //// AddScalar instead since doing x - 1 == x + (-(-1)) is cheap, no negation
@@ -417,19 +416,11 @@ auto operator+(const Left& a, const Right& b) {
   if constexpr (ginn::is_node_ptr_v<Left>) {
     if constexpr (ginn::is_node_ptr_v<Right>) {
       return Add(a, b);
-    } else if constexpr (ginn::is_arithmetic_v<Right>) {
-      // return AddScalar(a, b);
-      return nullptr;
     } else {
-      GINN_THROW("Unexpected argument type in operator+!");
+      return AddScalar(a, b);
     }
   } else {
-    if constexpr (ginn::is_node_ptr_v<Right>) {
-      // return AddScalar(b, a);
-      return nullptr;
-    } else {
-      GINN_THROW("Unexpected argument type in operator+!");
-    }
+    return AddScalar(b, a);
   }
 }
 //
