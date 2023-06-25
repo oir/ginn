@@ -51,47 +51,47 @@ class AddScalarNode : public BaseDataNode<Scalar, Kind> {
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(AddScalar);
-//
-//// To be used when scalar is on the left e.g. 1 - x, otherwise we can use
-//// AddScalar instead since doing x - 1 == x + (-(-1)) is cheap, no negation
-//// of a node type, no temporary nodes.
-// template <typename Scalar>
-// class SubtractScalarNode : public BaseDataNode<Scalar> {
-//   static_assert(not std::is_same_v<Scalar, bool>);
-//   static_assert(ginn::is_arithmetic_v<Scalar>);
-//
-//  protected:
-//   NodePtr<Scalar> in_;
-//   Scalar val_;
-//
-//   void forward_() override {
-//     value().resize(in_->value().shape());
-//     value() = val_ - in_->value().t();
-//   }
-//
-//   void backward_() override {
-//     if (in_->has_grad()) { in_->grad() -= grad().t(); }
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   template <typename LeftScalar,
-//             typename = std::enable_if_t<ginn::is_arithmetic_v<LeftScalar>>>
-//   SubtractScalarNode(LeftScalar a, const NodePtr<Scalar>& b)
-//       : BaseDataNode<Scalar>({b}), in_(b), val_(Scalar(a)) {}
-//
-//   std::string name() const override { return "SubtractScalar"; }
-// };
-//
-// template <typename LeftScalar,
-//           typename NodePtr,
-//           typename = std::enable_if_t<ginn::is_node_ptr_v<NodePtr>>>
-// auto SubtractScalar(LeftScalar a, NodePtr b) {
-//   using Scalar = typename std::decay_t<NodePtr>::element_type::Scalar;
-//   return make_ptr<SubtractScalarNode<Scalar>>(a, std::move(b));
-// }
+
+// To be used when scalar is on the left e.g. 1 - x, otherwise we can use
+// AddScalar instead since doing x - 1 == x + (-(-1)) is cheap, no negation
+// of a node type, no temporary nodes.
+ template <typename Scalar, DeviceKind Kind>
+ class SubtractScalarNode : public BaseDataNode<Scalar, Kind> {
+   static_assert(not std::is_same_v<Scalar, bool>);
+   static_assert(ginn::is_arithmetic_v<Scalar>);
+
+  protected:
+   NodePtr<Scalar, Kind> in_;
+   Raw<Scalar> val_;
+
+   void forward_() override {
+     value().resize(in_->value().shape());
+     value() = val_ - in_->value().t();
+   }
+
+   void backward_() override {
+     if (in_->has_grad()) { in_->grad() -= grad().t(); }
+   }
+
+  public:
+   using BaseDataNode<Scalar, Kind>::value;
+   using BaseDataNode<Scalar, Kind>::grad;
+
+   template <typename LeftScalar>
+   SubtractScalarNode(LeftScalar a, const NodePtr<Scalar, Kind>& b)
+       : BaseDataNode<Scalar, Kind>(b), in_(b), val_(Raw<Scalar>(a)) {}
+
+   std::string name() const override { return "SubtractScalar"; }
+ };
+
+ template <typename LeftScalar,
+           typename NodePtr,
+           typename = std::enable_if_t<ginn::is_node_ptr_v<NodePtr>>>
+ auto SubtractScalar(LeftScalar a, NodePtr b) {
+   using Scalar = typename NodePtr::element_type::Scalar;
+   constexpr auto Kind = NodePtr::element_type::device_kind;
+   return make_ptr<SubtractScalarNode<Scalar, Kind>>(a, std::move(b));
+ }
 
 template <typename Scalar, DeviceKind Kind>
 class AddNode : public BaseDataNode<Scalar, Kind> {
@@ -158,61 +158,61 @@ class AddNode : public BaseDataNode<Scalar, Kind> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(Add);
 
-// template <typename Scalar>
-// class SubtractNode : public BaseDataNode<Scalar> {
-//  private:
-//   NodePtr<Scalar> left_, right_;
-//
-//   void forward_() override {
-//     value().resize(left_->shape());
-//     value() = left_->value().t() - right_->value().t();
-//   }
-//
-//   void backward_() override {
-//     if (left_->has_grad()) { left_->grad() += grad().t(); }
-//     if (right_->has_grad()) { right_->grad() -= grad().t(); }
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   SubtractNode(NodePtr<Scalar> a, NodePtr<Scalar> b)
-//       : BaseDataNode<Scalar>({a, b}), left_(a), right_(b) {}
-//
-//   std::string name() const override { return "Subtract"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(Subtract);
-//
-// template <typename Scalar>
-// class ProdScalarNode : public BaseDataNode<Scalar> {
-//  protected:
-//   NodePtr<Scalar> in_;
-//   Scalar val_;
-//
-//   void forward_() override {
-//     value().resize(in_->value().shape());
-//     value() = in_->value().t() * val_;
-//   }
-//
-//   void backward_() override {
-//     if (in_->has_grad()) { in_->grad() += grad().t() * val_; }
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   template <typename RightScalar,
-//             typename = std::enable_if_t<ginn::is_arithmetic_v<RightScalar>>>
-//   ProdScalarNode(const NodePtr<Scalar>& a, RightScalar b)
-//       : BaseDataNode<Scalar>({a}), in_(a), val_(Scalar(b)) {}
-//
-//   std::string name() const override { return "ProdScalar"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(ProdScalar);
+ template <typename Scalar, DeviceKind Kind>
+ class SubtractNode : public BaseDataNode<Scalar, Kind> {
+  private:
+   NodePtr<Scalar, Kind> left_, right_;
+
+   void forward_() override {
+     value().resize(left_->shape());
+     value() = left_->value().t() - right_->value().t();
+   }
+
+   void backward_() override {
+     if (left_->has_grad()) { left_->grad() += grad().t(); }
+     if (right_->has_grad()) { right_->grad() -= grad().t(); }
+   }
+
+  public:
+   using BaseDataNode<Scalar, Kind>::value;
+   using BaseDataNode<Scalar, Kind>::grad;
+
+   SubtractNode(const NodePtr<Scalar, Kind>& a,
+                const NodePtr<Scalar, Kind>& b)
+       : BaseDataNode<Scalar, Kind>({a, b}), left_(a), right_(b) {}
+
+   std::string name() const override { return "Subtract"; }
+ };
+
+ GINN_MAKE_SCALAR_FORWARDING_FACTORY(Subtract);
+
+ template <typename Scalar, DeviceKind Kind>
+ class ProdScalarNode : public BaseDataNode<Scalar, Kind> {
+  protected:
+   NodePtr<Scalar, Kind> in_;
+   Raw<Scalar> val_;
+
+   void forward_() override {
+     value().resize(in_->value().shape());
+     value() = in_->value().t() * val_;
+   }
+
+   void backward_() override {
+     if (in_->has_grad()) { in_->grad() += grad().t() * val_; }
+   }
+
+  public:
+   using BaseDataNode<Scalar, Kind>::value;
+   using BaseDataNode<Scalar, Kind>::grad;
+
+   template <typename RightScalar>
+   ProdScalarNode(const NodePtr<Scalar, Kind>& a, RightScalar b)
+       : BaseDataNode<Scalar, Kind>(a), in_(a), val_(Raw<Scalar>(b)) {}
+
+   std::string name() const override { return "ProdScalar"; }
+ };
+
+ GINN_MAKE_SCALAR_FORWARDING_FACTORY(ProdScalar);
 
 template <typename Scalar, DeviceKind Kind>
 class CwiseProdNode : public BaseDataNode<Scalar, Kind> {
@@ -234,88 +234,88 @@ class CwiseProdNode : public BaseDataNode<Scalar, Kind> {
   using BaseDataNode<Scalar, Kind>::grad;
 
   CwiseProdNode(const NodePtr<Scalar, Kind>& a, const NodePtr<Scalar, Kind>& b)
-      : BaseDataNode<Scalar, Kind>(std::vector{a, b}), a_(a), b_(b) {}
+      : BaseDataNode<Scalar, Kind>({a, b}), a_(a), b_(b) {}
 
   std::string name() const override { return "CwiseProd"; }
-}; // namespace ginn
+};
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(CwiseProd);
 
-// template <typename Scalar>
-// class CwiseProdAddNode : public BaseDataNode<Scalar> {
-//  private:
-//   NodePtr<Scalar> a_, b_, c_;
-//   bool broadcast_;
-//   Scalar multiplier_bias_{0};
-//
-//   void forward_() override {
-//     const auto s0 = a_->shape(), s1 = b_->shape(), s2 = c_->shape();
-//     if (s0 == s1 and s1 == s2) {
-//       broadcast_ = false;
-//     } else if (s1.size() == 1 and s2.size() == 1) {
-//       broadcast_ = true;
-//       GINN_ASSERT(s0[0] == s1[0] and s1[0] == s2[0],
-//                   "Unexpected shapes for CwiseProdAdd!");
-//     } else {
-//       GINN_THROW("Unexpected shapes for CwiseProdAdd!");
-//     }
-//
-//     value().resize(s0);
-//     auto a_t = a_->value().t();
-//     auto b_t = b_->value().t();
-//     auto c_t = c_->value().t();
-//
-//     if (not broadcast_) {
-//       value() = a_t * (b_t + multiplier_bias_) + c_t;
-//     } else {
-//       auto cols = a_->shape2()[1];
-//       value() = a_t * (b_t + multiplier_bias_).broadcast(Index<2>{1, cols}) +
-//                 c_t.broadcast(Index<2>{1, cols});
-//     }
-//   }
-//
-//   void backward_() override {
-//     auto a_t = a_->value().t();
-//     auto b_t = b_->value().t();
-//
-//     if (not broadcast_) {
-//       if (a_->has_grad()) {
-//         a_->grad() += grad().t() * (b_t + multiplier_bias_);
-//       }
-//       if (b_->has_grad()) { b_->grad() += grad().t() * a_t; }
-//       if (c_->has_grad()) { c_->grad() += grad().t(); }
-//     } else {
-//       if (a_->has_grad()) {
-//         const auto cols = a_->shape2()[1];
-//         a_->grad() +=
-//             grad().t() * (b_t + multiplier_bias_).broadcast(Index<2>{1,
-//             cols});
-//       }
-//       if (b_->has_grad()) { b_->grad() += (grad().t() *
-//       a_t).sum(Index<1>{1}); } if (c_->has_grad()) { c_->grad() +=
-//       grad().t().sum(Index<1>{1}); }
-//     }
-//   }
-//
-//  public:
-//   using BaseDataNode<Scalar>::value;
-//   using BaseDataNode<Scalar>::grad;
-//
-//   template <typename BiasScalar = Scalar>
-//   CwiseProdAddNode(NodePtr<Scalar> a,
-//                    NodePtr<Scalar> b,
-//                    NodePtr<Scalar> c,
-//                    BiasScalar multiplier_bias = BiasScalar(0))
-//       : BaseDataNode<Scalar>({a, b, c}),
-//         a_(a),
-//         b_(b),
-//         c_(c),
-//         multiplier_bias_(Scalar(multiplier_bias)) {}
-//
-//   std::string name() const override { return "CwiseProdAdd"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(CwiseProdAdd);
+ template <typename Scalar, DeviceKind Kind>
+ class CwiseProdAddNode : public BaseDataNode<Scalar, Kind> {
+  private:
+   NodePtr<Scalar, Kind> a_, b_, c_;
+   bool broadcast_;
+   Raw<Scalar> multiplier_bias_{0};
+
+   void forward_() override {
+     const auto s0 = a_->shape(), s1 = b_->shape(), s2 = c_->shape();
+     if (s0 == s1 and s1 == s2) {
+       broadcast_ = false;
+     } else if (s1.size() == 1 and s2.size() == 1) {
+       broadcast_ = true;
+       GINN_ASSERT(s0[0] == s1[0] and s1[0] == s2[0],
+                   "Unexpected shapes for CwiseProdAdd!");
+     } else {
+       GINN_THROW("Unexpected shapes for CwiseProdAdd!");
+     }
+
+     value().resize(s0);
+     auto a_t = a_->value().t();
+     auto b_t = b_->value().t();
+     auto c_t = c_->value().t();
+
+     if (not broadcast_) {
+       value() = a_t * (b_t + multiplier_bias_) + c_t;
+     } else {
+       auto cols = a_->shape2()[1];
+       value() = a_t * (b_t + multiplier_bias_).broadcast(Index<2>{1, cols}) +
+                 c_t.broadcast(Index<2>{1, cols});
+     }
+   }
+
+   void backward_() override {
+     auto a_t = a_->value().t();
+     auto b_t = b_->value().t();
+
+     if (not broadcast_) {
+       if (a_->has_grad()) {
+         a_->grad() += grad().t() * (b_t + multiplier_bias_);
+       }
+       if (b_->has_grad()) { b_->grad() += grad().t() * a_t; }
+       if (c_->has_grad()) { c_->grad() += grad().t(); }
+     } else {
+       if (a_->has_grad()) {
+         const auto cols = a_->shape2()[1];
+         a_->grad() +=
+             grad().t() * (b_t + multiplier_bias_).broadcast(Index<2>{1,
+             cols});
+       }
+       if (b_->has_grad()) { b_->grad() += (grad().t() *
+       a_t).sum(Index<1>{1}); } if (c_->has_grad()) { c_->grad() +=
+       grad().t().sum(Index<1>{1}); }
+     }
+   }
+
+  public:
+   using BaseDataNode<Scalar, Kind>::value;
+   using BaseDataNode<Scalar, Kind>::grad;
+
+   template <typename BiasScalar = Raw<Scalar>>
+   CwiseProdAddNode(const NodePtr<Scalar, Kind>& a,
+                    const NodePtr<Scalar, Kind>& b,
+                    const NodePtr<Scalar, Kind>& c,
+                    BiasScalar multiplier_bias = BiasScalar(0))
+       : BaseDataNode<Scalar, Kind>({a, b, c}),
+         a_(a),
+         b_(b),
+         c_(c),
+         multiplier_bias_(Raw<Scalar>(multiplier_bias)) {}
+
+   std::string name() const override { return "CwiseProdAdd"; }
+ };
+
+ GINN_MAKE_SCALAR_FORWARDING_FACTORY(CwiseProdAdd);
 //
 // template <typename Scalar>
 // class CwiseMaxNode : public BaseDataNode<Scalar> {
@@ -423,57 +423,40 @@ auto operator+(const Left& a, const Right& b) {
     return AddScalar(b, a);
   }
 }
-//
-// template <typename Left,
-//          typename Right,
-//          typename = std::enable_if_t<ginn::is_node_ptr_v<Left> or
-//                                      ginn::is_node_ptr_v<Right>>>
-// auto operator-(const Left& a, const Right& b) {
-//  if constexpr (ginn::is_node_ptr_v<Left>) {
-//    if constexpr (ginn::is_node_ptr_v<Right>) {
-//      return Subtract(a, b);
-//    } else if constexpr (ginn::is_arithmetic_v<Right>) {
-//      return AddScalar(a, -b);
-//    } else {
-//      GINN_THROW("Unexpected argument type in operator-!");
-//    }
-//  } else {
-//    if constexpr (ginn::is_node_ptr_v<Right>) {
-//      return SubtractScalar(a, b);
-//    } else {
-//      GINN_THROW("Unexpected argument type in operator-!");
-//    }
-//  }
-//}
-//
-// template <typename Node>
-// auto operator-(const Ptr<Node>& in) {
-//  using Scalar = typename Node::Scalar;
-//  return in * Scalar(-1);
-//}
-//
-// template <typename Left,
-//          typename Right,
-//          typename = std::enable_if_t<ginn::is_node_ptr_v<Left> xor
-//                                      ginn::is_node_ptr_v<Right>>>
-// auto operator*(const Left& a, const Right& b) {
-//  if constexpr (ginn::is_node_ptr_v<Left>) {
-//    if constexpr (ginn::is_node_ptr_v<Right>) {
-//      // this path should not happen based on the SFINAE condition above
-//      GINN_THROW("Programming error!");
-//    } else if constexpr (ginn::is_arithmetic_v<Right>) {
-//      return ProdScalar(a, b);
-//    } else {
-//      GINN_THROW("Unexpected argument type in operator*!");
-//    }
-//  } else {
-//    if constexpr (ginn::is_node_ptr_v<Right>) {
-//      return ProdScalar(b, a);
-//    } else {
-//      GINN_THROW("Unexpected argument type in operator*!");
-//    }
-//  }
-//}
+
+ template <typename Left,
+          typename Right,
+          typename = std::enable_if_t<ginn::is_node_ptr_v<Left> or
+                                      ginn::is_node_ptr_v<Right>>>
+ auto operator-(const Left& a, const Right& b) {
+  if constexpr (ginn::is_node_ptr_v<Left>) {
+    if constexpr (ginn::is_node_ptr_v<Right>) {
+      return Subtract(a, b);
+    } else {
+      return AddScalar(a, -b);
+    } 
+  } else {
+    return SubtractScalar(a, b);
+  }
+}
+
+ template <typename NodePtr, typename = std::enable_if<ginn::is_node_ptr_v<NodePtr>>>
+ auto operator-(const NodePtr& in) {
+  //return in * Scalar(-1); // do these differ in timings?
+  return 0-in;
+}
+
+ template <typename Left,
+          typename Right,
+          typename = std::enable_if_t<ginn::is_node_ptr_v<Left> xor
+                                      ginn::is_node_ptr_v<Right>>>
+ auto operator*(const Left& a, const Right& b) {
+  if constexpr (ginn::is_node_ptr_v<Left>) {
+    return ProdScalar(a, b);
+  } else {
+    return ProdScalar(b, a);
+  }
+}
 
 } // namespace ginn
 #endif

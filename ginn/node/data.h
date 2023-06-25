@@ -60,13 +60,16 @@ class BaseDataNode : public Node<Scalar, Kind> {
   BaseDataNode(const Inputs& ins)
       : Node<Scalar, Kind>(ins), fx_(best_dev(ins)), dfx_(fx_.dev()) {}
 
-  BaseDataNode(const NodePtr<Scalar, Kind> x)
-      : BaseDataNode(std::vector<NodePtr<Scalar, Kind>>{x}) {}
+  BaseDataNode(std::initializer_list<NodePtr<Scalar, Kind>> l)
+      : BaseDataNode(std::vector(l.begin(), l.end())) {}
+
+  BaseDataNode(const NodePtr<Scalar, Kind>& x)
+      : BaseDataNode(std::vector{x}) {}
 
   BaseDataNode(DevPtr<Kind> dev = default_dev<Kind>()) : fx_(dev), dfx_(dev) {}
   BaseDataNode(const Shape& shape)
       : fx_(default_dev<Kind>(), shape), dfx_(default_dev<Kind>()) {}
-  BaseDataNode(DevPtr<Kind> dev, const Shape& shape)
+  BaseDataNode(const DevPtr<Kind>& dev, const Shape& shape)
       : fx_(dev, shape), dfx_(dev) {}
 
   // BaseDataNode(const std::initializer_list<BaseNodePtr>& ins)
