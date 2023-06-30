@@ -20,25 +20,25 @@
 #include <catch2/catch.hpp>
 
 #include <ginn/node/common.h>
-#include <ginn/node/inplace.h>
+//#include <ginn/node/inplace.h>
 
 using namespace ginn;
 using namespace ginn;
-
-auto& Dev = cpu();
 
 TEMPLATE_TEST_CASE("Dropout", "[common][inplace]", Real, Half) {
   using Scalar = TestType;
 
-  auto drop = [](auto in, Real p, bool inplace) {
-    return inplace ? (NodePtr<Scalar>)InPlaceDropout(1 * in, p)
-                   : (NodePtr<Scalar>)Dropout(in, p);
+  auto drop = [](auto in, Real p, bool /*inplace*/) {
+    //    return inplace ? (NodePtr<Scalar>)InPlaceDropout(1 * in, p)
+    //                   : (NodePtr<Scalar>)Dropout(in, p);
+    return Dropout(in, p);
   };
 
   SECTION("Cpu sample") {
-    auto x = Ones(Dev, {100, 100, 100, 100})->cast<Scalar>();
+    auto x = Ones(cpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0.25, 0.5, 0.75);
-    bool inplace = GENERATE(false, true);
+    // bool inplace = GENERATE(false, true);
+    bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
@@ -47,52 +47,57 @@ TEMPLATE_TEST_CASE("Dropout", "[common][inplace]", Real, Half) {
     CHECK(mean == Approx(1.).epsilon(1e-3));
   }
   SECTION("Cpu extremes") {
-    auto x = Ones(Dev, {100, 100, 100, 100})->cast<Scalar>();
+    auto x = Ones(cpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0., 1.);
-    bool inplace = GENERATE(false, true);
+    // bool inplace = GENERATE(false, true);
+    bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
 
     if (p == 0) {
-      CHECK((y->value().m().array() == Scalar(1)).all());
+      CHECK((y->value().m().array() == Raw<Scalar>(1)).all());
     } else if (p == 1) {
-      CHECK((y->value().m().array() == Scalar(0)).all());
+      CHECK((y->value().m().array() == Raw<Scalar>(0)).all());
     }
 
     CHECK_THROWS(Dropout(x, -1.));
     CHECK_THROWS(Dropout(x, 1.1));
   }
+
 #ifdef GINN_ENABLE_GPU
   SECTION("Gpu sample") {
     auto x = Ones(gpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0.25, 0.5, 0.75);
-    bool inplace = GENERATE(false, true);
+    // bool inplace = GENERATE(false, true);
+    bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
 
-    Tensor<double> sum(gpu(), Shape{});
+    Tensor<double, GPU> sum(gpu(), Shape{});
     sum = y->value().t().template cast<double>().sum();
     double mean = sum.copy_to(cpu()).item() / y->size();
     CHECK(mean ==
           Approx(1.).epsilon(1e-2)); // Gpu is float hence bigger epsilon
   }
+
   SECTION("Gpu extremes") {
     auto x = Ones(gpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0., 1.);
-    bool inplace = GENERATE(false, true);
+    // bool inplace = GENERATE(false, true);
+    bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
 
-    Tensor<bool> valid(gpu(), Shape{});
+    Tensor<bool, GPU> valid(gpu(), Shape{});
 
     if (p == 0) {
-      valid = (y->value().t() == Scalar(1)).all();
+      valid = (y->value().t() == Raw<Scalar>(1)).all();
       CHECK(valid.item());
     } else if (p == 1) {
-      valid = (y->value().t() == Scalar(0)).all();
+      valid = (y->value().t() == Raw<Scalar>(0)).all();
       CHECK(valid.item());
     }
   }

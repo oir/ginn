@@ -28,7 +28,7 @@
 // #include <ginn/node/inplace.h>
 // #include <ginn/node/layernorm.h>
 #include <ginn/node/layout.h>
-// #include <ginn/node/nlnode.h>
+#include <ginn/node/nlnode.h>
 // #include <ginn/node/pick.h>
 // #include <ginn/node/prod.h>
 // #include <ginn/node/reduce.h>
@@ -40,330 +40,147 @@
 
 using namespace ginn;
 
+#ifdef GINN_ENABLE_GPU
+constexpr bool gpu_enabled = true;
+#else
+constexpr bool gpu_enabled = false;
+#endif
+
 // clang-format off
 
-TEMPLATE_TEST_CASE("Add subtract", "[arithmetic]", Real, Half, Int) {
-  using Scalar = TestType;
-
-  auto a = Values<2>({{1, 4},
-                      {2, 5},
-                      {3, 6}})->cast<Scalar>();
-  auto b = Values<2>({{-1, 4},
-                      {-2, 5},
-                      {-3, 6}})->cast<Scalar>();
-  auto c = Values<2>({{1, -4},
-                      {2, -5},
-                      {3, -6}})->cast<Scalar>();
-
-  SECTION("Add") {
-    auto e = Values<2>({{0,  8},
-                        {0, 10},
-                        {0, 12}})->cast<Scalar>();
-
-    check(Add(a, b), e);
-    check(a + b    , e);
+using Typelist = std::tuple<
 #ifdef GINN_ENABLE_GPU
-    if constexpr (ginn::is_floating_point_v<Scalar>) {
-      auto a_ = a->copy_to(gpu());
-      auto b_ = b->copy_to(gpu());
-      compare_devices(Add(a,  b ), {a,  b },
-                      Add(a_, b_), {a_, b_});
-    }
-#else
-    if constexpr (std::is_same_v<Scalar, Real>) {
-      check_grad(Add(a, b), {a, b}, true);
-      check_grad(a + b,     {a, b}, true);
-    }
+    Tensor<Real, GPU>,
+    Tensor<Half, GPU>,
 #endif
-  }
-  //SECTION("Add longer") {
-  //  auto e = Values<2>({{1, 4},
-  //                      {2, 5},
-  //                      {3, 6}})->cast<Scalar>();
+    Tensor<Real, CPU>,
+    Tensor<Half, CPU>
+>;
 
-  //  check(Add(a, b, c), e);
-  //  check(a + b + c   , e);
-  //  CHECK_(Add(a, b, c), {a, b, c}, true);
-  //  CHECK_(a + b + c   , {a, b, c}, true);
-  //}
-  //SECTION("Add w/ repeat") {
-  //  auto e = Values<2>({{1, 12},
-  //                      {2, 15},
-  //                      {3, 18}})->cast<Scalar>();
 
-  //  check(Add(a, b, a), e);
-  //  check(a + b + a   , e);
-  //  CHECK_(Add(a, b, a), {a, b}, true);
-  //  CHECK_(a + b + a   , {a, b}, true);
-  //}
+TEMPLATE_LIST_TEST_CASE("Weight", "[weight]", Typelist) {
+  using Scalar = typename TestType::Scalar;
+  constexpr auto Kind = TestType::device_kind;
 
-  //SECTION("Add scalar") {
-  //  auto e = Values<2>({{2, 5},
-  //                      {3, 6},
-  //                      {4, 7}})->cast<Scalar>();
+  auto W = Weight<Scalar>(default_dev<Kind>(), {2, 3});
+  W->set_random();
+  auto t = W->value();
 
-  //  Scalar s{1};
-  //  check(AddScalar(a, s), e);
-  //  check(a + s          , e);
-  //  check(s + a          , e);
-  //  CHECK_(AddScalar(a, s), {a}, true);
-  //  CHECK_(a + s          , {a}, true);
-  //  CHECK_(s + a          , {a}, true);
-  //}
+  CHECK(W->forwarded);
+  W->reset_forwarded();
+  CHECK(W->forwarded);
 
-  //SECTION("Subtract") {
-  //  auto e = Values<2>({{2, 0},
-  //                      {4, 0},
-  //                      {6, 0}})->cast<Scalar>();
+  W->forward();
+  CHECK(W->value() == t);
 
-  //  check(Subtract(a, b), e);
-  //  check(a - b         , e);
-  //  CHECK_(Subtract(a, b), {a, b}, true);
-  //  CHECK_(a - b         , {a, b}, true);
-  //}
+  W->reset_grad();
 
-  //SECTION("Subtract scalar") {
-  //  auto e = Values<2>({{ 0, -3},
-  //                      {-1, -4},
-  //                      {-2, -5}})->cast<Scalar>();
-  //  check(SubtractScalar(1, a), e);
-  //  check(1 - a,                e);
-  //  check(1.0 - a,              e);
-  //  CHECK_(SubtractScalar(1, a), {a});
-  //  CHECK_(1 - a,                {a});
-  //  CHECK_(1.0 - a,              {a});
+  auto W2 = W->copy(Copy::Tied);
+  CHECK(&W2->value() == &W->value());
+  CHECK(&W2->grad()  != &W->grad() );
 
-  //  auto a2 = Values<2>({{1, 4},
-  //                       {2, 5},
-  //                       {3, 6}})->cast<Scalar>();
-  //  auto e2 = Values<2>({{0, 3},
-  //                       {1, 4},
-  //                       {2, 5}})->cast<Scalar>();
-  //  check(AddScalar(a2, -1), e2);
-  //  check(a2 - 1,            e2);
-  //  check(a2 - 1.,           e2);
-  //  CHECK_(AddScalar(a2, -1), {a2});
-  //  CHECK_(a2 - 1,            {a2});
-  //  CHECK_(a2 - 1.,           {a2});
-  //}
+  auto W3 = W->copy(Copy::Deep);
+  CHECK(W3->value()  == W->value() );
+  CHECK(&W3->value() != &W->value());
+  CHECK(&W3->grad()  != &W->grad() );
 
-  //SECTION("Unary -") {
-  //  auto e = Values<2>({{-1, -4},
-  //                      {-2, -5},
-  //                      {-3, -6}})->cast<Scalar>();
-
-  //  check(-a, e);
-  //  CHECK_(-a, {a}, true);
-  //}
-
-  //SECTION("Prod scalar") {
-  //  auto e = Values<2>({{2,  8},
-  //                      {4, 10},
-  //                      {6, 12}})->cast<Scalar>();
-
-  //  Scalar s{2};
-  //  check(ProdScalar(a, s), e);
-  //  check(a * s           , e);
-  //  check(s * a           , e);
-  //  CHECK_(ProdScalar(a, s), {a}, true);
-  //  CHECK_(a * s           , {a}, true);
-  //  CHECK_(s * a           , {a}, true);
-  //}
-
-  //SECTION("CwiseProd") {
-  //  auto e = Values<2>({{-1, 16 },
-  //                      {-4, 25},
-  //                      {-9, 36}})->cast<Scalar>();
-
-  //  check(CwiseProd(a, b), e);
-  //  CHECK_(CwiseProd(a, b), {a, b}, true);
-  //}
-
-  //SECTION("CwiseProdAdd") {
-  //  Real eps = std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6;
-
-  //  SECTION("Regular") {
-  //    auto e = Values<2>({{ 0, 12 },
-  //                        {-2, 20},
-  //                        {-6, 30}})->cast<Scalar>();
-
-  //    check(CwiseProdAdd(a, b, c), e);
-  //    CHECK_(CwiseProdAdd(a, b, c), {a, b, c}, true, eps);
-  //  }
-
-  //  SECTION("Regular w/ bias") {
-  //    // a * (b+1) + c
-  //    auto e = Values<2>({{ 1, 16 },
-  //                        { 0, 25},
-  //                        {-3, 36}})->cast<Scalar>();
-
-  //    check(CwiseProdAdd(a, b, c, Scalar(1)), e);
-  //    CHECK_(CwiseProdAdd(a, b, c, Scalar(1)), {a, b, c}, true, eps);
-  //  }
-
-  //  SECTION("Broadcast") {
-  //    auto b = Values<1>({-1,
-  //                        -2,
-  //                        -3})->cast<Scalar>();
-  //    auto c = Values<1>({4,
-  //                        5,
-  //                        6})->cast<Scalar>();
-
-  //    SECTION("w/o bias") {
-  //      auto e = Values<2>({{ 3,   0},
-  //                          { 1,  -5},
-  //                          {-3, -12}})->cast<Scalar>();
-
-  //      check(CwiseProdAdd(a, b, c), e);
-  //      CHECK_(CwiseProdAdd(a, b, c), {a, b, c}, true);
-  //    }
-
-  //    SECTION("w/ bias") {
-  //      auto e = Values<2>({{4,  4},
-  //                          {3,  0},
-  //                          {0, -6}})->cast<Scalar>();
-
-  //      check(CwiseProdAdd(a, b, c, Scalar(1)), e);
-  //      CHECK_(CwiseProdAdd(a, b, c, Scalar(1)), {a, b, c}, true);
-  //    }
-  //  }
-
-  //  SECTION("Wrong shapes") {
-  //    SECTION("b only column") {
-  //      auto b = Values<1>({-1,
-  //                          -2,
-  //                          -3})->cast<Scalar>();
-  //      CHECK_THROWS(Graph(CwiseProdAdd(a, b, c)).forward());
-  //    }
-  //    SECTION("c only column") {
-  //      auto c = Values<1>({-1,
-  //                          -2,
-  //                          -3})->cast<Scalar>();
-  //      CHECK_THROWS(Graph(CwiseProdAdd(a, b, c)).forward());
-  //    }
-  //    SECTION("b transposed") {
-  //      auto b = Values<2>({{-1, -2, -3},
-  //                          { 4,  5,  6}})->cast<Scalar>();
-  //      CHECK_THROWS(Graph(CwiseProdAdd(a, b, c)).forward());
-  //    }
-  //    SECTION("Incorrect rows") {
-  //      auto b = Values<1>({-1,
-  //                          -2})->cast<Scalar>();
-  //      auto c = Values<1>({4,
-  //                          5})->cast<Scalar>();
-  //      CHECK_THROWS(Graph(CwiseProdAdd(a, b, c)).forward());
-  //    }
-  //    SECTION("Rank 0") {
-  //      auto b = Values<0>(-1)->cast<Scalar>();
-  //      auto c = Values<0>(4)->cast<Scalar>();
-  //      CHECK_THROWS(Graph(CwiseProdAdd(a, b, c)).forward());
-  //    }
-  //  }
-  //}
-
-  //SECTION("CwiseMax") {
-  //  check(CwiseMax(b, c), a);
-  //  // Warning: CwiseMax does not have derivative at points where argmax is
-  //  // more than one. Gradcheck might fail if two maxes are within gradcheck eps.
-  //  CHECK_(CwiseMax(a, b, c), {a, b, c}, true, 1e-6);
-  //}
+  auto W4 = Weight(*W); // use copy ctor, should deep copy
+  CHECK(W4->value()  == W->value() );
+  CHECK(&W4->value() != &W->value());
+  CHECK(&W4->grad()  != &W->grad() );
 }
 
-//TEMPLATE_TEST_CASE("Weight", "[weight]", Real, Half) {
-//  using Scalar = TestType;
-//  auto W = Weight<Scalar>(Dev, {2, 3});
-//  W->set_random();
-//  auto t = W->value();
-//
-//  CHECK(W->forwarded);
-//  W->reset_forwarded();
-//  CHECK(W->forwarded);
-//
-//  W->forward();
-//  CHECK(W->value() == t);
-//
-//  W->reset_grad();
-//
-//  auto W2 = W->copy(Copy::Tied);
-//  CHECK(&W2->value() == &W->value());
-//  CHECK(&W2->grad()  != &W->grad() );
-//
-//  auto W3 = W->copy(Copy::Deep);
-//  CHECK(W3->value()  == W->value() );
-//  CHECK(&W3->value() != &W->value());
-//  CHECK(&W3->grad()  != &W->grad() );
-//
-//  auto W4 = Weight(*W); // use copy ctor, should deep copy
-//  CHECK(W4->value()  == W->value() );
-//  CHECK(&W4->value() != &W->value());
-//  CHECK(&W4->grad()  != &W->grad() );
-//}
-//
-//TEMPLATE_TEST_CASE("Nonlin", "[nlnode]", Real, Half) {
-//  using Scalar = TestType;
-//  auto W = Values<2>({{-1, -2, -3},
-//                      { 4,  5,  6}})->cast<Scalar>();
-//  auto tanhW = Values<2>({{-0.76159415, -0.96402758, -0.99505475},
-//                          { 0.99932929,  0.99990920,  0.99998771}})->cast<Scalar>();
-//  auto reluW = Values<2>({{0, 0, 0},
-//                          {4, 5, 6}})->cast<Scalar>();
-//  auto sigmW = Values<2>({{0.26894142, 0.11920292, 0.04742587},
-//                          {0.98201379, 0.99330714, 0.99752737}})->cast<Scalar>();
-//  auto smaxW = Values<2>({{0.00669285, 9.11051194e-04, 1.23394576e-04},
-//                          {0.99330715, 9.99088949e-01, 9.99876605e-01}})->cast<Scalar>();
-//  auto absW  = Values<2>({{1, 2, 3},
-//                          {4, 5, 6}})->cast<Scalar>();
-//  auto logaW = Values<2>({{0,          0.69314718, 1.09861229},
-//                          {1.38629436, 1.60943791, 1.79175947}})->cast<Scalar>();
-//
-//  check(Identity(W), W    );
-//  check(Tanh(W),     tanhW);
-//  check(Relu(W),     reluW);
-//  check(Sigmoid(W),  sigmW, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6); // TODO: how can i make this more accurate?
-//  check(Softmax(W),  smaxW, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6); // TODO: how can i make this more accurate?
-//  check(Sqrt(CwiseProd(W, W)), absW);
-//  CHECK_THROWS(check(Sqrt(W), W));
-//  check(Log(absW),   logaW);
-//  // TODO: Gelu forward
-//  // TODO: Gelu2 forward
-//
-//  CHECK_(Identity(W), {W}, true);
-//  CHECK_(Tanh(W),     {W}, true);
-//  CHECK_(Relu(W),     {W}, true);
-//  CHECK_(Sigmoid(W),  {W}, true);
-//  CHECK_(Softmax(W),  {W}, true);
-//  CHECK_(Sqrt(W + Scalar(3)),  {W}, true);
-//  CHECK_(Log(W + Scalar(1.5)), {W}, true);
-//  CHECK_(Gelu(W),     {W}, true, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-4);
-//  CHECK_(Gelu2(W),    {W}, true, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-4);
-//}
-//
-//TEMPLATE_TEST_CASE("Nonlin Extreme", "[nlnode]", Real, Half) {
-//  using Scalar = TestType;
-//  auto x = Values<2>({{10000.}, {-10000.}})->cast<Scalar>();
-//  auto x2 = Values<2>({{5.}, {-std::numeric_limits<Real>::infinity()}})->cast<Scalar>();
-//
-//  REQUIRE(x->shape() == Shape{2, 1});
-//
-//  auto tanhx    = Values<2>({{1.}, {-1.}})->cast<Scalar>();
-//  auto sigmoidx = Values<2>({{1.}, {0.}})->cast<Scalar>();
-//  auto smaxx    = Values<2>({{1.}, {0.}})->cast<Scalar>();
-//  auto smaxx2   = Values<2>({{1., 1.}})->cast<Scalar>();
-//
-//  REQUIRE(smaxx2->shape() == Shape{1, 2});
-//
-//  check(Tanh(x),     tanhx   );
-//  check(Sigmoid(x),  sigmoidx);
-//  check(Softmax(Reshape(x, Shape{1, 2})), smaxx2  );
-//  check(Softmax(x),  smaxx);
-//  check(Softmax(x2), smaxx);
-//
-//  CHECK_(Tanh(x),     {x});
-//  CHECK_(Sigmoid(x),  {x});
-//  CHECK_(Softmax(Reshape(x, Shape{1, 2})), {x});
-//  CHECK_(Softmax(x),  {x});
-//  CHECK_(Softmax(x2), {x2});
-//}
+TEMPLATE_TEST_CASE("Nonlin", "[nlnode]", Real, Half) {
+  using Scalar = TestType;
+  auto W = Values<2>({{-1, -2, -3},
+                      { 4,  5,  6}})->cast<Scalar>();
+  auto tanhW = Values<2>({{-0.76159415, -0.96402758, -0.99505475},
+                          { 0.99932929,  0.99990920,  0.99998771}})->cast<Scalar>();
+  auto reluW = Values<2>({{0, 0, 0},
+                          {4, 5, 6}})->cast<Scalar>();
+  auto sigmW = Values<2>({{0.26894142, 0.11920292, 0.04742587},
+                          {0.98201379, 0.99330714, 0.99752737}})->cast<Scalar>();
+  auto smaxW = Values<2>({{0.00669285, 9.11051194e-04, 1.23394576e-04},
+                          {0.99330715, 9.99088949e-01, 9.99876605e-01}})->cast<Scalar>();
+  auto absW  = Values<2>({{1, 2, 3},
+                          {4, 5, 6}})->cast<Scalar>();
+  auto logaW = Values<2>({{0,          0.69314718, 1.09861229},
+                          {1.38629436, 1.60943791, 1.79175947}})->cast<Scalar>();
+
+  check(Identity(W), W    );
+  check(Tanh(W),     tanhW);
+  check(Relu(W),     reluW);
+  check(Sigmoid(W),  sigmW, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6); // TODO: how can i make this more accurate?
+  check(Softmax(W),  smaxW, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6); // TODO: how can i make this more accurate?
+  check(Sqrt(CwiseProd(W, W)), absW);
+  CHECK_THROWS(check(Sqrt(W), W));
+  check(Log(absW),   logaW);
+  // TODO: Gelu forward
+  // TODO: Gelu2 forward
+
+  if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+    check_grad(Identity(W), {W}, true);
+    check_grad(Tanh(W),     {W}, true);
+    check_grad(Relu(W),     {W}, true);
+    check_grad(Sigmoid(W),  {W}, true);
+    check_grad(Softmax(W),  {W}, true);
+    check_grad(Sqrt(W + 3),  {W}, true);
+    check_grad(Log(W + 1.5), {W}, true);
+    check_grad(Gelu(W),     {W}, true);
+    check_grad(Gelu2(W),    {W}, true);
+  }
+  if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+    auto [W_] = to_gpu(W);
+    auto eps = std::is_same_v<Scalar, Half> ? 1e-3 : 1e-4;
+    SECTION("Id")      { compare_devices(Identity(W),   {W}, Identity(W_),   {W_}); }
+    SECTION("Tanh")    { compare_devices(Tanh(W * 0.1), {W}, Tanh(W_ * 0.1), {W_}); }
+    SECTION("Relu")    { compare_devices(Relu(W),       {W}, Relu(W_),       {W_}); }
+    SECTION("Sigmoid") { compare_devices(Sigmoid(W),    {W}, Sigmoid(W_),    {W_}); }
+    SECTION("Softmax") { compare_devices(Softmax(W * 0.1), {W}, Softmax(W_ * 0.1), {W_}); }
+    SECTION("Sqrt")    { compare_devices(Sqrt(W + 3),   {W}, Sqrt(W_ + 3),  {W_}); }
+    SECTION("Log")     { compare_devices(Log(W + 3.5),  {W}, Log(W_ + 3.5), {W_}); }
+    SECTION("Gelu")    { compare_devices(Gelu(W),       {W}, Gelu(W_),      {W_}); }
+    SECTION("Gelu2")   { compare_devices(Gelu2(W),      {W}, Gelu2(W_),     {W_}, eps); }
+  }
+}
+
+TEMPLATE_TEST_CASE("Nonlin Extreme", "[nlnode]", Real, Half) {
+  using Scalar = TestType;
+  auto x = Values<2>({{10000.}, {-10000.}})->cast<Scalar>();
+  auto x2 = Values<2>({{5.}, {-std::numeric_limits<Real>::infinity()}})->cast<Scalar>();
+
+  REQUIRE(x->shape() == Shape{2, 1});
+
+  auto tanhx    = Values<2>({{1.}, {-1.}})->cast<Scalar>();
+  auto sigmoidx = Values<2>({{1.}, {0.}})->cast<Scalar>();
+  auto smaxx    = Values<2>({{1.}, {0.}})->cast<Scalar>();
+  auto smaxx2   = Values<2>({{1., 1.}})->cast<Scalar>();
+
+  REQUIRE(smaxx2->shape() == Shape{1, 2});
+
+  check(Tanh(x),     tanhx   );
+  check(Sigmoid(x),  sigmoidx);
+  check(Softmax(x),  smaxx);
+  check(Softmax(x2), smaxx);
+  check(Softmax(Reshape(x, Shape{1, 2})), smaxx2  );
+
+  if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+    check_grad(Tanh(x),     {x});
+    check_grad(Sigmoid(x),  {x});
+    check_grad(Softmax(x),  {x});
+    check_grad(Softmax(x2), {x2});
+    check_grad(Softmax(Reshape(x, Shape{1, 2})), {x});
+  }
+  if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+    auto [x_, x2_] = to_gpu(x, x2);
+    compare_devices(Tanh(x),     {x }, Tanh(x_),     {x_ });
+    compare_devices(Sigmoid(x),  {x }, Sigmoid(x_),  {x_ });
+    compare_devices(Softmax(x),  {x }, Softmax(x_),  {x_ });
+    compare_devices(Softmax(x2), {x2}, Softmax(x2_), {x2_});
+    compare_devices(Softmax(Reshape(x, Shape{1, 2})), {x},
+                    Softmax(Reshape(x_, Shape{1, 2})), {x_});
+  }
+}
 //
 //TEMPLATE_TEST_CASE("Pickles", "[pick][nlnode]", Real, Half) {
 //  using Scalar = TestType;

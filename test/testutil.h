@@ -210,6 +210,13 @@ auto to_gpu(Args&&... args) {
 }
 #endif
 
+//// TODO: consider putting this in ginn/util/
+//// loop over values with heterogeneous types
+//// useful for applying some logic to a list of differently typed values
+// template <typename... Args, typename F>
+// void for_each(Args&&... args, F f) {
+//  (f(std::forward<Args>(args)), ...);
+//}
 } // namespace ginn
 
 #endif

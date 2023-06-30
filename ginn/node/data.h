@@ -63,8 +63,7 @@ class BaseDataNode : public Node<Scalar, Kind> {
   BaseDataNode(std::initializer_list<NodePtr<Scalar, Kind>> l)
       : BaseDataNode(std::vector(l.begin(), l.end())) {}
 
-  BaseDataNode(const NodePtr<Scalar, Kind>& x)
-      : BaseDataNode(std::vector{x}) {}
+  BaseDataNode(const NodePtr<Scalar, Kind>& x) : BaseDataNode(std::vector{x}) {}
 
   BaseDataNode(DevPtr<Kind> dev = default_dev<Kind>()) : fx_(dev), dfx_(dev) {}
   BaseDataNode(const Shape& shape)
@@ -168,43 +167,47 @@ template <typename Scalar, typename DevicePtr>
 auto Data(DevicePtr dev, std::initializer_list<Size> shape) {
   return Data<Scalar>(dev, Shape(shape));
 }
-// template <typename Scalar = Real, enum DeviceKind Kind = CPU>
-// auto FixedData(DevPtr<Kind> dev, std::initializer_list<Size> shape) {
-//   return FixedData<Scalar, Kind>(dev, Shape(shape));
-// }
+template <typename Scalar, typename DevicePtr>
+auto FixedData(DevicePtr dev, std::initializer_list<Size> shape) {
+  return FixedData<Scalar>(dev, Shape(shape));
+}
 
-// template <typename Scalar>
-// auto Constant(DevPtr dev, const Shape& shape, Scalar val) {
-//   auto x = FixedData<Scalar>(dev, shape);
-//   x->value().fill(val);
-//   return x;
-// }
-//
+template <typename Scalar, typename DevicePtr>
+auto Constant(DevicePtr dev, const Shape& shape, Scalar val) {
+  auto x = FixedData<Scalar>(dev, shape);
+  x->value().fill(val);
+  return x;
+}
+
 // template <typename Scalar, typename InScalar>
 // auto ConstantLike(NodePtr<InScalar> x, Scalar val) {
-//   return make_ptr<ConstantLikeNode<Scalar>>(x, val);
-// }
-//
-// template <typename Scalar = Real>
-// auto Zero(DevPtr dev, const Shape& s) {
-//   return Constant<Scalar>(dev, s, 0);
-// }
-//
+//  return make_ptr<ConstantLikeNode<Scalar>>(x, val);
+//}
+
+template <typename Scalar, typename DevicePtr>
+auto Zero(DevicePtr dev, const Shape& s) {
+  return Constant<Scalar>(dev, s, 0);
+}
+
 // template <typename Scalar>
 // auto ZeroLike(NodePtr<Scalar> x) {
-//   return ConstantLike<Scalar>(x, 0);
-// }
-//
-// template <typename Scalar = Real>
-// auto Ones(DevPtr dev, const Shape& s) {
-//   return Constant<Scalar>(dev, s, 1);
-// }
-//
+//  return ConstantLike<Scalar>(x, 0);
+//}
+
+template <typename Scalar, typename DevicePtr>
+auto Ones(DevicePtr dev, const Shape& s) {
+  return Constant<Scalar>(dev, s, 1);
+}
+template <typename DevicePtr>
+auto Ones(DevicePtr dev, const Shape& s) {
+  return Constant<Real>(dev, s, 1);
+}
+
 // template <typename Scalar>
 // auto OnesLike(NodePtr<Scalar> x) {
-//   return ConstantLike<Scalar>(x, 1);
-// }
-//
+//  return ConstantLike<Scalar>(x, 1);
+//}
+
 template <typename Scalar, typename DevicePtr>
 auto Random(DevicePtr dev, const Shape& shape) {
   auto x = Data<Scalar>(dev, shape);

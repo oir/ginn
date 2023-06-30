@@ -26,7 +26,7 @@ namespace ginn {
 
 enum class Copy { Tied, Deep };
 
-template <typename Scalar = Real, enum DeviceKind Kind = CPU>
+template <typename Scalar = Real, DeviceKind Kind = CPU>
 class WeightNode : public Node<Scalar, Kind> {
  private:
   static size_t next_id() {
@@ -85,7 +85,7 @@ class WeightNode : public Node<Scalar, Kind> {
 
   void reset_forwarded() override {}
 
-  template <enum DeviceKind OtherKind>
+  template <DeviceKind OtherKind>
   auto copy_to(const DevPtr<OtherKind>& to) {
     auto copy = make_ptr<WeightNode<Scalar, OtherKind>>();
     copy->value() = this->value().copy_to(to);
@@ -131,21 +131,22 @@ class WeightNode : public Node<Scalar, Kind> {
   }
 };
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 using WeightPtr = Ptr<WeightNode<Scalar, Kind>>;
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 using ConstWeightPtr = Ptr<const WeightNode<Scalar, Kind>>;
 
-template <typename Scalar = Real, enum DeviceKind Kind = CPU>
-auto Weight(DevPtr<Kind> dev = default_dev<Kind>(), const Shape& s = {0}) {
+template <typename Scalar, typename DevicePtr>
+auto Weight(const DevicePtr& dev, const Shape& s) {
+  constexpr auto Kind = DevicePtr::element_type::device_kind;
   return make_ptr<WeightNode<Scalar, Kind>>(dev, s);
 }
-template <typename Scalar = Real, enum DeviceKind Kind = CPU>
-auto Weight(DevPtr<Kind> dev, std::initializer_list<Size> shape) {
-  return Weight<Scalar, Kind>(dev, Shape(shape));
+template <typename Scalar, typename DevicePtr>
+auto Weight(const DevicePtr& dev, std::initializer_list<Size> shape) {
+  return Weight<Scalar>(dev, Shape(shape));
 }
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 auto Weight(const WeightNode<Scalar, Kind>& other) {
   return make_ptr<WeightNode<Scalar, Kind>>(other);
 }
