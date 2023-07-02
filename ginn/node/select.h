@@ -20,11 +20,11 @@
 
 namespace ginn {
 
-template <typename Scalar>
-class SelectNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class SelectNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<bool> if_;
-  NodePtr<Scalar> then_, else_;
+  NodePtr<bool, Kind> if_;
+  NodePtr<Scalar, Kind> then_, else_;
 
   void forward_() override {
     GINN_ASSERT(then_->shape() == Shape{} or then_->shape() == if_->shape());
@@ -59,7 +59,7 @@ class SelectNode : public BaseDataNode<Scalar> {
     bool else_scalar = else_->shape() == Shape{};
 
     if (then_->has_grad()) {
-      auto cmp = if_->value().t().template cast<Scalar>();
+      auto cmp = if_->value().t().template cast<Raw<Scalar>>();
       if (then_scalar) {
         then_->grad() += (cmp * grad().t()).sum();
       } else {
@@ -67,7 +67,7 @@ class SelectNode : public BaseDataNode<Scalar> {
       }
     }
     if (else_->has_grad()) {
-      auto cmp = (if_->value().t() == false).template cast<Scalar>();
+      auto cmp = (if_->value().t() == false).template cast<Raw<Scalar>>();
       if (else_scalar) {
         else_->grad() += (cmp * grad().t()).sum();
       } else {
@@ -77,56 +77,84 @@ class SelectNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  SelectNode(const NodePtr<bool>& if_n,
-             const NodePtr<Scalar>& then_n,
-             const NodePtr<Scalar>& else_n)
-      : BaseDataNode<Scalar>({if_n, then_n, else_n}),
+  SelectNode(const NodePtr<bool, Kind>& if_n,
+             const NodePtr<Scalar, Kind>& then_n,
+             const NodePtr<Scalar, Kind>& else_n)
+      : BaseDataNode<Scalar, Kind>(
+            std::vector<BaseDevNodePtr<Kind>>{if_n, then_n, else_n}),
         if_(if_n),
         then_(then_n),
         else_(else_n) {}
 
-  SelectNode(const NodePtr<bool>& if_n,
-             const NodePtr<Scalar>& then_n,
-             Scalar else_val)
-      : SelectNode(if_n, then_n, Constant(if_n->dev(), {}, else_val)) {}
-
-  SelectNode(const NodePtr<bool>& if_n,
-             Scalar then_val,
-             const NodePtr<Scalar>& else_n)
-      : SelectNode(if_n, Constant(if_n->dev(), {}, then_val), else_n) {}
-
-  SelectNode(const NodePtr<bool>& if_n, Scalar then_val, Scalar else_val)
+  template <typename ElseScalar,
+            typename = std::enable_if_t<std::is_arithmetic_v<ElseScalar>>>
+  SelectNode(const NodePtr<bool, Kind>& if_n,
+             const NodePtr<Scalar, Kind>& then_n,
+             ElseScalar else_val)
       : SelectNode(if_n,
-                   Constant(if_n->dev(), {}, then_val),
-                   Constant(if_n->dev(), {}, else_val)) {}
+                   then_n,
+                   Constant<Scalar>(if_n->dev(), Shape{}, else_val)) {}
+
+  template <typename ThenScalar,
+            typename = std::enable_if_t<std::is_arithmetic_v<ThenScalar>>>
+  SelectNode(const NodePtr<bool, Kind>& if_n,
+             ThenScalar then_val,
+             const NodePtr<Scalar, Kind>& else_n)
+      : SelectNode(if_n,
+                   Constant<Scalar>(if_n->dev(), Shape{}, then_val),
+                   else_n) {}
+
+  template <typename ThenScalar,
+            typename ElseScalar,
+            typename = std::enable_if_t<std::is_arithmetic_v<ThenScalar>>,
+            typename = std::enable_if_t<std::is_arithmetic_v<ElseScalar>>>
+  SelectNode(const NodePtr<bool, Kind>& if_n,
+             ThenScalar then_val,
+             ElseScalar else_val)
+      : SelectNode(if_n,
+                   Constant<Scalar>(if_n->dev(), Shape{}, then_val),
+                   Constant<Scalar>(if_n->dev(), Shape{}, else_val)) {}
 
   std::string name() const override { return "Select"; }
 };
 
-template <typename Then, typename Else>
-auto Select(const NodePtr<bool>& if_, Then&& then_, Else&& else_) {
-  if constexpr (is_node_ptr_v<std::decay_t<Then>>) {
-    using Scalar = typename std::decay_t<Then>::element_type::Scalar;
-    return make_ptr<SelectNode<Scalar>>(
-        if_, std::forward<Then>(then_), std::forward<Else>(else_));
+template <typename If, typename Then, typename Else>
+auto Select(const If& if_, const Then& then_, const Else& else_) {
+  static_assert(is_node_ptr_v<If>);
+  static_assert(is_node_ptr_v<Then> or is_node_ptr_v<Else>);
+
+  constexpr auto Kind = If::element_type::device_kind;
+  if constexpr (is_node_ptr_v<Then>) {
+    using Scalar = typename Then::element_type::Scalar;
+    return make_ptr<SelectNode<Scalar, Kind>>(if_, then_, else_);
   } else {
-    using Scalar = typename std::decay_t<Then>;
-    return make_ptr<SelectNode<Scalar>>(
-        if_, std::forward<Then>(then_), std::forward<Else>(else_));
+    using Scalar = typename Else::element_type::Scalar;
+    return make_ptr<SelectNode<Scalar, Kind>>(if_, then_, else_);
   }
+}
+
+// To be able to specify "Scalar" explicitly when "Then" and "Else" are various
+// scalars themselves
+template <typename Scalar, typename If, typename Then, typename Else>
+auto Select(const If& if_, const Then& then_, const Else& else_) {
+  static_assert(is_node_ptr_v<If>);
+  constexpr auto Kind = If::element_type::device_kind;
+  return make_ptr<SelectNode<Scalar, Kind>>(if_, then_, else_);
 }
 
 // Mask is very close to a Select with a scalar, however mask is allowed to
 // broadcast.
-template <typename Scalar>
-class MaskNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class MaskNode : public BaseDataNode<Scalar, Kind> {
  private:
   // TODO: check if any part of this should be Int or bool nodes
-  NodePtr<Scalar> in_, mask_;
-  Scalar mask_val_;
+  NodePtr<Scalar, Kind> in_, mask_;
+  Raw<Scalar> mask_val_;
+
+  Size size() const { return mask_->size(); }
 
   void forward_() override {
     value().resize(in_->shape());
@@ -147,9 +175,9 @@ class MaskNode : public BaseDataNode<Scalar> {
     auto in_m = in_->value().reshaped({Size(mask_->size()), batch_size});
     auto value_m = value().reshaped({Size(mask_->size()), batch_size});
 
-    Tensor<Scalar> val(dev(), {}, mask_val_);
+    Tensor<Scalar, Kind> val(dev(), {}, mask_val_);
     Index<2> cast{in_m.rows(), in_m.cols()};
-    value_m = (mask_m.t().broadcast(Index<2>{1, batch_size}) != Scalar(0))
+    value_m = (mask_m.t().broadcast(Index<2>{1, batch_size}) != Raw<Scalar>(0))
                   .select(in_m.t(), val.t().broadcast(cast));
   }
 
@@ -160,23 +188,24 @@ class MaskNode : public BaseDataNode<Scalar> {
       auto d_in_m = in_->grad().reshaped({Size(mask_->size()), batch_size});
       auto d_m = grad().reshaped({Size(mask_->size()), batch_size});
 
-      Tensor<Scalar> zero(dev(), {}, Scalar(0));
+      Tensor<Scalar, Kind> zero(dev(), {}, Raw<Scalar>(0));
       Index<2> cast{d_in_m.rows(), d_in_m.cols()};
-      d_in_m += (mask_m.t().broadcast(Index<2>{1, batch_size}) != Scalar(0))
-                    .select(d_m.t(), zero.t().broadcast(cast));
+      d_in_m +=
+          (mask_m.t().broadcast(Index<2>{1, batch_size}) != Raw<Scalar>(0))
+              .select(d_m.t(), zero.t().broadcast(cast));
     }
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
   template <typename RhsScalar>
-  MaskNode(const NodePtr<Scalar>& in,
-           const NodePtr<Scalar>& mask,
+  MaskNode(const NodePtr<Scalar, Kind>& in,
+           const NodePtr<Scalar, Kind>& mask,
            RhsScalar mask_val)
-      : BaseDataNode<Scalar>({in, mask}),
+      : BaseDataNode<Scalar, Kind>({in, mask}),
         in_(in),
         mask_(mask),
         mask_val_(mask_val) {}

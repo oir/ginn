@@ -240,7 +240,7 @@ TEMPLATE_TEST_CASE("Add subtract", "[arithmetic]", Real, Half, Int) {
   }
 
   SECTION("CwiseProd") {
-    auto e = Values<2>({{-1, 16 },
+    auto e = Values<2>({{-1, 16},
                         {-4, 25},
                         {-9, 36}})->cast<Scalar>();
 

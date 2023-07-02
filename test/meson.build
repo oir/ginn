@@ -9,6 +9,7 @@ sources = [
   'nodes-common.cu.cpp',
   'nodes-dropout.cu.cpp',
   'nodes-layout.cu.cpp',
+  'nodes-pick.cu.cpp',
   'sample.cpp',
   'tensor.cu.cpp',
   'util.cpp',
@@ -21,6 +22,7 @@ cuda_sources = [
   'nodes-common.cu.cpp',
   'nodes-dropout.cu.cpp',
   'nodes-layout.cu.cpp',
+  'nodes-pick.cu.cpp',
   'tensor.cu.cpp',
 ]
 

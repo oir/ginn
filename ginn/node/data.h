@@ -93,50 +93,53 @@ class BaseDataNode : public Node<Scalar, Kind> {
   std::string name() const override = 0;
 };
 
-template <typename Scalar, enum DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind>
 class DataNode : public BaseDataNode<Scalar, Kind> {
-  public : DataNode(DevPtr<Kind> dev = default_dev<Kind>()) :
-      BaseDataNode<Scalar, Kind>(dev){this->forwarded = true;}
-DataNode(Shape shape) : BaseDataNode<Scalar, Kind>(std::move(shape)) {
-  this->forwarded = true;
-}
-DataNode(DevPtr<Kind> dev, Shape shape)
-    : BaseDataNode<Scalar, Kind>(std::move(dev), std::move(shape)) {
-  this->forwarded = true;
-}
+ public:
+  DataNode(DevPtr<Kind> dev = default_dev<Kind>())
+      : BaseDataNode<Scalar, Kind>(dev) {
+    this->forwarded = true;
+  }
+  DataNode(Shape shape) : BaseDataNode<Scalar, Kind>(std::move(shape)) {
+    this->forwarded = true;
+  }
+  DataNode(DevPtr<Kind> dev, Shape shape)
+      : BaseDataNode<Scalar, Kind>(std::move(dev), std::move(shape)) {
+    this->forwarded = true;
+  }
 
-using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::value;
 
-template <typename DevicePtr>
-auto copy_to(const DevicePtr& to) {
-  const static auto OtherKind = DevicePtr::element_type::device_kind;
-  auto copy = make_ptr<DataNode<Scalar, OtherKind>>();
-  copy->value() = this->value().copy_to(to);
-  copy->grad() = this->grad().copy_to(to);
-  return copy;
-}
+  template <typename DevicePtr>
+  auto copy_to(const DevicePtr& to) {
+    const static auto OtherKind = DevicePtr::element_type::device_kind;
+    auto copy = make_ptr<DataNode<Scalar, OtherKind>>();
+    copy->value() = this->value().copy_to(to);
+    copy->grad() = this->grad().copy_to(to);
+    return copy;
+  }
 
-void fill(Raw<Scalar> val) { value().fill(val); }
-void set_zero() { value().set_zero(); }
-void set_ones() { value().set_ones(); }
-void set_random() { value().set_random(); }
+  void fill(Raw<Scalar> val) { value().fill(val); }
+  void set_zero() { value().set_zero(); }
+  void set_ones() { value().set_ones(); }
+  void set_random() { value().set_random(); }
 
-void reset_forwarded() override {}
+  void reset_forwarded() override {}
 
-template <typename OtherScalar>
-auto cast() const {
-  auto other =
-      make_ptr<DataNode<OtherScalar, Kind>>(this->dev(), this->shape());
-  other->set_has_grad(this->has_grad());
-  other->forwarded = this->forwarded;
-  other->value() = this->value().template cast<OtherScalar>();
-  other->grad() = this->grad().template cast<OtherScalar>();
-  return other;
-}
+  template <typename OtherScalar>
+  auto cast() const {
+    auto other =
+        make_ptr<DataNode<OtherScalar, Kind>>(this->dev(), this->shape());
+    other->set_has_grad(this->has_grad());
+    other->forwarded = this->forwarded;
+    other->value() = this->value().template cast<OtherScalar>();
+    other->grad() = this->grad().template cast<OtherScalar>();
+    return other;
+  }
 
-Shape shape() const override { return value().shape(); }
+  Shape shape() const override { return value().shape(); }
 
-std::string name() const override { return "DataNode"; }
+  std::string name() const override { return "DataNode"; }
 }; // namespace ginn
 
 template <typename Scalar = Real, enum DeviceKind Kind = CPU>
@@ -172,10 +175,10 @@ auto FixedData(DevicePtr dev, std::initializer_list<Size> shape) {
   return FixedData<Scalar>(dev, Shape(shape));
 }
 
-template <typename Scalar, typename DevicePtr>
-auto Constant(DevicePtr dev, const Shape& shape, Scalar val) {
+template <typename Scalar, typename DevicePtr, typename ValScalar>
+auto Constant(DevicePtr dev, const Shape& shape, ValScalar val) {
   auto x = FixedData<Scalar>(dev, shape);
-  x->value().fill(val);
+  x->value().fill(Raw<Scalar>(val));
   return x;
 }
 

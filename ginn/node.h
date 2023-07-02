@@ -165,17 +165,33 @@ class BaseNode {
   virtual std::string name() const = 0;
 };
 
-template <typename ScalarType = Real, enum DeviceKind Kind = CPU>
-class Node : public BaseNode {
+template <DeviceKind Kind = CPU>
+class BaseDevNode : public BaseNode {
  public:
-  using Scalar = ScalarType;
   static const auto device_kind = Kind;
 
  public:
   using BaseNode::BaseNode;
 
+  virtual DevPtr<Kind> dev() const = 0;
+};
+
+template <DeviceKind Kind = CPU>
+using BaseDevNodePtr = Ptr<BaseDevNode<Kind>>;
+
+template <typename ScalarType = Real, DeviceKind Kind = CPU>
+class Node : public BaseDevNode<Kind> {
+ public:
+  using Scalar = ScalarType;
+  static const auto device_kind = Kind;
+
+ public:
+  using BaseDevNode<Kind>::BaseDevNode;
+  using BaseNode::forwarded;
+
   virtual const Tensor<Scalar, Kind>& value() const = 0;
   virtual const Tensor<Scalar, Kind>& grad() const = 0;
+
   Tensor<Scalar, Kind>& value() {
     return const_cast<Tensor<Scalar, Kind>&>(
         const_cast<const Node&>(*this).value());
@@ -185,19 +201,19 @@ class Node : public BaseNode {
         const_cast<const Node&>(*this).grad());
   }
 
-  virtual DevPtr<Kind> dev() const { return value().dev(); }
+  DevPtr<Kind> dev() const override { return value().dev(); }
 
   Shape shape() const override { return value().shape(); }
 
   void init_grad() override {
     GINN_ASSERT(forwarded, "Cannot init grad on non-forwarded nodes!");
-    if (has_grad() and value().size() != grad().size()) {
+    if (this->has_grad() and value().size() != grad().size()) {
       grad().resize(value().shape());
     }
   }
   void reset_grad() override {
     init_grad();
-    if (has_grad()) { grad().set_zero(); }
+    if (this->has_grad()) { grad().set_zero(); }
   }
 
   Raw<Scalar> item() const { return value().item(); }

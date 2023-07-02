@@ -32,7 +32,7 @@
 // #include <ginn/node/pick.h>
 // #include <ginn/node/prod.h>
 // #include <ginn/node/reduce.h>
-// #include <ginn/node/select.h>
+#include <ginn/node/select.h>
 // #include <ginn/node/weight.h>
 
 #include "check_node.h"
@@ -181,164 +181,129 @@ TEMPLATE_TEST_CASE("Nonlin Extreme", "[nlnode]", Real, Half) {
                     Softmax(Reshape(x_, Shape{1, 2})), {x_});
   }
 }
-//
-//TEMPLATE_TEST_CASE("Pickles", "[pick][nlnode]", Real, Half) {
-//  using Scalar = TestType;
-//  auto W = Values<2>({{-0.5,  0.55, -0.45},
-//                      { 1. ,  2.  , -1.  },
-//                      { 0. ,  0.  ,  0.  },
-//                      { 0.3, -0.33,  1.3 }})->cast<Scalar>();
-//  //auto sm = Values<2>({{0.106884, 0.159876,  0.112361},
-//  //                     {0.47902,  0.68157,   0.0648268},
-//  //                     {0.176222, 0.0922404, 0.176218},
-//  //                     {0.237874, 0.0663138, 0.646594}});
-//  auto p     = Values<2>({{0.3, 0.55, -1.}})->cast<Scalar>();
-//  auto psm   = Values<2>({{0.23787436, 0.15987601, 0.06482681}})->cast<Scalar>();
-//  auto pnlsm = Values<2>({{1.43601264, 1.8333567,  2.73603603}})->cast<Scalar>();
-//
-//  auto iv = std::vector<Int>{3, 0, 1};
-//  auto it = Values<1>({3, 0, 1})->cast<Int>();
-//  it->set_has_grad(false);
-//
-//  SECTION("Pick") {
-//    check(Pick(W, iv), p);
-//    check(Pick(W, it), p);
-//    CHECK_(Pick(W, iv), {W},     true);
-//    CHECK_(Pick(W, it), {W, it}, true);
-//  }
-//  SECTION("PickSoftmax") {
-//    check(PickSoftmax(W, iv),   psm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(PickSoftmax(W, it),   psm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(Pick(Softmax(W), iv), psm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(Pick(Softmax(W), it), psm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    CHECK_(PickSoftmax(W, iv),   {W},     true);
-//    CHECK_(PickSoftmax(W, it),   {W, it}, true);
-//    CHECK_(Pick(Softmax(W), iv), {W},     true);
-//    CHECK_(Pick(Softmax(W), it), {W, it}, true);
-//  }
-//  SECTION("PickNegLogSoftmax") {
-//    check(PickNegLogSoftmax(W, iv),   pnlsm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(PickNegLogSoftmax(W, it),   pnlsm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(-Log(PickSoftmax(W, iv)),   pnlsm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(-Log(PickSoftmax(W, it)),   pnlsm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(Pick(-Log(Softmax(W)), iv), pnlsm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    check(Pick(-Log(Softmax(W)), it), pnlsm, std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6);
-//    CHECK_(PickNegLogSoftmax(W, iv),   {W},     true);
-//    CHECK_(PickNegLogSoftmax(W, it),   {W, it}, true);
-//    CHECK_(-Log(PickSoftmax(W, iv)),   {W},     true);
-//    CHECK_(-Log(PickSoftmax(W, it)),   {W, it}, true);
-//    CHECK_(Pick(-Log(Softmax(W)), iv), {W},     true);
-//    CHECK_(Pick(-Log(Softmax(W)), it), {W, it}, true);
-//  }
-//}
-//
-//TEMPLATE_TEST_CASE("PickNegLogSigmoid", "[pick][nlnode]", Real, Half) {
-//  using Scalar = TestType;
-//  auto W = Values<2>({{-0.5,  0.55, -0.45},
-//                      { 1. ,  2.  , -1.  },
-//                      { 0. ,  0.  ,  0.  },
-//                      { 0.3, -0.33,  1.3 }})->cast<Scalar>();
-//  auto p = Values<2>({{0, 1, 0},
-//                      {1, 0, 1},
-//                      {0, 1, 0},
-//                      {1, 0, 1}})->cast<Int>();
-//  p->set_has_grad(false);
-//  auto pnls = Values<2>({{0.47407698, 0.45549248, 0.49324895},
-//                         {0.31326169, 2.12692801, 1.31326169},
-//                         {0.69314718, 0.69314718, 0.69314718},
-//                         {0.55435524, 0.54169836, 0.24100845}})->cast<Scalar>();
-//
-//  check(PickNegLogSigmoid(W, p), pnls, std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6);
-//  CHECK_(PickNegLogSigmoid(W, p), {W, p}, true);
-//}
-//
-//TEMPLATE_TEST_CASE("Select", "[select]", Real, Half, Int) {
-//  using Scalar = TestType;
-//  auto if_ = Values<2>({{1., 0.},
-//                        {0., 1.},
-//                        {1., 0.}})->cast<bool>();
-//  if_->set_has_grad(false); // TODO: maybe integral nodes should have this default?
-//  auto a = Values<2>({{1., 2.},
-//                      {3., 4.},
-//                      {5., 6.}})->cast<Scalar>();
-//  auto b = Values<2>({{.1, .2},
-//                      {.3, .4},
-//                      {.5, .6}})->cast<Scalar>();
-//
-//  auto y1 = Values<2>({{1., .2},
-//                       {.3, 4.},
-//                       {5., .6}})->cast<Scalar>();
-//  auto y2 = Values<2>({{1., 7.},
-//                       {7., 4.},
-//                       {5., 7.}})->cast<Scalar>();
-//  auto y3 = Values<2>({{7., .2},
-//                       {.3, 7.},
-//                       {7., .6}})->cast<Scalar>();
-//  auto y4 = Values<2>({{7., -2},
-//                       {-2, 7.},
-//                       {7., -2}})->cast<Scalar>();
-//
-//
-//  check(Select(if_, a, b),                  y1);
-//  check(Select(if_, a, Scalar(7)),          y2);
-//  check(Select(if_, Scalar(7), b),          y3);
-//  check(Select(if_, Scalar(7), Scalar(-2)), y4);
-//  CHECK_(Select(if_, a, b),                  {if_, a, b});
-//  CHECK_(Select(if_, a, Scalar(7)),          {if_, a});
-//  CHECK_(Select(if_, Scalar(7), b),          {if_, b});
-//  CHECK_(Select(if_, Scalar(7), Scalar(-2)), {if_});
-//}
-//
-//TEMPLATE_TEST_CASE("Mask", "[select]", Real, Half, Int) {
-//  using Scalar = TestType;
-//  auto mask = Values<2>({{1., 0.},
-//                         {0., 1.},
-//                         {1., 0.}})->cast<Scalar>();
-//  mask->set_has_grad(false);
-//  auto mask2 = Values<2>({{1.},
-//                          {0.},
-//                          {1.}})->cast<Scalar>();
-//  mask2->set_has_grad(false);
-//  auto a = Values<2>({{1., 2.},
-//                      {3., 4.},
-//                      {5., 6.}})->cast<Scalar>();
-//
-//  SECTION("Forward") {
-//    auto y1 = Values<2>({{ 1., -1.},
-//                         {-1.,  4.},
-//                         { 5., -1.}})->cast<Scalar>();
-//    auto y2 = Values<2>({{1., 2.},
-//                         {7., 7.},
-//                         {5., 6.}})->cast<Scalar>();
-//
-//    check(Mask(a, mask,  Scalar(-1)), y1);
-//    check(Mask(a, mask2, Scalar(7)),  y2);
-//  }
-//
-//  SECTION("Grad or cuda") {
-//    CHECK_(Mask(a, mask,  Scalar(-1)), {a, mask });
-//    CHECK_(Mask(a, mask2, Scalar(7) ), {a, mask2});
-//
-//    auto W  = Random(Dev, {2, 3, 2})->cast<Scalar>();
-//    auto m1 = Random(Dev, {2, 3, 2})->cast<Scalar>();
-//    auto m2 = Random(Dev, {2, 3, 1})->cast<Scalar>();
-//    auto m3 = Random(Dev, {2, 1, 1})->cast<Scalar>();
-//
-//    auto set_mask = [](auto& m) {
-//      m->set_random();
-//      m->value() = (m->value().t() > Scalar(0)).template cast<Scalar>();
-//      m->set_has_grad(false);
-//    };
-//
-//    set_mask(m1);
-//    set_mask(m2);
-//    set_mask(m3);
-//
-//    CHECK_(Mask(W, m1, Scalar( 3.)), {W, m1, m2, m3});
-//    CHECK_(Mask(W, m2, Scalar(-3.)), {W, m1, m2, m3});
-//    CHECK_(Mask(W, m3, Scalar( 0.)), {W, m1, m2, m3});
-//  }
-//}
+
+TEMPLATE_TEST_CASE("Select", "[select]", Real, Half, Int) {
+  using Scalar = TestType;
+  auto if_ = Values<2>({{1., 0.},
+                        {0., 1.},
+                        {1., 0.}})->cast<bool>();
+  if_->set_has_grad(false); // TODO: maybe integral nodes should have this default?
+  auto a = Values<2>({{1., 2.},
+                      {3., 4.},
+                      {5., 6.}})->cast<Scalar>();
+  auto b = Values<2>({{.1, .2},
+                      {.3, .4},
+                      {.5, .6}})->cast<Scalar>();
+
+  auto y1 = Values<2>({{1., .2},
+                       {.3, 4.},
+                       {5., .6}})->cast<Scalar>();
+  auto y2 = Values<2>({{1., 7.},
+                       {7., 4.},
+                       {5., 7.}})->cast<Scalar>();
+  auto y3 = Values<2>({{7., .2},
+                       {.3, 7.},
+                       {7., .6}})->cast<Scalar>();
+  auto y4 = Values<2>({{7., -2},
+                       {-2, 7.},
+                       {7., -2}})->cast<Scalar>();
+
+
+  check(Select(if_, a, b),   y1);
+  check(Select(if_, a, 7),   y2);
+  check(Select(if_, 7, b),   y3);
+  check(Select<Scalar>(if_, 7, -2.), y4);
+  if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+    check_grad(Select(if_, a, b),  {a, b}, true);
+    check_grad(Select(if_, a, 7),  {a},    true);
+    check_grad(Select(if_, 7., b), {b},    true);
+  }
+  if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+    auto [if__, a_, b_] = to_gpu(if_, a, b);
+    compare_devices(Select(if_ , a , b ), {a , b },
+                    Select(if__, a_, b_), {a_, b_});
+    compare_devices(Select(if_, a, 7)  , {a}, Select(if__, a_, 7) , {a_});
+    compare_devices(Select(if_, 7., b ), {b}, Select(if__, 7., b_), {b_});
+    compare_devices(Select<Scalar>(if_ , 7, -2.), std::initializer_list<NodePtr<Scalar, CPU>>{},
+                    Select<Scalar>(if__, 7, -2.), std::initializer_list<NodePtr<Scalar, GPU>>{});
+  }
+}
+
+TEMPLATE_TEST_CASE("Mask", "[select]", Real, Half, Int) {
+  using Scalar = TestType;
+  auto mask = Values<2>({{1., 0.},
+                         {0., 1.},
+                         {1., 0.}})->cast<Scalar>();
+  mask->set_has_grad(false);
+  auto mask2 = Values<2>({{1.},
+                          {0.},
+                          {1.}})->cast<Scalar>();
+  mask2->set_has_grad(false);
+  auto a = Values<2>({{1., 2.},
+                      {3., 4.},
+                      {5., 6.}})->cast<Scalar>();
+
+  SECTION("Forward") {
+    auto y1 = Values<2>({{ 1., -1.},
+                         {-1.,  4.},
+                         { 5., -1.}})->cast<Scalar>();
+    auto y2 = Values<2>({{1., 2.},
+                         {7., 7.},
+                         {5., 6.}})->cast<Scalar>();
+
+    check(Mask(a, mask,  -1), y1);
+    check(Mask(a, mask2, 7.),  y2);
+  }
+
+  SECTION("Grad or cuda") {
+    if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+      check_grad(Mask(a, mask,  -1), {a}, true);
+      check_grad(Mask(a, mask2, 7.), {a}, true);
+
+      auto W  = Random(cpu(), {2, 3, 2})->cast<Scalar>();
+      auto m1 = Random(cpu(), {2, 3, 2})->cast<Scalar>();
+      auto m2 = Random(cpu(), {2, 3, 1})->cast<Scalar>();
+      auto m3 = Random(cpu(), {2, 1, 1})->cast<Scalar>();
+
+      auto set_mask = [](auto& m) {
+        m->value() = (m->value().t() > Raw<Scalar>(0))
+                       .template cast<Raw<Scalar>>();
+      };
+
+      set_mask(m1);
+      set_mask(m2);
+      set_mask(m3);
+
+      check_grad(Mask(W, m1,  3.), {W});
+      check_grad(Mask(W, m2, -3.), {W});
+      check_grad(Mask(W, m3,  0.), {W});
+    }
+    if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+      auto [a_, mask_, mask2_] = to_gpu(a, mask, mask2);
+      compare_devices(Mask(a, mask,  -1), {a}, Mask(a_, mask_,  -1), {a_});
+      compare_devices(Mask(a, mask2, 7.), {a}, Mask(a_, mask2_, 7.), {a_});
+
+      auto W  = Random(cpu(), {2, 3, 2})->cast<Scalar>();
+      auto m1 = Random(cpu(), {2, 3, 2})->cast<Scalar>();
+      auto m2 = Random(cpu(), {2, 3, 1})->cast<Scalar>();
+      auto m3 = Random(cpu(), {2, 1, 1})->cast<Scalar>();
+
+      auto set_mask = [](auto& m) {
+        m->value() = (m->value().t() > Raw<Scalar>(0))
+                       .template cast<Raw<Scalar>>();
+      };
+
+      set_mask(m1);
+      set_mask(m2);
+      set_mask(m3);
+
+      auto [W_, m1_, m2_, m3_] = to_gpu(W, m1, m2, m3);
+      compare_devices(Mask(W, m1,  3.), {W}, Mask(W_, m1_,  3.), {W_});
+      compare_devices(Mask(W, m2, -3.), {W}, Mask(W_, m2_, -3.), {W_});
+      compare_devices(Mask(W, m3,  0.), {W}, Mask(W_, m3_,  0.), {W_});
+    }
+  }
+}
 //
 //TEMPLATE_TEST_CASE("LayerNorm", "[layernorm][inplace]", Real, Half) {
 //  // TODO: forward test

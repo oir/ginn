@@ -25,11 +25,11 @@
 
 namespace ginn {
 
-template <typename Scalar>
-class PickNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class PickNode : public BaseDataNode<Scalar, Kind> {
  protected:
-  NodePtr<Scalar> in_;
-  DataPtr<Int> index_; // TODO: Make this NodePtr<Int> instead
+  NodePtr<Scalar, Kind> in_;
+  DataPtr<Int, Kind> index_; // TODO: Make this NodePtr<Int> instead
 
  public: // Cuda needs this public
 #ifdef GINN_ENABLE_GPU
@@ -46,25 +46,25 @@ class PickNode : public BaseDataNode<Scalar> {
 #endif
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
  protected:
-  void pick(Tensor<Scalar>& input) {
+  void pick(Tensor<Scalar, Kind>& input) {
     value().resize({1, input.cols()});
     auto& index = index_->value();
     GINN_ASSERT(input.cols() == index.size(),
                 "Index size does not match input columns! (" +
                     std::to_string(index.size()) + "≠" +
                     std::to_string(input.cols()));
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       auto vv = value().v();
       auto ivm = input.m();
       auto iv = index.v();
       for (Size i = 0; i < index.size(); i++) { vv[i] = ivm.col(i)[iv[i]]; }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       Int rows = input.rows();
       auto index_begin = thrust::device_ptr<Int>(index.data());
       auto ct_begin = thrust::make_counting_iterator(Int(0));
@@ -74,18 +74,18 @@ class PickNode : public BaseDataNode<Scalar> {
       thrust::gather(thrust::device,
                      map_begin,
                      map_begin + index.size(),
-                     thrust::device_ptr<Scalar>(input.data()),
-                     thrust::device_ptr<Scalar>(value().data()));
+                     thrust::device_ptr<Raw<Scalar>>(input.data()),
+                     thrust::device_ptr<Raw<Scalar>>(value().data()));
 #endif
     } else {
       GINN_THROW("Unexpected device!");
     }
   }
 
-  void pick_grad(Tensor<Scalar>& grad_in, bool negate = false) {
+  void pick_grad(Tensor<Scalar, Kind>& grad_in, bool negate = false) {
     auto& index = index_->value();
     if (in_->has_grad()) {
-      if (dev()->kind() == CPU) {
+      if constexpr (Kind == CPU) {
         auto iv = index.v();
         auto gv = grad().v();
         auto igm = grad_in.m();
@@ -97,7 +97,7 @@ class PickNode : public BaseDataNode<Scalar> {
           }
         }
 #ifdef GINN_ENABLE_GPU
-      } else if (dev()->kind() == GPU) {
+      } else if constexpr (Kind == GPU) {
         Int rows = in_->value().rows();
         auto index_begin = thrust::device_ptr<Int>(index.data());
         auto ct_begin = thrust::make_counting_iterator(Int(0));
@@ -107,24 +107,24 @@ class PickNode : public BaseDataNode<Scalar> {
         // If we had a "scatter_add" instead of "scatter", we wouldn't need
         // this additional temp tensor and the gather step. Maybe implement
         // based on thrust::scatter?
-        Tensor<Scalar> grad_bits(dev(), grad().shape());
+        Tensor<Scalar, Kind> grad_bits(dev(), grad().shape());
         thrust::gather(thrust::device,
                        map_begin,
                        map_begin + index.size(),
-                       thrust::device_ptr<Scalar>(grad_in.data()),
-                       thrust::device_ptr<Scalar>(grad_bits.data()));
+                       thrust::device_ptr<Raw<Scalar>>(grad_in.data()),
+                       thrust::device_ptr<Raw<Scalar>>(grad_bits.data()));
         if (negate) {
           grad_bits -= grad().t();
         } else {
           grad_bits += grad().t();
         }
-        auto grad_begin = thrust::device_ptr<Scalar>(grad_bits.data());
+        auto grad_begin = thrust::device_ptr<Raw<Scalar>>(grad_bits.data());
         auto grad_end = grad_begin + grad_bits.size();
         thrust::scatter(thrust::device,
                         grad_begin,
                         grad_end,
                         map_begin,
-                        thrust::device_ptr<Scalar>(grad_in.data()));
+                        thrust::device_ptr<Raw<Scalar>>(grad_in.data()));
 #endif
       } else {
         GINN_THROW("Unexpected device!");
@@ -134,7 +134,7 @@ class PickNode : public BaseDataNode<Scalar> {
 
   void check_range() {
     // TODO: Gpu
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       GINN_ASSERT((index_->value().v().array() >= Int(0)).all(),
                   "Picking index is negative!");
       GINN_ASSERT(
@@ -151,15 +151,18 @@ class PickNode : public BaseDataNode<Scalar> {
   void backward_() override { pick_grad(in_->grad()); }
 
  public:
-  PickNode(const NodePtr<Scalar>& in, const DataPtr<Int>& index)
-      : BaseDataNode<Scalar>({in, index}), in_(in), index_(index) {}
+  PickNode(const NodePtr<Scalar, Kind>& in, const DataPtr<Int, Kind>& index)
+      : BaseDataNode<Scalar, Kind>(
+            std::vector<BaseDevNodePtr<Kind>>{in, index}),
+        in_(in),
+        index_(index) {}
 
-  PickNode(const NodePtr<Scalar>& in, const std::vector<Int>& index)
+  PickNode(const NodePtr<Scalar, Kind>& in, const std::vector<Int>& index)
       : PickNode(in, Data<Int>(in->dev(), Shape{(Size)index.size()})) {
     index_->value().set(index);
   }
 
-  PickNode(const NodePtr<Scalar>& in, Int index)
+  PickNode(const NodePtr<Scalar, Kind>& in, Int index)
       : PickNode(in, std::vector<Int>{index}) {}
 
   std::string name() const override { return "Pick"; }
@@ -167,48 +170,48 @@ class PickNode : public BaseDataNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(Pick);
 
-template <typename Scalar>
-class PickSoftmaxNode : public PickNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class PickSoftmaxNode : public PickNode<Scalar, Kind> {
   // TODO: This can (possibly) be made more efficient by performing exp(x), then
   //   pick, then divide by sum(exp(x)), instead of picking at the end.
  protected:
-  using PickNode<Scalar>::in_;
-  Tensor<Scalar> smax_;
+  using PickNode<Scalar, Kind>::in_;
+  Tensor<Scalar, Kind> smax_;
 
   void forward_() override {
-    smax_.move_to(this->dev());
+    smax_ = smax_.copy_to(this->dev());
     smax_.resize(in_->value().shape());
-    SoftmaxOp<Scalar>().forward(smax_, in_->value());
+    SoftmaxOp<Scalar, Kind>().forward(smax_, in_->value());
     this->pick(smax_);
   }
 
   void backward_() override {
     if (in_->has_grad()) {
-      Tensor<Scalar> dsmax(smax_.dev(), smax_.shape(), Scalar(0));
+      Tensor<Scalar, Kind> dsmax(smax_.dev(), smax_.shape(), Raw<Scalar>(0));
       this->pick_grad(dsmax);
-      SoftmaxOp<Scalar>().backward(
+      SoftmaxOp<Scalar, Kind>().backward(
           in_->grad(), dsmax, in_->value(), smax_, true);
     }
   }
 
  public:
-  using PickNode<Scalar>::PickNode;
+  using PickNode<Scalar, Kind>::PickNode;
 
   std::string name() const override { return "PickSoftmax"; }
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(PickSoftmax);
 
-template <typename Scalar>
-class PickNegLogSoftmaxNode : public PickSoftmaxNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class PickNegLogSoftmaxNode : public PickSoftmaxNode<Scalar, Kind> {
  protected:
-  using PickSoftmaxNode<Scalar>::in_;
-  using PickSoftmaxNode<Scalar>::smax_;
-  Scalar eps_ = Scalar(0);
+  using PickSoftmaxNode<Scalar, Kind>::in_;
+  using PickSoftmaxNode<Scalar, Kind>::smax_;
+  Raw<Scalar> eps_{0};
 
   void forward_() override {
-    if (eps_ == Scalar(0)) {
-      PickSoftmaxNode<Scalar>::forward_();
+    if (eps_ == Raw<Scalar>(0)) {
+      PickSoftmaxNode<Scalar, Kind>::forward_();
       value() = -value().t().log();
     } else {
       // TODO
@@ -217,7 +220,7 @@ class PickNegLogSoftmaxNode : public PickSoftmaxNode<Scalar> {
 
   void backward_() override {
     if (in_->has_grad()) {
-      if (eps_ == Scalar(0)) {
+      if (eps_ == Raw<Scalar>(0)) {
         this->pick_grad(in_->grad(), /*negate*/ true);
         in_->grad() +=
             smax_.t() * grad().t().broadcast(Index<2>{smax_.rows(), 1});
@@ -236,22 +239,22 @@ class PickNegLogSoftmaxNode : public PickSoftmaxNode<Scalar> {
   }
 
  public:
-  using PickSoftmaxNode<Scalar>::value;
-  using PickSoftmaxNode<Scalar>::grad;
+  using PickSoftmaxNode<Scalar, Kind>::value;
+  using PickSoftmaxNode<Scalar, Kind>::grad;
 
-  using PickSoftmaxNode<Scalar>::PickSoftmaxNode;
+  using PickSoftmaxNode<Scalar, Kind>::PickSoftmaxNode;
 
   std::string name() const override { return "PickNegLogSoftmax"; }
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(PickNegLogSoftmax);
 
-template <typename Scalar>
-class PickNegLogSigmoidNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class PickNegLogSigmoidNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> in_;
-  DataPtr<Int> index_;
-  Tensor<Scalar> sigm_;
+  NodePtr<Scalar, Kind> in_;
+  DataPtr<Int, Kind> index_;
+  Tensor<Scalar, Kind> sigm_;
   // std::array<Real, 2> weights_{{1., 1.}}; // TODO:
 
   void forward_() override {
@@ -259,91 +262,93 @@ class PickNegLogSigmoidNode : public BaseDataNode<Scalar> {
     // TODO: Maybe add a binary-ness check for index?
 
     sigm_.resize(in_->shape());
-    SigmoidOp<Scalar>().forward(sigm_, in_->value());
+    SigmoidOp<Scalar, Kind>().forward(sigm_, in_->value());
 
     value().resize(sigm_.shape());
     // value() = -(index.t().template cast<Scalar>() * sigm_.t().log() +
     //            (Scalar(1) - index.t().template cast<Scalar>()) * (Scalar(1) -
     //            sigm_.t()).log());
     value() = -index.t().template cast<bool>().select(
-        sigm_.t().log(), (Scalar(1) - sigm_.t()).log());
+        sigm_.t().log(), (Raw<Scalar>(1) - sigm_.t()).log());
   }
 
   void backward_() override {
     if (in_->has_grad()) {
       auto& index = index_->value();
       in_->grad() +=
-          (sigm_.t() - index.t().template cast<Scalar>()) * grad().t();
+          (sigm_.t() - index.t().template cast<Raw<Scalar>>()) * grad().t();
     }
   }
 
  public:
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  PickNegLogSigmoidNode(const NodePtr<Scalar>& in, const DataPtr<Int>& index)
-      : BaseDataNode<Scalar>({in, index}),
+  PickNegLogSigmoidNode(const NodePtr<Scalar, Kind>& in,
+                        const DataPtr<Int, Kind>& index)
+      : BaseDataNode<Scalar, Kind>(
+            std::vector<BaseDevNodePtr<Kind>>{in, index}),
         in_(in),
         index_(index),
         sigm_(this->dev()) {}
 
-  PickNegLogSigmoidNode(const NodePtr<Scalar>& in,
+  PickNegLogSigmoidNode(const NodePtr<Scalar, Kind>& in,
                         const std::vector<Int>& index)
       : PickNegLogSigmoidNode(in,
                               Data<Int>(in->dev(), Shape{(Size)index.size()})) {
     index_->value().set(index);
   }
 
-  PickNegLogSigmoidNode(const NodePtr<Scalar>& in, Int index)
+  PickNegLogSigmoidNode(const NodePtr<Scalar, Kind>& in, Int index)
       : PickNegLogSigmoidNode(in, std::vector<Int>{index}) {}
 
   std::string name() const override { return "PickNegLogSigmoid"; }
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(PickNegLogSigmoid);
-
-/* TODO
-class PickNegLogSoftmax2Node : public BaseDataNode {
-  // TODO: This is clearly inefficient because of the for loop.
-  // Any routines in Eigen? Write my own kernel? Also it is ugly.
-  // TODO: add GPU support
- public:
-  NodePtr scores, true_probs;
-  Tensor smax;
-  Real eps = 0;
-
-  void forward_() override {
-    GINN_ASSERT(dev()->kind() == CPU); // for now
-    smax.resize(scores->value().shape());
-    SoftmaxOp::forward(smax, scores->value());
-
-    value().resize({1, smax.cols()});
-
-    value().v() = -smax.m()
-        .array()
-        .log()
-        .matrix()
-        .cwiseProduct(true_probs->value().m())
-        .colwise()
-        .sum();
-  }
-
-  void backward_() override {
-    Tensor ones(smax.dev(), smax.shape());
-    ones.fill(1.);
-    scores->grad() += (smax.t() - true_probs->value().t()) *
-                      grad().t().broadcast(Index<2>{smax.rows(), 1});
-  }
-
-  PickNegLogSoftmax2Node(NodePtr a_scores, NodePtr a_true_probs)
-      : BaseDataNode(a_scores->dev(), {a_scores, a_true_probs}),
-        scores(a_scores),
-        true_probs(a_true_probs),
-        smax(a_scores->dev()) {}
-
-  std::string name() const override { return "PickNegLogSoftmax2"; }
-};
- */
+//
+///* TODO
+// class PickNegLogSoftmax2Node : public BaseDataNode {
+//  // TODO: This is clearly inefficient because of the for loop.
+//  // Any routines in Eigen? Write my own kernel? Also it is ugly.
+//  // TODO: add GPU support
+// public:
+//  NodePtr scores, true_probs;
+//  Tensor smax;
+//  Real eps = 0;
+//
+//  void forward_() override {
+//    GINN_ASSERT(dev()->kind() == CPU); // for now
+//    smax.resize(scores->value().shape());
+//    SoftmaxOp::forward(smax, scores->value());
+//
+//    value().resize({1, smax.cols()});
+//
+//    value().v() = -smax.m()
+//        .array()
+//        .log()
+//        .matrix()
+//        .cwiseProduct(true_probs->value().m())
+//        .colwise()
+//        .sum();
+//  }
+//
+//  void backward_() override {
+//    Tensor ones(smax.dev(), smax.shape());
+//    ones.fill(1.);
+//    scores->grad() += (smax.t() - true_probs->value().t()) *
+//                      grad().t().broadcast(Index<2>{smax.rows(), 1});
+//  }
+//
+//  PickNegLogSoftmax2Node(NodePtr a_scores, NodePtr a_true_probs)
+//      : BaseDataNode(a_scores->dev(), {a_scores, a_true_probs}),
+//        scores(a_scores),
+//        true_probs(a_true_probs),
+//        smax(a_scores->dev()) {}
+//
+//  std::string name() const override { return "PickNegLogSoftmax2"; }
+//};
+// */
 
 } // namespace ginn
 
