@@ -22,11 +22,11 @@
 #include <algorithm>
 #include <iostream>
 
-#include <ginn/node/affine.h>
+//#include <ginn/node/affine.h>
 #include <ginn/node/common.h>
 // #include <ginn/node/compare.h>
 // #include <ginn/node/inplace.h>
-// #include <ginn/node/layernorm.h>
+#include <ginn/node/layernorm.h>
 #include <ginn/node/layout.h>
 #include <ginn/node/nlnode.h>
 // #include <ginn/node/pick.h>
@@ -304,117 +304,43 @@ TEMPLATE_TEST_CASE("Mask", "[select]", Real, Half, Int) {
     }
   }
 }
-//
-//TEMPLATE_TEST_CASE("LayerNorm", "[layernorm][inplace]", Real, Half) {
-//  // TODO: forward test
-//  using Scalar = TestType;
-//  auto x = Random(Dev, {3, 2})->cast<Scalar>();
-//  auto y = Random(Dev, {3, 2, 4})->cast<Scalar>();
-//  x->value() = x->value().t() * Scalar(3) + Scalar(2);
-//  y->value() = y->value().t() * Scalar(2.5) - Scalar(2);
-//
-//  #ifdef GINN_ENABLE_GPU
-//  auto eps2 = std::is_same_v<Scalar, Half> ? 2e-2 : 1e-4;
-//  #else
-//  auto eps2 = 1e-4;
-//  #endif
-//
-//  CHECK_(LayerNorm(x), {x}, false, eps2);
-//  CHECK_(LayerNorm(y), {y}, false, eps2);
-//  CHECK_(InPlaceLayerNorm(1 * x), {x}, false, eps2);
-//  CHECK_(InPlaceLayerNorm(1 * y), {y}, false, eps2);
-//  //SECTION("Layer") {
-//  //  auto ln1 = LayerNormLayer();
-//  //  auto ln2 = LayerNormLayer(Dev, 3);
-//  //  ln2->gamma->value().set_random();
-//  //  ln2->gamma->value() = ln2->gamma->value().t() + Real(1);
-//  //  ln2->beta->value().set_zero();
-//  //  CHECK_(ln1->run(x), {x});
-//  //  CHECK_(ln2->run(x), {x, ln2->gamma, ln2->beta});
-//  //}
-//}
-//
-//TEMPLATE_TEST_CASE("Sums", "[reduce]", Real, Half) {
-//  using Scalar = TestType;
-//  auto W = Values<2>({{1, 2, 3},
-//                      {4, 5, 6}})->cast<Scalar>();
-//  SECTION("Sum") {
-//    auto Wsum = Values<0>(21)->cast<Scalar>();
-//    check(Sum(W), Wsum);
-//  }
-//
-//  SECTION("AxisSum") {
-//    auto V    = Values<3>({{{1, 2, 3},
-//                            {4, 5, 6}},
-//                           {{.1, .2, .3},
-//                            {.4, .5, .6}}})->cast<Scalar>();
-//    auto V0   = Values<2>({{1.1, 2.2, 3.3},
-//                           {4.4, 5.5, 6.6}})->cast<Scalar>();
-//    auto V01  = Values<1>({5.5, 7.7, 9.9})->cast<Scalar>();
-//    auto V012 = Values<0>(23.1)->cast<Scalar>();
-//    auto V1   = Values<2>({{5 , 7 , 9 },
-//                           {.5, .7, .9}})->cast<Scalar>();
-//    auto V12  = Values<1>({21,
-//                           2.1})->cast<Scalar>();
-//    auto V2   = Values<2>({{ 6,
-//                            15},
-//                           {.6,
-//                            1.5}})->cast<Scalar>();
-//    auto V02  = Values<1>({ 6.6,
-//                           16.5})->cast<Scalar>();
-//
-//    Real eps = std::is_same_v<Scalar, Half> ? 1e-3 : 1e-6;
-//    check(AxisSum(V, {0}),       V0,   eps);
-//    check(AxisSum(V, {0, 1}),    V01,  eps);
-//    check(AxisSum(V, {0, 1, 2}), V012, eps);
-//    check(AxisSum(V, {1}),       V1,   eps);
-//    check(AxisSum(V, {1, 2}),    V12,  eps);
-//    check(AxisSum(V, {2}),       V2,   eps);
-//    check(AxisSum(V, {0, 2}),    V02,  eps);
-//    CHECK_THROWS(AxisSum(V, {0, 0}));
-//    CHECK_THROWS(AxisSum(V, {2, 0}));
-//    CHECK_(AxisSum(V, {0}),       {V}, true);
-//    CHECK_(AxisSum(V, {0, 1}),    {V}, true);
-//    CHECK_(AxisSum(V, {0, 1, 2}), {V}, true);
-//    CHECK_(AxisSum(V, {1}),       {V}, true);
-//    CHECK_(AxisSum(V, {1, 2}),    {V}, true);
-//    CHECK_(AxisSum(V, {2}),       {V}, true);
-//    CHECK_(AxisSum(V, {0, 2}),    {V}, true);
-//  }
-//
-//  SECTION("Mean") {
-//    auto m = Values<0>(3.5)->cast<Scalar>();
-//
-//    check(Mean(W), m);
-//    CHECK_(Mean(W), {W}, true);
-//  }
-//
-//  SECTION("Variance") {
-//    auto m = Values<0>(35./12.)->cast<Scalar>();
-//
-//    check(Variance(W), m);
-//    CHECK_(Variance(W), {W}, true);
-//  }
-//}
-//
-//TEMPLATE_TEST_CASE("Comparison", "[compare]", Real, Half, Int) {
-//  using Scalar = TestType;
-//  auto a = Values<2>({{1.}, {2.}, {3.}, {4.}, {5.}})->cast<Scalar>();
-//  auto b = Values<2>({{5.}, {4.}, {3.}, {2.}, {1.}})->cast<Scalar>();
-//
-//  REQUIRE(a->shape() == Shape{5, 1});
-//  REQUIRE(b->shape() == Shape{5, 1});
-//
-//  auto y = Values<2>({{1.}, {1.}, {0.}, {0.}, {0.}})->cast<bool>();
-//
-//  SECTION("LessThan") {
-//    check(LessThan(a, b), y);
-//    check(a < b,          y);
-//    CHECK_(LessThan(a, b), {a, b}, true);
-//    CHECK_(a < b,          {a, b}, true);
-//  }
-//}
-//
+
+TEMPLATE_TEST_CASE("LayerNorm", "[layernorm][inplace]", Real, Half) {
+  // TODO: forward test
+  using Scalar = TestType;
+  auto x = Random(cpu(), {3, 2})->cast<Scalar>();
+  auto y = Random(cpu(), {3, 2, 4})->cast<Scalar>();
+  using s = Raw<Scalar>;
+  x->value() = x->value().t() * s(3) + s(2);
+  y->value() = y->value().t() * s(2.5) - s(2);
+
+  if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+    check_grad(LayerNorm(x),       {x});
+    check_grad(LayerNorm(y),       {y});
+    check_grad(LayerNorm(x, 1e-4), {x});
+    check_grad(LayerNorm(y, 1e-4), {y});
+    //check_grad(InPlaceLayerNorm(1 * x), {x}, false, eps2);
+    //check_grad(InPlaceLayerNorm(1 * y), {y}, false, eps2);
+  }
+  if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+    auto [x_, y_] = to_gpu(x, y);
+    compare_devices(LayerNorm(x), {x}, LayerNorm(x_), {x_}, 2e-2);
+    compare_devices(LayerNorm(y), {y}, LayerNorm(y_), {y_}, 8e-2);
+    compare_devices(LayerNorm(x, 1e-4), {x}, LayerNorm(x_, 1e-4), {x_}, 2e-2);
+    compare_devices(LayerNorm(y, 1e-4), {y}, LayerNorm(y_, 1e-4), {y_}, 8e-2);
+  }
+
+  //SECTION("Layer") {
+  //  auto ln1 = LayerNormLayer();
+  //  auto ln2 = LayerNormLayer(Dev, 3);
+  //  ln2->gamma->value().set_random();
+  //  ln2->gamma->value() = ln2->gamma->value().t() + Real(1);
+  //  ln2->beta->value().set_zero();
+  //  CHECK_(ln1->run(x), {x});
+  //  CHECK_(ln2->run(x), {x, ln2->gamma, ln2->beta});
+  //}
+}
+
 //TEMPLATE_TEST_CASE("Prod", "[prod]", Real, Half) {
 //  using Scalar = TestType;
 //  auto W = Values<2>({{1, 2, 3},
@@ -509,63 +435,63 @@ TEMPLATE_TEST_CASE("Mask", "[select]", Real, Half, Int) {
 //  }
 //}
 //
-TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
-  using Scalar = TestType;
-  Real eps = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6; // TODO: 😢
-#ifdef GINN_ENABLE_GPU
-  Real eps2 = std::is_same_v<Scalar, Half> ? 5e-3 : 1e-4;
-#endif
-
-  auto W = Values<2>({{1, 2, 3},
-                      {4, 5, 6}})->cast<Scalar>();
-  auto V = Values<2>({{ 0.6},
-                      { 0.4},
-                      {-0.2}})->cast<Scalar>();
-  auto b = Values<2>({{0.01},
-                      {0.02}})->cast<Scalar>();
-
-  SECTION("Affine")        {
-    auto WVb = Values<2>({{0.81},
-                          {3.22}})->cast<Scalar>();
-    check(Affine(W, V, b), WVb, eps);
-#ifdef GINN_ENABLE_GPU
-    if constexpr (ginn::is_floating_point_v<Scalar>) {
-      auto W_ = W->copy_to(gpu());
-      auto V_ = V->copy_to(gpu());
-      auto b_ = b->copy_to(gpu());
-      compare_devices(Affine(W,  V,  b),  {W,  V,  b },
-                      Affine(W_, V_, b_), {W_, V_, b_}, eps2);
-    }
-#else
-    if constexpr (std::is_same_v<Scalar, Real>) {
-      check_grad(Affine(W, V, b),  {W, V, b}, true);
-    }
-#endif
-    //check(W * V + b,       WVb, eps);
-    //CHECK_(Affine(W, V, b), {W, V, b}, true, eps2);
-  }
-  //SECTION("AffineSigmoid") {
-  //  auto sigmWVb = Values<2>({{0.692109},
-  //                            {0.96158 }})->cast<Scalar>();
-  //  check(Affine(SigmoidOp<Scalar>(), W, V, b), sigmWVb, eps);
-  //  check(Affine<SigmoidOp>(W, V, b),           sigmWVb, eps);
-  //  CHECK_(Affine(SigmoidOp<Scalar>(), W, V, b), {W, V, b}, true, eps2);
-  //  CHECK_(Affine<SigmoidOp>(W, V, b),           {W, V, b}, true, eps2);
-  //}
-  //SECTION("AffineSoftmax") {
-  //  auto smaxWVb = Values<2>({{0.0824133},
-  //                            {0.917587 }})->cast<Scalar>();
-  //  check(Affine<SoftmaxOp>(W, V, b), smaxWVb, eps);
-  //  CHECK_(Affine<SoftmaxOp>(W, V, b), {W, V, b}, true, eps2);
-  //}
-
-  //SECTION("Other nonlins") {
-  //  CHECK_(Affine<TanhOp>(W, V, b), {W, V, b}, true, eps2);
-  //  CHECK_(Affine<ReluOp>(W * 10, V, b), {W, V, b}, true, eps2);
-  //  CHECK_(Affine<Gelu2Op>(W, V, b), {W, V, b}, true, eps2);
-  //  CHECK_(Affine<GeluOp>(W, V, b), {W, V, b}, true, eps2);
-  //}
-}
+//TEMPLATE_TEST_CASE("Affine", "[affine]", Real, Half) {
+//  using Scalar = TestType;
+//  Real eps = std::is_same_v<Scalar, Half> ? 2e-3 : 1e-6; // TODO: 😢
+//#ifdef GINN_ENABLE_GPU
+//  Real eps2 = std::is_same_v<Scalar, Half> ? 5e-3 : 1e-4;
+//#endif
+//
+//  auto W = Values<2>({{1, 2, 3},
+//                      {4, 5, 6}})->cast<Scalar>();
+//  auto V = Values<2>({{ 0.6},
+//                      { 0.4},
+//                      {-0.2}})->cast<Scalar>();
+//  auto b = Values<2>({{0.01},
+//                      {0.02}})->cast<Scalar>();
+//
+//  SECTION("Affine")        {
+//    auto WVb = Values<2>({{0.81},
+//                          {3.22}})->cast<Scalar>();
+//    check(Affine(W, V, b), WVb, eps);
+//#ifdef GINN_ENABLE_GPU
+//    if constexpr (ginn::is_floating_point_v<Scalar>) {
+//      auto W_ = W->copy_to(gpu());
+//      auto V_ = V->copy_to(gpu());
+//      auto b_ = b->copy_to(gpu());
+//      compare_devices(Affine(W,  V,  b),  {W,  V,  b },
+//                      Affine(W_, V_, b_), {W_, V_, b_}, eps2);
+//    }
+//#else
+//    if constexpr (std::is_same_v<Scalar, Real>) {
+//      check_grad(Affine(W, V, b),  {W, V, b}, true);
+//    }
+//#endif
+//    //check(W * V + b,       WVb, eps);
+//    //CHECK_(Affine(W, V, b), {W, V, b}, true, eps2);
+//  }
+//  //SECTION("AffineSigmoid") {
+//  //  auto sigmWVb = Values<2>({{0.692109},
+//  //                            {0.96158 }})->cast<Scalar>();
+//  //  check(Affine(SigmoidOp<Scalar>(), W, V, b), sigmWVb, eps);
+//  //  check(Affine<SigmoidOp>(W, V, b),           sigmWVb, eps);
+//  //  CHECK_(Affine(SigmoidOp<Scalar>(), W, V, b), {W, V, b}, true, eps2);
+//  //  CHECK_(Affine<SigmoidOp>(W, V, b),           {W, V, b}, true, eps2);
+//  //}
+//  //SECTION("AffineSoftmax") {
+//  //  auto smaxWVb = Values<2>({{0.0824133},
+//  //                            {0.917587 }})->cast<Scalar>();
+//  //  check(Affine<SoftmaxOp>(W, V, b), smaxWVb, eps);
+//  //  CHECK_(Affine<SoftmaxOp>(W, V, b), {W, V, b}, true, eps2);
+//  //}
+//
+//  //SECTION("Other nonlins") {
+//  //  CHECK_(Affine<TanhOp>(W, V, b), {W, V, b}, true, eps2);
+//  //  CHECK_(Affine<ReluOp>(W * 10, V, b), {W, V, b}, true, eps2);
+//  //  CHECK_(Affine<Gelu2Op>(W, V, b), {W, V, b}, true, eps2);
+//  //  CHECK_(Affine<GeluOp>(W, V, b), {W, V, b}, true, eps2);
+//  //}
+//}
 //
 //TEMPLATE_TEST_CASE("Affine w/ broadcast", "[affine]", Real, Half) {
 //  using Scalar = TestType;

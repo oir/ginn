@@ -23,10 +23,10 @@ namespace ginn {
 // TODO: Seems like when I name the template parameter Scalar, it conflicts with
 //   Node::Scalar of base? Why does this not shadow?
 
-template <typename InScalar>
-class LessThanNode : public BaseDataNode<bool> {
+template <typename InScalar, DeviceKind Kind>
+class LessThanNode : public BaseDataNode<bool, Kind> {
  private:
-  NodePtr<InScalar> l_, r_;
+  NodePtr<InScalar, Kind> l_, r_;
 
   void forward_() override {
     value().resize(l_->value().shape());
@@ -34,12 +34,13 @@ class LessThanNode : public BaseDataNode<bool> {
   }
 
  public:
-  using BaseDataNode<bool>::value;
+  using BaseDataNode<bool, Kind>::value;
 
   bool has_grad() const override { return false; }
 
-  LessThanNode<InScalar>(const NodePtr<InScalar>& l, const NodePtr<InScalar>& r)
-      : BaseDataNode<bool>(std::vector<BaseNodePtr>{l, r}), l_(l), r_(r) {}
+  LessThanNode(const NodePtr<InScalar, Kind>& l,
+               const NodePtr<InScalar, Kind>& r)
+      : BaseDataNode<bool, Kind>(std::vector{l, r}), l_(l), r_(r) {}
 
   std::string name() const override { return "LessThan"; }
 };

@@ -142,8 +142,8 @@ inline Tensor<Real> analytic_grad(Expr e, Weight w, Mask mask) {
   return w->grad();
 }
 
-template <typename NodeFunc, typename NodeContainer>
-inline void check_grad(NodeFunc f_e,
+template <typename NodeContainer>
+inline void check_grad(NodePtr<Real> e,
                        const NodeContainer& ins,
                        bool randomize_inputs = false,
                        Real eps = 1e-4,
@@ -161,7 +161,6 @@ inline void check_grad(NodeFunc f_e,
     }
   }
 
-  NodePtr<Real> e = f_e();
   e = e + e; // to make sure gradient accumulates over input repetition
   auto g = Graph(e);
   g.reset_forwarded();
@@ -182,25 +181,12 @@ inline void check_grad(NodeFunc f_e,
   }
 }
 
-template <typename NodeContainer>
-inline void check_grad(NodePtr<Real> e,
-                       const NodeContainer& ins,
-                       bool randomize_inputs = false,
-                       Real eps = 1e-4,
-                       Real delta = 1e-4) {
-  check_grad([e]() { return e; }, ins, randomize_inputs, eps, delta);
-}
-
-inline void check_grad(NodePtr<Real> e,
+inline void check_grad(const NodePtr<Real>& e,
                        const std::initializer_list<BaseNodePtr>& ins,
                        bool randomize_inputs = false,
                        Real eps = 1e-4,
                        Real delta = 1e-4) {
-  check_grad([e]() { return e; },
-             std::vector<BaseNodePtr>(ins),
-             randomize_inputs,
-             eps,
-             delta);
+  check_grad(e, std::vector<BaseNodePtr>(ins), randomize_inputs, eps, delta);
 }
 
 #ifdef GINN_ENABLE_GPU

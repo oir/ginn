@@ -21,12 +21,12 @@
 
 namespace ginn {
 
-template <typename Scalar>
-class LayerNormNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class LayerNormNode : public BaseDataNode<Scalar, Kind> {
  protected:
-  NodePtr<Scalar> in_;
-  Scalar eps_;
-  Tensor<Scalar> std_;
+  NodePtr<Scalar, Kind> in_;
+  Raw<Scalar> eps_;
+  Tensor<Scalar, Kind> std_;
 
   void forward_() override {
     value().resize(in_->shape());
@@ -34,7 +34,7 @@ class LayerNormNode : public BaseDataNode<Scalar> {
     const auto rows = this->shape2()[0];
     const auto cols = this->shape2()[1];
 
-    Tensor<Scalar> mean(dev(), {1, cols});
+    Tensor<Scalar, Kind> mean(dev(), {1, cols});
     std_.resize({1, cols});
 
     auto bc = [=](const auto& e) { return e.broadcast(Index<2>{rows, 1}); };
@@ -52,12 +52,12 @@ class LayerNormNode : public BaseDataNode<Scalar> {
 
       auto bc = [=](const auto& e) { return e.broadcast(Index<2>{rows, 1}); };
 
-      Tensor<Scalar> grad_mean(dev(), {1, cols}), dot(dev(), {1, cols});
+      Tensor<Scalar, Kind> grad_mean(dev(), {1, cols}), dot(dev(), {1, cols});
       grad_mean = grad().t().mean(Index<1>{0});
-      if (dev()->kind() == CPU) {
+      if constexpr (Kind == CPU) {
         dot = (grad().t() * value().t()).sum(Index<1>{0});
 #ifdef GINN_ENABLE_GPU
-      } else if (dev()->kind() == GPU) {
+      } else if constexpr (Kind == GPU) {
         auto grad_ = grad().reshaped({1, grad().rows(), grad().cols()});
         auto value_ = value().reshaped({value().rows(), 1, value().cols()});
         auto dot_ = dot.reshaped({1, 1, dot.cols()});
@@ -68,18 +68,19 @@ class LayerNormNode : public BaseDataNode<Scalar> {
       }
 
       in_->grad() += (grad().t() - bc(grad_mean.t()) -
-                      value().t() * bc(dot.t() / Scalar(rows))) /
+                      value().t() * bc(dot.t() / Raw<Scalar>(rows))) /
                      bc(std_.t());
     }
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  LayerNormNode(NodePtr<Scalar> in, Scalar eps = Scalar(1e-8))
-      : BaseDataNode<Scalar>({in}), in_(in), eps_(eps), std_(dev()) {}
+  template <typename EpsScalar = Raw<Scalar>>
+  LayerNormNode(NodePtr<Scalar, Kind> in, EpsScalar eps = EpsScalar(1e-8))
+      : BaseDataNode<Scalar, Kind>(in), in_(in), eps_(eps), std_(dev()) {}
 
   std::string name() const override { return "LayerNorm"; }
 };
