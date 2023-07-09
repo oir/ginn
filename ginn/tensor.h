@@ -113,14 +113,16 @@ class Tensor {
     return Tensor<Scalar, OtherKind>(to, *this);
   }
 
-  // If tensor not on specified device, copy to it. Otherwise return a shallow
-  // copy based on Tensor::map() which uses the same storage
+  // If tensor not on specified _physical_ device, copy to it. Otherwise return
+  // a shallow copy based on Tensor::map() which uses the same storage
   template <typename OtherDevPtr>
   auto maybe_copy_to(const OtherDevPtr& to) {
     const static auto OtherKind = OtherDevPtr::element_type::device_kind;
     if constexpr (Kind == OtherKind) {
       if (dev_->id() == to->id()) {
-        return Tensor<Scalar, OtherKind>().map(*this);
+        Tensor<Scalar, OtherKind> rval;
+        rval.map(*this);
+        return rval;
       } else {
         return copy_to(to);
       }
@@ -247,7 +249,10 @@ class Tensor {
   }
 
   auto& operator=(Tensor<Scalar, Kind>&& other) {
-    if (dev_ == other.dev_ and owns_mem_) { // only then moving is possible
+    // TODO: is it safe to move across different Devices if they lie on the same
+    // physical device?
+    if (dev_->id() == other.dev_->id() and
+        owns_mem_) { // only then moving is possible
       free();
       shape_ = other.shape_;
       data_ = other.data_;

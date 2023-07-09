@@ -29,8 +29,8 @@ size_t argmax(const std::vector<T>& v) {
   return std::max_element(v.begin(), v.end()) - v.begin();
 }
 
-template <typename Scalar>
-RowVector<Int> argmax(const MatrixMap<Scalar>& x) {
+template <typename RawScalar>
+RowVector<Int> argmax(const Eigen::Map<Eigen::Matrix<RawScalar, -1, -1>>& x) {
   RowVector<Int> index(x.cols());
   for (int i = 0; i < x.cols(); i++) {
     auto begin = x.data() + x.rows() * i;
@@ -39,8 +39,8 @@ RowVector<Int> argmax(const MatrixMap<Scalar>& x) {
   return index;
 }
 
-template <typename Scalar>
-size_t argmax(const VectorMap<Scalar>& x) {
+template <typename RawScalar>
+size_t argmax(const Eigen::Map<Eigen::Vector<RawScalar, -1>>& x) {
   return std::max_element(x.data(), x.data() + x.size()) - x.data();
 }
 
@@ -54,14 +54,14 @@ auto argmax(const Tensor<Scalar>& t) {
 }
 
 // Argmax w.r.t. a dim / axis
-template <typename Scalar>
-auto argmax(const Tensor<Scalar>& t, Size dim) {
+template <typename Scalar, DeviceKind Kind>
+auto argmax(const Tensor<Scalar, Kind>& t, Size dim) {
   using Index = typename TensorMap<Scalar, 1>::Index;
   auto s = t.shape();
   GINN_ASSERT(dim < (Size)s.size(), "Index dim is bigger than tensor rank!");
   GINN_ASSERT(s.size() <= 8, "Unsupported large rank!");
   s.erase(s.begin() + dim);
-  Tensor<Index> rt(t.dev(), s);
+  Tensor<Index, Kind> rt(t.dev(), s);
   rt = t.template view<8>().argmax(dim);
   return rt;
 }

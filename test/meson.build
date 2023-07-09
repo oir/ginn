@@ -1,8 +1,8 @@
 sources = [
-  'autobatch.cpp',
+#  'autobatch.cpp',
   'dev.cu.cpp',
   'graph.cpp',
-  'include.cpp',
+#  'include.cpp',
   'model.cu.cpp',
   'nodes.cu.cpp',
   'nodes-common.cu.cpp',

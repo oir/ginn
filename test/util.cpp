@@ -551,19 +551,19 @@ TEMPLATE_TEST_CASE("std::vector argmax", "[amax]", int, short, float, double) {
 
 TEST_CASE("VectorMap argmax", "[amax]") {
   SECTION("Basic") {
-    Tensor<Real> t(Shape{4}, {2, -3, 7, 5});
+    Tensor<Real> t(cpu(), Shape{4}, {2, -3, 7, 5});
     auto am = argmax(t.v());
     CHECK(am == 2);
   }
   SECTION("Multiple") {
-    Tensor<Real> t(Shape{4}, {7, -3, 7, 5});
+    Tensor<Real> t(cpu(), Shape{4}, {7, -3, 7, 5});
     auto am = argmax(t.v());
     CHECK((am == 0 or am == 2));
   }
   SECTION("Extreme") {
     Real max = std::numeric_limits<Real>::infinity();
     Real min = -max;
-    Tensor<Real> t(Shape{4}, {2, min, max, 5});
+    Tensor<Real> t(cpu(), Shape{4}, {2, min, max, 5});
     auto am = argmax(t.v());
     CHECK(am == 2);
   }
@@ -574,7 +574,7 @@ TEST_CASE("MatrixMap argmax", "[amax]") {
     //  2  1  3
     // -3  3 -1
     //  7 -5  0
-    Tensor<Real> t(Shape{3, 3}, {2, -3, 7, 1, 3, -5, 3, -1, 0});
+    Tensor<Real> t(cpu(), Shape{3, 3}, {2, -3, 7, 1, 3, -5, 3, -1, 0});
     RowVector<Int> am = argmax(t.m());
     RowVector<Int> expected(3);
     expected << 2, 1, 0;
@@ -585,7 +585,7 @@ TEST_CASE("MatrixMap argmax", "[amax]") {
     //  7  1 -2
     // -3  1 -1
     //  7 -5 -1
-    Tensor<Real> t(Shape{3, 3}, {7, -3, 7, 1, 1, -5, -2, -1, -1});
+    Tensor<Real> t(cpu(), Shape{3, 3}, {7, -3, 7, 1, 1, -5, -2, -1, -1});
     RowVector<Int> am = argmax(t.m());
 
     CHECK((am[0] == 0 or am[0] == 2));
@@ -598,7 +598,7 @@ TEST_CASE("MatrixMap argmax", "[amax]") {
     //  2 -∞  3
     // -3  3 -1
     //  ∞ -5  0
-    Tensor<Real> t(Shape{3, 3}, {2, -3, max, min, 3, -5, 3, -1, 0});
+    Tensor<Real> t(cpu(), Shape{3, 3}, {2, -3, max, min, 3, -5, 3, -1, 0});
     RowVector<Int> am = argmax(t.m());
     RowVector<Int> expected(3);
     expected << 2, 1, 0;
@@ -611,19 +611,19 @@ TEST_CASE("Tensor flat argmax", "[amax]") {
   Shape s = GENERATE(Shape{4}, Shape{2, 2});
 
   SECTION("Basic") {
-    Tensor<Real> t(s, {2, -3, 7, 5});
+    Tensor<Real> t(cpu(), s, {2, -3, 7, 5});
     auto am = argmax(t);
     CHECK(am == 2);
   }
   SECTION("Multiple") {
-    Tensor<Real> t(s, {7, -3, 7, 5});
+    Tensor<Real> t(cpu(), s, {7, -3, 7, 5});
     auto am = argmax(t);
     CHECK((am == 0 or am == 2));
   }
   SECTION("Extreme") {
     Real max = std::numeric_limits<Real>::infinity();
     Real min = -max;
-    Tensor<Real> t(s, {2, min, max, 5});
+    Tensor<Real> t(cpu(), s, {2, min, max, 5});
     auto am = argmax(t);
     CHECK(am == 2);
   }
@@ -634,10 +634,10 @@ TEST_CASE("Tensor axiswise argmax", "[amax]") {
     //  3  1  2
     // -3  3 -1
     //  7 -5  0
-    Tensor<Real> t(Shape{3, 3}, {3, -3, 7, 1, 2, -5, 3, -1, 0});
+    Tensor<Real> t(cpu(), Shape{3, 3}, {3, -3, 7, 1, 2, -5, 3, -1, 0});
     using Index = TensorMap<Real, 1>::Index;
-    Tensor<Index> row(Shape{3}, {2, 1, 0});
-    Tensor<Index> col(Shape{3}, {0, 1, 0});
+    Tensor<Index> row(cpu(), Shape{3}, {2, 1, 0});
+    Tensor<Index> col(cpu(), Shape{3}, {0, 1, 0});
 
     CHECK(argmax(t, 0) == row);
     CHECK(argmax(t, 1) == col);
@@ -647,10 +647,10 @@ TEST_CASE("Tensor axiswise argmax", "[amax]") {
     // -3  3 -∞
     //  ∞ -5  0
     Real inf = std::numeric_limits<Real>::infinity();
-    Tensor<Real> t(Shape{3, 3}, {3, -3, inf, 1, 2, -5, 3, -inf, 0});
+    Tensor<Real> t(cpu(), Shape{3, 3}, {3, -3, inf, 1, 2, -5, 3, -inf, 0});
     using Index = TensorMap<Real, 1>::Index;
-    Tensor<Index> row(Shape{3}, {2, 1, 0});
-    Tensor<Index> col(Shape{3}, {0, 1, 0});
+    Tensor<Index> row(cpu(), Shape{3}, {2, 1, 0});
+    Tensor<Index> col(cpu(), Shape{3}, {0, 1, 0});
 
     CHECK(argmax(t, 0) == row);
     CHECK(argmax(t, 1) == col);
@@ -733,9 +733,14 @@ TEST_CASE("Basic timer", "[timer]") {
   for (auto s : {"[apple]", "[orange]", "[banana]"}) {
     CHECK(has(ss.str(), s));
   }
-  CHECK(startswith(ss.str(),
+  CHECK((startswith(ss.str(),
                    "Timing:\n"
-                   "  Name       time   #       %   relative____________\n"));
+                   "  Name       time   #       %   relative____________\n") or
+        startswith(ss.str(),
+                   "Timing:\n"
+                   "  Name       time   #        %   relative____________\n"))
+
+  );
 }
 
 TEST_CASE("Output stream tensor", "[io]") {
@@ -747,7 +752,7 @@ TEST_CASE("Output stream tensor", "[io]") {
       ss << x->value();
     }
     SECTION("From flat storage") {
-      Tensor t(cpu(), {3, 2, 2});
+      Tensor<> t(cpu(), {3, 2, 2});
       t.set(std::vector<Real>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
       ss << t;
     }
@@ -763,7 +768,7 @@ TEST_CASE("Output stream tensor", "[io]") {
       ss << x->value();
     }
     SECTION("From flat storage") {
-      Tensor t(cpu(), {3, 2});
+      Tensor<> t(cpu(), {3, 2});
       t.set(std::vector<Real>{1, 2, 3, 4, 5, 6});
       ss << t;
     }
@@ -779,7 +784,7 @@ TEST_CASE("Output stream tensor", "[io]") {
       ss << x->value();
     }
     SECTION("From flat storage") {
-      Tensor t(cpu(), {3});
+      Tensor<> t(cpu(), {3});
       t.set(std::vector<Real>{1, 2, 3});
       ss << t;
     }

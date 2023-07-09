@@ -116,6 +116,7 @@ class DataNode : public BaseDataNode<Scalar, Kind> {
     auto copy = make_ptr<DataNode<Scalar, OtherKind>>();
     copy->value() = this->value().copy_to(to);
     copy->grad() = this->grad().copy_to(to);
+    copy->set_has_grad(this->has_grad());
     return copy;
   }
 

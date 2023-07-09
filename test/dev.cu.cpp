@@ -34,22 +34,24 @@ TEMPLATE_TEST_CASE("Cpu tensors", "", Real, Int, Half) {
   CHECK(dev->used() == 0);
 
   Tensor<Scalar> t2(dev, {1, 2});
-  CHECK(dev->used() == (t2.size() * sizeof(Scalar)));
+  CHECK(dev->used() == (t2.size() * sizeof(Raw<Scalar>)));
 
   Tensor<Scalar> t3(dev);
-  CHECK(dev->used() == (t2.size() * sizeof(Scalar)));
+  CHECK(dev->used() == (t2.size() * sizeof(Raw<Scalar>)));
 
   t3 = t2; // should copy
-  CHECK(dev->used() == (2 * t2.size() * sizeof(Scalar)));
+  CHECK(dev->used() == (2 * t2.size() * sizeof(Raw<Scalar>)));
 
   auto t4 = t1.maybe_copy_to(dev); // should avoid copy
-  CHECK(dev->used() == (2 * t2.size() * sizeof(Scalar)));
+  CHECK(dev->used() == (2 * t2.size() * sizeof(Raw<Scalar>)));
 
-  t1.move_to(dev);
-  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Scalar)));
+  auto t1_ = t1.copy_to(dev);
+  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Raw<Scalar>)));
 
-  t2.move_to(dev); // should be a no-op
-  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Scalar)));
+  auto t2_ = t2.maybe_copy_to(dev); // should avoid copy
+
+  CHECK(t2.dev()->id() == t2_.dev()->id());
+  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Raw<Scalar>)));
 }
 
 TEMPLATE_TEST_CASE("Cpu nodes", "", Real, Int, Half) {
@@ -62,21 +64,22 @@ TEMPLATE_TEST_CASE("Cpu nodes", "", Real, Int, Half) {
 
   CHECK(dev->used() == 0);
 
-  x->move_to(dev);
-  CHECK(dev->used() == (x->size() * sizeof(Scalar)));
+  auto x_ = x->copy_to(dev);
+  CHECK(dev->used() == (x->size() * sizeof(Raw<Scalar>)));
 
-  y->move_to(dev); // should move both value() and grad(), but grad() is empty
-  CHECK(dev->used() == (2 * x->size() * sizeof(Scalar)));
+  auto y_ = y->copy_to(
+      dev); // should copy both value() and grad(), but grad() is empty
+  CHECK(dev->used() == (2 * x->size() * sizeof(Raw<Scalar>)));
 
-  auto z = x + y;
+  auto z = x_ + y_;
   Graph g(z);
-  CHECK(dev->used() == (2 * x->size() * sizeof(Scalar)));
+  CHECK(dev->used() == (2 * x->size() * sizeof(Raw<Scalar>)));
 
   g.forward();
-  CHECK(dev->used() == (3 * x->size() * sizeof(Scalar)));
+  CHECK(dev->used() == (3 * x->size() * sizeof(Raw<Scalar>)));
 
-  g.reset_grad(); // only z and y have grads
-  CHECK(dev->used() == (5 * x->size() * sizeof(Scalar)));
+  g.reset_grad(); // only z and y_ have grads
+  CHECK(dev->used() == (5 * x->size() * sizeof(Raw<Scalar>)));
 }
 
 TEST_CASE("InPlaceAdd", "[inplace]") {
@@ -123,31 +126,31 @@ TEMPLATE_TEST_CASE("Gpu tensors", "", Real, Int, Half) {
   using Scalar = TestType;
   auto dev = PreallocGpu(100);
 
-  Tensor<Scalar> t1(gpu(), {2, 3});
+  Tensor<Scalar, GPU> t1(gpu(), {2, 3});
   CHECK(dev->used() == 0);
 
-  Tensor<Scalar> t2(dev, {1, 2});
-  CHECK(dev->used() == (t2.size() * sizeof(Scalar)));
+  Tensor<Scalar, GPU> t2(dev, {1, 2});
+  CHECK(dev->used() == (t2.size() * sizeof(Raw<Scalar>)));
 
-  Tensor<Scalar> t3(dev);
-  CHECK(dev->used() == (t2.size() * sizeof(Scalar)));
+  Tensor<Scalar, GPU> t3(dev);
+  CHECK(dev->used() == (t2.size() * sizeof(Raw<Scalar>)));
 
   t3 = t2; // should copy
-  CHECK(dev->used() == (2 * t2.size() * sizeof(Scalar)));
+  CHECK(dev->used() == (2 * t2.size() * sizeof(Raw<Scalar>)));
 
   auto t4 = t1.maybe_copy_to(dev); // should avoid copy
-  CHECK(dev->used() == (2 * t2.size() * sizeof(Scalar)));
+  CHECK(dev->used() == (2 * t2.size() * sizeof(Raw<Scalar>)));
 
-  t1.move_to(dev);
-  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Scalar)));
+  auto t1_ = t1.copy_to(dev);
+  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Raw<Scalar>)));
 
-  t2.move_to(dev); // should be a no-op
-  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Scalar)));
+  auto t2_ = t2.maybe_copy_to(dev); // should avoid copy
+  CHECK(dev->used() == ((2 * t2.size() + t1.size()) * sizeof(Raw<Scalar>)));
 
-  Tensor<Scalar> t5(cpu(), {1, 3});
+  Tensor<Scalar, CPU> t5(cpu(), {1, 3});
   auto t6 = t5.maybe_copy_to(dev); // should copy
   CHECK(dev->used() ==
-        ((2 * t2.size() + t1.size() + t5.size()) * sizeof(Scalar)));
+        ((2 * t2.size() + t1.size() + t5.size()) * sizeof(Raw<Scalar>)));
 }
 
 TEMPLATE_TEST_CASE("Gpu nodes", "", Real, Int, Half) {
@@ -160,21 +163,22 @@ TEMPLATE_TEST_CASE("Gpu nodes", "", Real, Int, Half) {
 
   CHECK(dev->used() == 0);
 
-  x->move_to(dev);
-  CHECK(dev->used() == (x->size() * sizeof(Scalar)));
+  auto x_ = x->copy_to(dev);
+  CHECK(dev->used() == (x->size() * sizeof(Raw<Scalar>)));
 
-  y->move_to(dev); // should move both value() and grad(), but grad() is empty
-  CHECK(dev->used() == (2 * x->size() * sizeof(Scalar)));
+  auto y_ = y->copy_to(
+      dev); // should move both value() and grad(), but grad() is empty
+  CHECK(dev->used() == (2 * x->size() * sizeof(Raw<Scalar>)));
 
-  auto z = x + y;
+  auto z = x_ + y_;
   Graph g(z);
-  CHECK(dev->used() == (2 * x->size() * sizeof(Scalar)));
+  CHECK(dev->used() == (2 * x->size() * sizeof(Raw<Scalar>)));
 
   g.forward();
-  CHECK(dev->used() == (3 * x->size() * sizeof(Scalar)));
+  CHECK(dev->used() == (3 * x->size() * sizeof(Raw<Scalar>)));
 
-  g.reset_grad(); // only z and y have grads
-  CHECK(dev->used() == (5 * x->size() * sizeof(Scalar)));
+  g.reset_grad(); // only z and y_ have grads
+  CHECK(dev->used() == (5 * x->size() * sizeof(Raw<Scalar>)));
 }
 
 #endif
