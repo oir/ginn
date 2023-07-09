@@ -170,9 +170,18 @@ template <typename Scalar, typename DevicePtr>
 auto Data(DevicePtr dev, std::initializer_list<Size> shape) {
   return Data<Scalar>(dev, Shape(shape));
 }
+template <typename DevicePtr>
+auto Data(DevicePtr dev, const Shape& shape) {
+  return Data<Real, DevicePtr>(dev, shape);
+}
+
 template <typename Scalar, typename DevicePtr>
 auto FixedData(DevicePtr dev, std::initializer_list<Size> shape) {
   return FixedData<Scalar>(dev, Shape(shape));
+}
+template <typename DevicePtr>
+auto FixedData(DevicePtr dev, const Shape& shape) {
+  return FixedData<Real, DevicePtr>(dev, shape);
 }
 
 template <typename Scalar, typename DevicePtr, typename ValScalar>
@@ -226,11 +235,21 @@ auto Random(const Shape& shape) {
   return Random<Scalar>(cpu(), shape);
 }
 
-// template <typename Scalar = Real>
-// auto Random(const Shape& shape) {
-//   return Random<Scalar>(cpu(), shape);
-// }
-//
+template <typename Scalar, typename DevicePtr>
+auto FixedRandom(DevicePtr dev, const Shape& shape) {
+  auto x = FixedData<Scalar>(dev, shape);
+  x->value().set_random();
+  return x;
+}
+template <typename DevicePtr>
+auto FixedRandom(DevicePtr dev, const Shape& shape) {
+  return FixedRandom<Real, DevicePtr>(dev, shape);
+}
+template <typename Scalar = Real>
+auto FixedRandom(const Shape& shape) {
+  return FixedRandom<Scalar>(cpu(), shape);
+}
+
 //// Temporary? workaround for lack of "uniform" impl for Half
 // template <>
 // inline auto Random<Half>(DevPtr dev, const Shape& shape) {
@@ -242,12 +261,6 @@ auto Random(const Shape& shape) {
 //   return Random(shape)->cast<Half>();
 // }
 //
-// template <typename Scalar = Real>
-// auto FixedRandom(DevPtr dev, const Shape& shape) {
-//   auto x = FixedData<Scalar>(dev, shape);
-//   x->value().set_random();
-//   return x;
-// }
 
 template <int Rank, typename Scalar, typename DevicePtr>
 auto Values(DevicePtr dev, NestedInitList<Rank, Scalar> val) {

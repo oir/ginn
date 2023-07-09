@@ -15,6 +15,8 @@
 #ifndef GINN_NODE_AFFINE_H
 #define GINN_NODE_AFFINE_H
 
+#include <type_traits>
+
 #include <ginn/node/data.h>
 #include <ginn/nonlin.h>
 #include <ginn/prod.h>
@@ -209,18 +211,19 @@ auto Affine(Ptr<Node> in, Args&&... args) {
   return make_ptr<AffineNode<Scalar, Kind>>(in, std::forward<Args>(args)...);
 }
 
-// template <typename Node,
-//           typename NonlinType,
-//           typename... Args,
-//           typename = std::enable_if_t<
-//               std::is_base_of_v<NonlinOp<typename Node::Scalar>,
-//               NonlinType>>>
-// auto Affine(NonlinType nonlin, Ptr<Node> in, Args&&... args) {
-//   using Scalar = typename Node::Scalar;
-//   return make_ptr<AffineNode<Scalar>>(nonlin, in,
-//   std::forward<Args>(args)...);
-// }
-//
+template <typename Node,
+          typename NonlinType,
+          typename... Args,
+          typename = std::enable_if_t<std::is_base_of_v<
+              NonlinOp<typename Node::Scalar, Node::device_kind>,
+              NonlinType>>>
+auto Affine(NonlinType nonlin, Ptr<Node> in, Args&&... args) {
+  using Scalar = typename Node::Scalar;
+  const static auto Kind = Node::device_kind;
+  return make_ptr<AffineNode<Scalar, Kind>>(
+      nonlin, in, std::forward<Args>(args)...);
+}
+
 // template <typename Node,
 //           typename NonlinType,
 //           typename... Args,

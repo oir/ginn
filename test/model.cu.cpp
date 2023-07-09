@@ -20,9 +20,16 @@
 
 using namespace ginn;
 
+#ifdef GINN_ENABLE_GPU
+const auto dev = gpu();
+#else
+const auto dev = cpu();
+#endif
+
 TEST_CASE("Lstm") {
   // Compare to PyTorch output
-  Lstm lstm(cpu(), 3, 3);
+  constexpr auto Kind = decltype(dev)::element_type::device_kind;
+  Lstm<Real, Kind> lstm(dev, 3, 3);
 
   for (auto& w : {lstm.Wix,
                   lstm.Wfx,
@@ -38,31 +45,31 @@ TEST_CASE("Lstm") {
   // so set these weights to 0
   for (auto& w : {lstm.Wic, lstm.Wfc, lstm.Woc}) { w->value().set_zero(); }
   for (auto& b : {lstm.bi, lstm.bf, lstm.bc, lstm.bo}) {
-    b->value().v() << 0.0, 0.3, 0.6;
+    b->value().set<1>({0.0, 0.3, 0.6});
   }
 
-  Lstm<>::State hidden{Data(cpu(), {3, 1}), Data(cpu(), {3, 1})};
-  hidden.first->value().v() << 0.3, 0.5, 0.7;
-  hidden.second->value().v() << -0.3, -0.5, -0.7;
+  Lstm<Real, Kind>::State hidden{Data(dev, {3, 1}), Data(dev, {3, 1})};
+  hidden.first->value().set<1>({0.3, 0.5, 0.7});
+  hidden.second->value().set<1>({-0.3, -0.5, -0.7});
 
-  std::vector<DataPtr<>> inputs;
+  std::vector<DataPtr<Real, Kind>> inputs;
   for (size_t i = 0; i < 5; i++) {
-    inputs.push_back(Data(cpu(), {3, 1}));
-    inputs.back()->value().v() << 0.25, -0.5, 0.75;
+    inputs.push_back(Data(dev, {3, 1}));
+    inputs.back()->value().set<1>({0.25, -0.5, 0.75});
   }
 
   for (auto& x : inputs) { hidden = lstm.step(x, hidden); }
 
   Graph(hidden.first).forward();
 
-  auto hv = hidden.first->value().v();
-  auto cv = hidden.second->value().v();
-  CHECK(hv(0) == Approx(0.067673));
-  CHECK(hv(1) == Approx(0.504593));
-  CHECK(hv(2) == Approx(-0.030797));
-  CHECK(cv(0) == Approx(0.127502));
-  CHECK(cv(1) == Approx(0.972858));
-  CHECK(cv(2) == Approx(-0.062305));
+  auto hv = hidden.first->value().vector();
+  auto cv = hidden.second->value().vector();
+  CHECK(hv[0] == Approx(0.067673));
+  CHECK(hv[1] == Approx(0.504593));
+  CHECK(hv[2] == Approx(-0.030797));
+  CHECK(cv[0] == Approx(0.127502));
+  CHECK(cv[1] == Approx(0.972858));
+  CHECK(cv[2] == Approx(-0.062305));
 }
 // (tensor([[[ 0.067673,  0.504593, -0.030797]]], grad_fn=<StackBackward>),
 // tensor([[[ 0.127502,  0.972858, -0.062305]]], grad_fn=<StackBackward>))

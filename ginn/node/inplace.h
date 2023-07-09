@@ -31,12 +31,12 @@ namespace ginn {
 //   a non intrusive way to do it instead, similar to what a traits class would
 //   look like?
 
-template <typename Scalar>
-class InPlaceAddNode : public AddNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceAddNode : public AddNode<Scalar, Kind> {
  protected:
-  using AddNode<Scalar>::ins_;
+  using AddNode<Scalar, Kind>::ins_;
 
-  void forward_() override { AddNode<Scalar>::forward_(); }
+  void forward_() override { AddNode<Scalar, Kind>::forward_(); }
 
   void backward_() override {
     for (size_t i = 1; i < ins_.size(); i++) {
@@ -45,10 +45,14 @@ class InPlaceAddNode : public AddNode<Scalar> {
   }
 
  public:
-  using AddNode<Scalar>::AddNode;
+  using AddNode<Scalar, Kind>::AddNode;
 
-  const Tensor<Scalar>& value() const override { return ins_[0]->value(); }
-  const Tensor<Scalar>& grad() const override { return ins_[0]->grad(); }
+  const Tensor<Scalar, Kind>& value() const override {
+    return ins_[0]->value();
+  }
+  const Tensor<Scalar, Kind>& grad() const override { return ins_[0]->grad(); }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
 
   bool has_grad() const override { return ins_[0]->has_grad(); }
 
@@ -57,18 +61,21 @@ class InPlaceAddNode : public AddNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceAdd);
 
-template <typename Scalar>
-class InPlaceAddScalarNode : public AddScalarNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceAddScalarNode : public AddScalarNode<Scalar, Kind> {
  protected:
-  using AddScalarNode<Scalar>::in_;
+  using AddScalarNode<Scalar, Kind>::in_;
 
   void backward_() override {}
 
  public:
-  using AddScalarNode<Scalar>::AddScalarNode;
+  using AddScalarNode<Scalar, Kind>::AddScalarNode;
 
-  const Tensor<Scalar>& value() const override { return in_->value(); }
-  const Tensor<Scalar>& grad() const override { return in_->grad(); }
+  const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
+  const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
+
   bool has_grad() const override { return in_->has_grad(); }
 
   std::string name() const override { return "InPlaceAddScalarNode"; }
@@ -76,11 +83,11 @@ class InPlaceAddScalarNode : public AddScalarNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceAddScalar);
 
-template <typename Scalar>
-class InPlaceCwiseProdNode : public CwiseProdNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceCwiseProdNode : public CwiseProdNode<Scalar, Kind> {
  protected:
-  using CwiseProdNode<Scalar>::a_;
-  using CwiseProdNode<Scalar>::b_;
+  using CwiseProdNode<Scalar, Kind>::a_;
+  using CwiseProdNode<Scalar, Kind>::b_;
 
   void backward_() override {
     if (b_->has_grad()) {
@@ -90,10 +97,13 @@ class InPlaceCwiseProdNode : public CwiseProdNode<Scalar> {
   }
 
  public:
-  using CwiseProdNode<Scalar>::CwiseProdNode;
+  using CwiseProdNode<Scalar, Kind>::CwiseProdNode;
 
-  const Tensor<Scalar>& value() const override { return a_->value(); }
-  const Tensor<Scalar>& grad() const override { return a_->grad(); }
+  const Tensor<Scalar, Kind>& value() const override { return a_->value(); }
+  const Tensor<Scalar, Kind>& grad() const override { return a_->grad(); }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
+
   bool has_grad() const override { return a_->has_grad(); }
 
   std::string name() const override { return "InPlaceCwiseProd"; }
@@ -101,20 +111,23 @@ class InPlaceCwiseProdNode : public CwiseProdNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceCwiseProd);
 
-template <typename Scalar>
-class InPlaceProdScalarNode : public ProdScalarNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceProdScalarNode : public ProdScalarNode<Scalar, Kind> {
  protected:
-  using ProdScalarNode<Scalar>::in_;
+  using ProdScalarNode<Scalar, Kind>::in_;
 
   void backward_() override {
     if (in_->has_grad()) { in_->grad() = grad().t() * this->val_; }
   }
 
  public:
-  using ProdScalarNode<Scalar>::ProdScalarNode;
+  using ProdScalarNode<Scalar, Kind>::ProdScalarNode;
 
-  const Tensor<Scalar>& value() const override { return in_->value(); }
-  const Tensor<Scalar>& grad() const override { return in_->grad(); }
+  const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
+  const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
+
   bool has_grad() const override { return in_->has_grad(); }
 
   std::string name() const override { return "InPlaceProdScalar"; }
@@ -122,26 +135,28 @@ class InPlaceProdScalarNode : public ProdScalarNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceProdScalar);
 
-template <typename Scalar>
-class InPlaceDropoutNode : public DropoutNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceDropoutNode : public DropoutNode<Scalar, Kind> {
  protected:
-  using DropoutNode<Scalar>::in_;
-  using DropoutNode<Scalar>::p_;
-  using DropoutNode<Scalar>::mask_;
+  using DropoutNode<Scalar, Kind>::in_;
+  using DropoutNode<Scalar, Kind>::p_;
+  using DropoutNode<Scalar, Kind>::mask_;
 
   void backward_() override {
     if (in_->has_grad() and p_ < 1.) {
-      Scalar tmp(1. / (1. - p_));
-      grad() = (grad().t() * mask_.t().template cast<Scalar>() * tmp);
+      Raw<Scalar> tmp(1. / (1. - p_));
+      grad() = (grad().t() * mask_.t().template cast<Raw<Scalar>>() * tmp);
     }
   }
 
  public:
-  using DropoutNode<Scalar>::DropoutNode;
+  using DropoutNode<Scalar, Kind>::DropoutNode;
 
-  const Tensor<Scalar>& value() const override { return in_->value(); }
-  const Tensor<Scalar>& grad() const override { return in_->grad(); }
-  using DropoutNode<Scalar>::grad;
+  const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
+  const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
+  using DropoutNode<Scalar, Kind>::value;
+  using DropoutNode<Scalar, Kind>::grad;
+
   bool has_grad() const override { return in_->has_grad(); }
 
   std::string name() const override { return "InPlaceDropout"; }
@@ -149,12 +164,12 @@ class InPlaceDropoutNode : public DropoutNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceDropout);
 
-template <typename Scalar>
-class InPlaceMaskNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceMaskNode : public BaseDataNode<Scalar, Kind> {
  private:
   // TODO: Consider making mask_ a NodePtr<bool> instead
-  NodePtr<Scalar> in_, mask_;
-  Scalar mask_val_;
+  NodePtr<Scalar, Kind> in_, mask_;
+  Raw<Scalar> mask_val_;
 
   void forward_() override {
     auto mask_s = mask_->shape();
@@ -173,9 +188,9 @@ class InPlaceMaskNode : public BaseDataNode<Scalar> {
     auto mask_m = mask_->value().reshaped({ms, 1});
     auto in_m = in_->value().reshaped({ms, batch_size});
 
-    Tensor<Scalar> val(this->dev(), {}, mask_val_);
+    Tensor<Scalar, Kind> val(this->dev(), {}, mask_val_);
     Index<2> cast{in_m.rows(), in_m.cols()};
-    in_m = (mask_m.t().broadcast(Index<2>{1, batch_size}) != Scalar(0))
+    in_m = (mask_m.t().broadcast(Index<2>{1, batch_size}) != Raw<Scalar>(0))
                .select(in_m.t(), val.t().broadcast(cast));
   }
 
@@ -186,36 +201,41 @@ class InPlaceMaskNode : public BaseDataNode<Scalar> {
       auto mask_m = mask_->value().reshaped({ms, 1});
       auto d_in_m = in_->grad().reshaped({ms, batch_size});
 
-      Tensor<Scalar> zero(this->dev(), {}, Scalar(0));
+      Tensor<Scalar, Kind> zero(this->dev(), {}, Raw<Scalar>(0));
       Index<2> cast{d_in_m.rows(), d_in_m.cols()};
-      d_in_m = (mask_m.t().broadcast(Index<2>{1, batch_size}) != Scalar(0))
+      d_in_m = (mask_m.t().broadcast(Index<2>{1, batch_size}) != Raw<Scalar>(0))
                    .select(d_in_m.t(), zero.t().broadcast(cast));
     }
   }
 
  public:
-  const Tensor<Scalar>& value() const override { return in_->value(); }
-  const Tensor<Scalar>& grad() const override { return in_->grad(); }
+  const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
+  const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
+
   bool has_grad() const override { return in_->has_grad(); }
 
   template <typename MaskScalar,
             typename = std::enable_if_t<ginn::is_arithmetic_v<MaskScalar>>>
-  InPlaceMaskNode(NodePtr<Scalar> in, NodePtr<Scalar> mask, MaskScalar mask_val)
-      : BaseDataNode<Scalar>({in, mask}),
+  InPlaceMaskNode(const NodePtr<Scalar, Kind>& in,
+                  const NodePtr<Scalar, Kind>& mask,
+                  MaskScalar mask_val)
+      : BaseDataNode<Scalar, Kind>({in, mask}),
         in_(in),
         mask_(mask),
-        mask_val_(Scalar(mask_val)) {}
+        mask_val_(Raw<Scalar>(mask_val)) {}
 
   std::string name() const override { return "InPlaceMask"; }
 };
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceMask);
 
-template <typename Scalar>
-class InPlaceLayerNormNode : public LayerNormNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class InPlaceLayerNormNode : public LayerNormNode<Scalar, Kind> {
  protected:
-  using LayerNormNode<Scalar>::in_;
-  using LayerNormNode<Scalar>::std_;
+  using LayerNormNode<Scalar, Kind>::in_;
+  using LayerNormNode<Scalar, Kind>::std_;
 
   void backward_() override {
     if (in_->has_grad()) {
@@ -224,7 +244,7 @@ class InPlaceLayerNormNode : public LayerNormNode<Scalar> {
 
       auto bc = [=](const auto& e) { return e.broadcast(Index<2>{rows, 1}); };
 
-      Tensor<Scalar> grad_mean(this->dev(), {1, cols}),
+      Tensor<Scalar, Kind> grad_mean(this->dev(), {1, cols}),
           dot(this->dev(), {1, cols});
       grad_mean = grad().t().mean(Index<1>{0});
       dot = (grad().t() * value().t()).mean(Index<1>{0});
@@ -236,10 +256,13 @@ class InPlaceLayerNormNode : public LayerNormNode<Scalar> {
   }
 
  public:
-  using LayerNormNode<Scalar>::LayerNormNode;
+  using LayerNormNode<Scalar, Kind>::LayerNormNode;
 
-  const Tensor<Scalar>& value() const override { return in_->value(); }
-  const Tensor<Scalar>& grad() const override { return in_->grad(); }
+  const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
+  const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
+  using Node<Scalar, Kind>::value;
+  using Node<Scalar, Kind>::grad;
+
   bool has_grad() const override { return in_->has_grad(); }
 
   std::string name() const override { return "InPlaceLayerNorm"; }
@@ -247,62 +270,62 @@ class InPlaceLayerNormNode : public LayerNormNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlaceLayerNorm);
 
-// TODO: This seems to be breaking. Maybe an aliasing issue when using Eigen
-// shuffle()?
-// TODO: is this still breaking or no? check
-template <typename Scalar>
-class InPlacePermuteNode : public PermuteNode<Scalar> {
- protected:
-  using PermuteNode<Scalar>::in_;
-  using PermuteNode<Scalar>::indices_;
-
-  void forward_() override {
-    Shape s(indices_.size());
-    for (size_t i = 0; i < s.size(); i++) { s[i] = in_->shape()[indices_[i]]; }
-    this->value().map(in_->value(), s);
-
-    switch (indices_.size()) {
-    case 2: this->template forward_helper<2>(); break;
-    case 3: this->template forward_helper<3>(); break;
-    case 4: this->template forward_helper<4>(); break;
-    case 5: this->template forward_helper<5>(); break;
-    case 6: this->template forward_helper<6>(); break;
-    case 7: this->template forward_helper<7>(); break;
-    case 8: this->template forward_helper<8>(); break;
-    default: GINN_THROW("Unexpected number of indices in Permute!");
-    }
-  }
-
- public:
-  InPlacePermuteNode(NodePtr<Scalar> in, Shape indices)
-      : PermuteNode<Scalar>(in, std::move(indices)) {
-    this->overwrite_ = true;
-  }
-
-  bool has_grad() const override { return in_->has_grad(); }
-
-  void init_grad() override {
-    if (this->has_grad()) {
-      BaseDataNode<Scalar>::init_grad();
-      Shape s = PermuteNode<Scalar>::permute(in_->shape(), indices_);
-      this->grad().map(in_->grad(), s);
-    }
-  }
-
-  std::string name() const override { return "InPlacePermuteNode"; }
-};
-
-GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlacePermute);
-
-template <typename Node>
-auto InPlacePermute(Ptr<Node> in, std::initializer_list<Size> s) {
-  return InPlacePermute(in, Shape(s));
-}
-
-template <typename Scalar>
-auto InPlacePermute(NodePtr<Scalar> x, std::initializer_list<Size> indices) {
-  return InPlacePermute(std::move(x), Shape(indices));
-}
+//// TODO: This seems to be breaking. Maybe an aliasing issue when using Eigen
+//// shuffle()?
+//// TODO: is this still breaking or no? check
+// template <typename Scalar>
+// class InPlacePermuteNode : public PermuteNode<Scalar> {
+// protected:
+//  using PermuteNode<Scalar>::in_;
+//  using PermuteNode<Scalar>::indices_;
+//
+//  void forward_() override {
+//    Shape s(indices_.size());
+//    for (size_t i = 0; i < s.size(); i++) { s[i] = in_->shape()[indices_[i]];
+//    } this->value().map(in_->value(), s);
+//
+//    switch (indices_.size()) {
+//    case 2: this->template forward_helper<2>(); break;
+//    case 3: this->template forward_helper<3>(); break;
+//    case 4: this->template forward_helper<4>(); break;
+//    case 5: this->template forward_helper<5>(); break;
+//    case 6: this->template forward_helper<6>(); break;
+//    case 7: this->template forward_helper<7>(); break;
+//    case 8: this->template forward_helper<8>(); break;
+//    default: GINN_THROW("Unexpected number of indices in Permute!");
+//    }
+//  }
+//
+// public:
+//  InPlacePermuteNode(NodePtr<Scalar> in, Shape indices)
+//      : PermuteNode<Scalar>(in, std::move(indices)) {
+//    this->overwrite_ = true;
+//  }
+//
+//  bool has_grad() const override { return in_->has_grad(); }
+//
+//  void init_grad() override {
+//    if (this->has_grad()) {
+//      BaseDataNode<Scalar>::init_grad();
+//      Shape s = PermuteNode<Scalar>::permute(in_->shape(), indices_);
+//      this->grad().map(in_->grad(), s);
+//    }
+//  }
+//
+//  std::string name() const override { return "InPlacePermuteNode"; }
+//};
+//
+// GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlacePermute);
+//
+// template <typename Node>
+// auto InPlacePermute(Ptr<Node> in, std::initializer_list<Size> s) {
+//  return InPlacePermute(in, Shape(s));
+//}
+//
+// template <typename Scalar>
+// auto InPlacePermute(NodePtr<Scalar> x, std::initializer_list<Size> indices) {
+//  return InPlacePermute(std::move(x), Shape(indices));
+//}
 
 } // namespace ginn
 

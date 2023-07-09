@@ -20,25 +20,25 @@
 #include <catch2/catch.hpp>
 
 #include <ginn/node/common.h>
-//#include <ginn/node/inplace.h>
+#include <ginn/node/inplace.h>
 
-using namespace ginn;
 using namespace ginn;
 
 TEMPLATE_TEST_CASE("Dropout", "[common][inplace]", Real, Half) {
   using Scalar = TestType;
 
-  auto drop = [](auto in, Real p, bool /*inplace*/) {
-    //    return inplace ? (NodePtr<Scalar>)InPlaceDropout(1 * in, p)
-    //                   : (NodePtr<Scalar>)Dropout(in, p);
-    return Dropout(in, p);
+  auto drop = [](auto in, Real p, bool inplace) {
+    constexpr auto Kind = std::decay_t<decltype(in)>::element_type::device_kind;
+    return inplace ? (NodePtr<Scalar, Kind>)InPlaceDropout(1 * in, p)
+                   : (NodePtr<Scalar, Kind>)Dropout(in, p);
+    // return Dropout(in, p);
   };
 
   SECTION("Cpu sample") {
     auto x = Ones(cpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0.25, 0.5, 0.75);
-    // bool inplace = GENERATE(false, true);
-    bool inplace = false;
+    bool inplace = GENERATE(false, true);
+    // bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
@@ -49,8 +49,8 @@ TEMPLATE_TEST_CASE("Dropout", "[common][inplace]", Real, Half) {
   SECTION("Cpu extremes") {
     auto x = Ones(cpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0., 1.);
-    // bool inplace = GENERATE(false, true);
-    bool inplace = false;
+    bool inplace = GENERATE(false, true);
+    // bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
@@ -69,8 +69,8 @@ TEMPLATE_TEST_CASE("Dropout", "[common][inplace]", Real, Half) {
   SECTION("Gpu sample") {
     auto x = Ones(gpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0.25, 0.5, 0.75);
-    // bool inplace = GENERATE(false, true);
-    bool inplace = false;
+    bool inplace = GENERATE(false, true);
+    // bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();
@@ -85,8 +85,8 @@ TEMPLATE_TEST_CASE("Dropout", "[common][inplace]", Real, Half) {
   SECTION("Gpu extremes") {
     auto x = Ones(gpu(), {100, 100, 100, 100})->cast<Scalar>();
     Real p = GENERATE(0., 1.);
-    // bool inplace = GENERATE(false, true);
-    bool inplace = false;
+    bool inplace = GENERATE(false, true);
+    // bool inplace = false;
 
     auto y = drop(x, p, inplace);
     Graph(y).forward();

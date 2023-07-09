@@ -24,10 +24,10 @@ namespace ginn {
 // 2d Spatial Convolution
 // Input shape: (channels, height, width, others (e.g. batch dim))
 // Filters / Kernel shape: (filters, channels, kernel height, kernel width)
-template <typename Scalar>
-class Conv2dNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Conv2dNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> in_, filter_;
+  NodePtr<Scalar, Kind> in_, filter_;
   size_t row_stride_ = 1; // TODO: Should these be Size instead?
   size_t col_stride_ = 1;
 
@@ -36,7 +36,7 @@ class Conv2dNode : public BaseDataNode<Scalar> {
   }
 
   void forward_() override {
-    Shape s(Tensor<Scalar>::reduce(in_->shape(), 4));
+    Shape s(Tensor<Scalar, Kind>::reduce(in_->shape(), 4));
     Shape filt_s = filter_->shape();
     s[0] = filt_s.at(0);
     s[1] = dim(s[1], row_stride_);
@@ -62,14 +62,14 @@ class Conv2dNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  Conv2dNode(NodePtr<Scalar> input,
-             NodePtr<Scalar> filters,
+  Conv2dNode(const NodePtr<Scalar, Kind>& input,
+             const NodePtr<Scalar, Kind>& filters,
              size_t a_row_stride = 1,
              size_t a_col_stride = 1)
-      : BaseDataNode<Scalar>({input, filters}),
+      : BaseDataNode<Scalar, Kind>({input, filters}),
         in_(input),
         filter_(filters),
         row_stride_(a_row_stride),
@@ -83,10 +83,10 @@ GINN_MAKE_SCALAR_FORWARDING_FACTORY(Conv2d);
 // 1d Spatial Convolution
 // Input shape: (channels, length, others (e.g. batch dim))
 // Filters / Kernel shape: (filters, channels, kernel length)
-template <typename Scalar>
-class Conv1dNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Conv1dNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> in_, filter_;
+  NodePtr<Scalar, Kind> in_, filter_;
   size_t stride_ = 1; // TODO: Should these be Size instead?
 
   static unsigned dim(Size input_len, size_t stride) {
@@ -94,8 +94,8 @@ class Conv1dNode : public BaseDataNode<Scalar> {
   }
 
   void forward_() override {
-    Shape is(Tensor<Scalar>::reduce(in_->value().shape(), 3));
-    Shape s(Tensor<Scalar>::reduce(in_->value().shape(), 3));
+    Shape is(Tensor<Scalar, Kind>::reduce(in_->value().shape(), 3));
+    Shape s(is);
     Shape ks = filter_->value().shape();
 
     s[0] = ks.at(0);
@@ -111,7 +111,7 @@ class Conv1dNode : public BaseDataNode<Scalar> {
   }
 
   void backward_() override {
-    Shape is(Tensor<Scalar>::reduce(in_->value().shape(), 3));
+    Shape is(Tensor<Scalar, Kind>::reduce(in_->value().shape(), 3));
     Shape s = value().shape();
     Shape ks = filter_->value().shape();
 
@@ -140,11 +140,13 @@ class Conv1dNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  Conv1dNode(NodePtr<Scalar> input, NodePtr<Scalar> filters, size_t stride = 1)
-      : BaseDataNode<Scalar>({input, filters}),
+  Conv1dNode(const NodePtr<Scalar, Kind>& input,
+             const NodePtr<Scalar, Kind>& filters,
+             size_t stride = 1)
+      : BaseDataNode<Scalar, Kind>({input, filters}),
         in_(input),
         filter_(filters),
         stride_(stride) {}

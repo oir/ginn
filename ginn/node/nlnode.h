@@ -69,33 +69,37 @@ GINN_MAKE_UNARY_NODE_AND_FACTORY(Sqrt);
 GINN_MAKE_UNARY_NODE_AND_FACTORY(Gelu);
 GINN_MAKE_UNARY_NODE_AND_FACTORY(Gelu2);
 
-//#define GINN_MAKE_INPLACE_UNARY_NODE_AND_FACTORY(F)                            \
-//  template <typename Scalar>                                                   \
-//  class InPlace##F##Node : public F##Node<Scalar> {                            \
-//   protected:                                                                  \
-//    using F##Node<Scalar>::in_;                                                \
-//    using F##Node<Scalar>::op_;                                                \
-//                                                                               \
-//    void backward_() override {                                                \
-//      if (in_->has_grad()) {                                                   \
-//        op_.backward(in_->grad(), grad(), in_->value(), value(), false);       \
-//      }                                                                        \
-//    }                                                                          \
-//                                                                               \
-//   public:                                                                     \
-//    const Tensor<Scalar>& value() const override { return in_->value(); }      \
-//    const Tensor<Scalar>& grad() const override { return in_->grad(); }        \
-//                                                                               \
-//    bool has_grad() const override { return in_->has_grad(); }                 \
-//                                                                               \
-//    using UnaryOp = F##Op<Scalar>;                                             \
-//    using F##Node<Scalar>::F##Node;                                            \
-//    std::string name() const override { return "InPlace" #F; }                 \
-//  };                                                                           \
-//                                                                               \
-//  GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlace##F);
-//
-// GINN_MAKE_INPLACE_UNARY_NODE_AND_FACTORY(Sigmoid);
+#define GINN_MAKE_INPLACE_UNARY_NODE_AND_FACTORY(F)                            \
+  template <typename Scalar, DeviceKind Kind>                                  \
+  class InPlace##F##Node : public F##Node<Scalar, Kind> {                      \
+   protected:                                                                  \
+    using F##Node<Scalar, Kind>::in_;                                          \
+    using F##Node<Scalar, Kind>::op_;                                          \
+                                                                               \
+    void backward_() override {                                                \
+      if (in_->has_grad()) {                                                   \
+        op_.backward(in_->grad(), grad(), in_->value(), value(), false);       \
+      }                                                                        \
+    }                                                                          \
+                                                                               \
+   public:                                                                     \
+    const Tensor<Scalar, Kind>& value() const override {                       \
+      return in_->value();                                                     \
+    }                                                                          \
+    const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }  \
+    using BaseDataNode<Scalar, Kind>::value;                                   \
+    using BaseDataNode<Scalar, Kind>::grad;                                    \
+                                                                               \
+    bool has_grad() const override { return in_->has_grad(); }                 \
+                                                                               \
+    using UnaryOp = F##Op<Scalar, Kind>;                                       \
+    using F##Node<Scalar, Kind>::F##Node;                                      \
+    std::string name() const override { return "InPlace" #F; }                 \
+  };                                                                           \
+                                                                               \
+  GINN_MAKE_SCALAR_FORWARDING_FACTORY(InPlace##F);
+
+GINN_MAKE_INPLACE_UNARY_NODE_AND_FACTORY(Sigmoid);
 
 } // end namespace ginn
 

@@ -1,16 +1,19 @@
 sources = [
   'autobatch.cpp',
-  'convnodes.cu.cpp',
   'dev.cu.cpp',
   'graph.cpp',
   'include.cpp',
-  'model.cpp',
+  'model.cu.cpp',
   'nodes.cu.cpp',
   'nodes-common.cu.cpp',
   'nodes-compare.cu.cpp',
+  'nodes-conv.cu.cpp',
   'nodes-dropout.cu.cpp',
+  'nodes-inplace.cu.cpp',
   'nodes-layout.cu.cpp',
   'nodes-pick.cu.cpp',
+  'nodes-pool.cu.cpp',
+  'nodes-prod.cu.cpp',
   'nodes-reduce.cu.cpp',
   'sample.cpp',
   'tensor.cu.cpp',
@@ -18,14 +21,18 @@ sources = [
 ]
 
 cuda_sources = [
-  'convnodes.cu.cpp',
   'dev.cu.cpp',
+  'model.cu.cpp',
   'nodes.cu.cpp',
   'nodes-common.cu.cpp',
   'nodes-compare.cu.cpp',
+  'nodes-conv.cu.cpp',
   'nodes-dropout.cu.cpp',
+  'nodes-inplace.cu.cpp',
   'nodes-layout.cu.cpp',
   'nodes-pick.cu.cpp',
+  'nodes-pool.cu.cpp',
+  'nodes-prod.cu.cpp',
   'nodes-reduce.cu.cpp',
   'tensor.cu.cpp',
 ]
@@ -50,12 +57,22 @@ if gpu
     copy_name = src.replace('.cu.cpp', '.copy.cu')
     copied_src = fs.copyfile(src, copy_name)
 
-    exe = executable(exec_name,
-                     copied_src,
-                     include_directories : incdir,
-                     dependencies : test_deps + [cuda_dep],
-                     cpp_args : cpp_args,
-                     cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])
+    if exec_name == 'cuda-nodes-conv-test'
+      exe = executable(exec_name,
+                      copied_src,
+                      include_directories : incdir,
+                      dependencies : test_deps + [cuda_dep],
+                      cpp_args : cpp_args + ['-DGINN_ENABLE_GPU', '-g', '-O0'],
+                      cuda_args : cuda_args + ['-DGINN_ENABLE_GPU', '-G', '-O0', '-Xptxas=-O0', '-Xcompiler=-Wno-maybe-uninitialized'])
+    else
+      exe = executable(exec_name,
+                      copied_src,
+                      include_directories : incdir,
+                      dependencies : test_deps + [cuda_dep],
+                      cpp_args : cpp_args + ['-DGINN_ENABLE_GPU'],
+                      cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])
+    endif
+
     tests += [exe]
     cudatests += [exe]
     test(exec_name, exe)

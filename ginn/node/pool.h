@@ -21,10 +21,10 @@
 
 namespace ginn {
 
-template <typename Scalar>
-class MaxPool2dNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class MaxPool2dNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> in_;
+  NodePtr<Scalar, Kind> in_;
   size_t rows_, cols_;
   size_t row_stride_ = 1;
   size_t col_stride_ = 1;
@@ -34,7 +34,7 @@ class MaxPool2dNode : public BaseDataNode<Scalar> {
   }
 
   void forward_() override {
-    Shape s(Tensor<Scalar>::reduce(in_->shape(), 4));
+    Shape s(Tensor<Scalar, Kind>::reduce(in_->shape(), 4));
     s[1] = dim(s[1], row_stride_);
     s[2] = dim(s[2], col_stride_);
     value().resize(s);
@@ -50,7 +50,7 @@ class MaxPool2dNode : public BaseDataNode<Scalar> {
       auto output = value().template view<4>();
       auto d_output = grad().template view<4>();
 
-      if (dev()->kind() == CPU) {
+      if constexpr (Kind == CPU) {
         eigen::MaxPool2dBackwardLoop(d_input,
                                      input,
                                      output,
@@ -69,16 +69,16 @@ class MaxPool2dNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  MaxPool2dNode(NodePtr<Scalar> input,
+  MaxPool2dNode(const NodePtr<Scalar, Kind>& input,
                 size_t a_rows,
                 size_t a_cols,
                 size_t a_row_stride = 1,
                 size_t a_col_stride = 1)
-      : BaseDataNode<Scalar>({input}),
+      : BaseDataNode<Scalar, Kind>({input}),
         in_(input),
         rows_(a_rows),
         cols_(a_cols),
@@ -90,10 +90,10 @@ class MaxPool2dNode : public BaseDataNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(MaxPool2d);
 
-template <typename Scalar>
-class MaxPool1dNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class MaxPool1dNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> in_;
+  NodePtr<Scalar, Kind> in_;
   size_t len_, stride_ = 1;
 
   static unsigned dim(Size input_len, size_t stride) {
@@ -101,8 +101,8 @@ class MaxPool1dNode : public BaseDataNode<Scalar> {
   }
 
   void forward_() override {
-    Shape is(Tensor<Scalar>::reduce(in_->value().shape(), 3));
-    Shape s(Tensor<Scalar>::reduce(in_->value().shape(), 3));
+    Shape is(Tensor<Scalar, Kind>::reduce(in_->value().shape(), 3));
+    Shape s(is);
     s[1] = dim(s[1], stride_);
     value().resize(s);
 
@@ -122,7 +122,7 @@ class MaxPool1dNode : public BaseDataNode<Scalar> {
       auto g = grad().reshaped({s[0], s[1], 1, s[2]});
       auto inp_g = in_->grad().reshaped({is[0], is[1], 1, is[2]});
 
-      if (dev()->kind() == CPU) {
+      if constexpr (Kind == CPU) {
         auto inp_g_ = inp_g.template view<4>();
         eigen::MaxPool2dBackwardLoop(inp_g_,
                                      inp.template view<4>(),
@@ -147,12 +147,17 @@ class MaxPool1dNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  MaxPool1dNode(NodePtr<Scalar> input, size_t len, size_t stride = 1)
-      : BaseDataNode<Scalar>({input}), in_(input), len_(len), stride_(stride) {}
+  MaxPool1dNode(const NodePtr<Scalar, Kind>& input,
+                size_t len,
+                size_t stride = 1)
+      : BaseDataNode<Scalar, Kind>({input}),
+        in_(input),
+        len_(len),
+        stride_(stride) {}
 
   std::string name() const override { return "MaxPool1d"; }
 };

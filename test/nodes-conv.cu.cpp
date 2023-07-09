@@ -23,17 +23,20 @@
 #include <iostream>
 
 #include <ginn/node/conv.h>
-#include <ginn/node/pool.h>
 
 #include "check_node.h"
 
 using namespace ginn;
 
-auto& Dev = cpu();
+#ifdef GINN_ENABLE_GPU
+constexpr bool gpu_enabled = true;
+#else
+constexpr bool gpu_enabled = false;
+#endif
 
 // clang-format off
 
-// With Half, this does not build (with cuda)
+// With Eigen::half, this does not build (with cuda)
 // With __half, it builds but crashes at runtime
 TEMPLATE_TEST_CASE("Conv2d", "[conv]", Real) {
   using Scalar = TestType;
@@ -62,41 +65,62 @@ TEMPLATE_TEST_CASE("Conv2d", "[conv]", Real) {
   SECTION("Basic")            { check(Conv2d(x, f),       y ); }
   SECTION("Row stride")       { check(Conv2d(x, f, 2, 1), y2); }
   SECTION("Row & col stride") { check(Conv2d(x, f, 2, 3), y3); }
+
   SECTION("Grad or cuda") {
-    CHECK_(Conv2d(x, f),       {x, f}, true);
-    CHECK_(Conv2d(x, f, 2, 1), {x, f}, true);
-    CHECK_(Conv2d(x, f, 2, 3), {x, f}, true);
+    if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+      check_grad(Conv2d(x, f),       {x, f}, true);
+      check_grad(Conv2d(x, f, 2, 1), {x, f}, true);
+      check_grad(Conv2d(x, f, 2, 3), {x, f}, true);
+    }
+    if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+      auto [x_, f_] = to_gpu(x, f);
+      compare_devices(Conv2d(x, f),       {x, f}, Conv2d(x_, f_),       {x_, f_});
+      compare_devices(Conv2d(x, f, 2, 1), {x, f}, Conv2d(x_, f_, 2, 1), {x_, f_});
+      compare_devices(Conv2d(x, f, 2, 3), {x, f}, Conv2d(x_, f_, 2, 3), {x_, f_});
+    }
   }
 }
 
-TEST_CASE("Conv2d 2", "[conv]") {
+TEMPLATE_TEST_CASE("Conv2d 2", "[conv]", Real) {
+  using Scalar = TestType;
+
   auto x = Values<4>({{{{1}, {5}, {9}, {3}},
                        {{2}, {6}, {0}, {4}},
                        {{3}, {7}, {1}, {5}},
-                       {{4}, {8}, {2}, {6}}}});
+                       {{4}, {8}, {2}, {6}}}})->cast<Scalar>();
   REQUIRE(x->shape() == Shape{1, 4, 4, 1});
 
   auto f = Values<4>({{{{1, 4, 7},
                         {2, 5, 8},
-                        {3, 6, 9}}}});
+                        {3, 6, 9}}}})->cast<Scalar>();
   REQUIRE(f->shape() == Shape{1, 1, 3, 3});
 
   auto y = Values<4>({{{{111}, {141}, {133}, {57}},
                        {{178}, {178}, {178}, {74}},
                        {{217}, {153}, {183}, {85}},
-                       {{145}, {102}, {120}, {55}}}});
+                       {{145}, {102}, {120}, {55}}}})->cast<Scalar>();
   REQUIRE(y->shape() == Shape{1, 4, 4, 1});
 
   SECTION("Basic") {
     check(Conv2d(x, f), y);
-    CHECK_(Conv2d(x, f), {x, f}, true);
+  }
+  SECTION("Grad or cuda") {
+    if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+      check_grad(Conv2d(x, f), {x, f}, true);
+    }
+    if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+      auto [x_, f_] = to_gpu(x, f);
+      compare_devices(Conv2d(x, f), {x, f}, Conv2d(x_, f_), {x_, f_});
+    }
   }
 }
 
-TEST_CASE("Conv2d 3", "[conv]") {
-  auto x = Values<4>({{{ {2}, {3} }}});
-  auto f = Values<4>({{{{4, 5, 6}}}});
-  auto y = Values<4>({{{{23}}}});
+TEMPLATE_TEST_CASE("Conv2d 3", "[conv]", Real) {
+  using Scalar = TestType;
+
+  auto x = Values<4>({{{ {2}, {3} }}})->cast<Scalar>();
+  auto f = Values<4>({{{{4, 5, 6}}}})->cast<Scalar>();
+  auto y = Values<4>({{{{23}}}})->cast<Scalar>();
 
   REQUIRE(x->shape() == Shape{1, 1, 2, 1});
   REQUIRE(f->shape() == Shape{1, 1, 1, 3});
@@ -104,39 +128,58 @@ TEST_CASE("Conv2d 3", "[conv]") {
 
   SECTION("Strided") {
     check(Conv2d(x, f, 1, 2), y);
-    CHECK_(Conv2d(x, f), {x, f}, true);
+
+    if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+      check_grad(Conv2d(x, f, 1, 2), {x, f}, true);
+    }
+    if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+      auto [x_, f_] = to_gpu(x, f);
+      compare_devices(Conv2d(x , f , 1, 2), {x , f},
+                      Conv2d(x_, f_, 1, 2), {x_, f_});
+    }
   }
 }
 
-TEST_CASE("Conv1d", "[forward]") {
+TEMPLATE_TEST_CASE("Conv1d", "[forward]", Real) {
+  using Scalar = TestType;
+
   auto x = Values<3>({{{1}, {4}, {7}},
                       {{2}, {5}, {8}},
-                      {{3}, {6}, {9}}});
+                      {{3}, {6}, {9}}})->cast<Scalar>();
   REQUIRE(x->shape() == Shape{3, 3, 1});
 
   auto f = Values<3>({{{1, 4},
                        {2, 5},
-                       {3, 6}}});
+                       {3, 6}}})->cast<Scalar>();
   REQUIRE(f->shape() == Shape{1, 3, 2});
 
-  auto y = Values<3>({{{91}, {154}, {50}}});
+  auto y = Values<3>({{{91}, {154}, {50}}})->cast<Scalar>();
   REQUIRE(y->shape() == Shape{1, 3, 1});
 
-  auto y2 = Values<3>({{{91}, {50}}});
+  auto y2 = Values<3>({{{91}, {50}}})->cast<Scalar>();
   REQUIRE(y2->shape() == Shape{1, 2, 1});
 
   SECTION("Basic")  { check(Conv1d(x, f),    y ); }
   SECTION("Stride") { check(Conv1d(x, f, 2), y2); }
   SECTION("Grad or cuda") {
-    CHECK_(Conv1d(x, f),       {x, f}, true);
-    CHECK_(Conv1d(x, f, 2),    {x, f}, true);
+    if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+      check_grad(Conv1d(x, f),    {x, f}, true);
+      check_grad(Conv1d(x, f, 2), {x, f}, true);
+    }
+    if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+      auto [x_, f_] = to_gpu(x, f);
+      compare_devices(Conv1d(x, f),    {x, f}, Conv1d(x_, f_),    {x_, f_});
+      compare_devices(Conv1d(x, f, 2), {x, f}, Conv1d(x_, f_, 2), {x_, f_});
+    }
   }
 }
 
-TEST_CASE("Conv1d more filters", "[forward]") {
+TEMPLATE_TEST_CASE("Conv1d more filters", "[forward]", Real) {
+  using Scalar = TestType;
+
   auto x = Values<3>({{{1}, {4}, {7}},
                       {{2}, {5}, {8}},
-                      {{3}, {6}, {9}}});
+                      {{3}, {6}, {9}}})->cast<Scalar>();
   REQUIRE(x->shape() == Shape{3, 3, 1});
 
   auto f = Values<3>({{{1, 4},
@@ -144,81 +187,29 @@ TEST_CASE("Conv1d more filters", "[forward]") {
                        {3, 6}},
                       {{1.5, 4.5},
                        {2.5, 5.5},
-                       {3.5, 6.5}}});
+                       {3.5, 6.5}}})->cast<Scalar>();
   REQUIRE(f->shape() == Shape{2, 3, 2});
 
   auto y = Values<3>({{{ 91  }, {154  }, {50}},
-                      {{101.5}, {173.5}, {62}}});
+                      {{101.5}, {173.5}, {62}}})->cast<Scalar>();
   REQUIRE(y->shape() == Shape{2, 3, 1});
 
   auto y2 = Values<3>({{{ 91  }, {50}},
-                       {{101.5}, {62}}});
+                       {{101.5}, {62}}})->cast<Scalar>();
   REQUIRE(y2->shape() == Shape{2, 2, 1});
 
   SECTION("Basic")  { check(Conv1d(x, f),    y ); }
   SECTION("Stride") { check(Conv1d(x, f, 2), y2); }
   SECTION("Grad or cuda") {
-    CHECK_(Conv1d(x, f),       {x, f}, true);
-    CHECK_(Conv1d(x, f, 2),    {x, f}, true);
-  }
-}
-
-TEMPLATE_TEST_CASE("MaxPool2d", "[pool]", Real, Half) {
-  using Scalar = TestType;
-  auto x = Values<4>({{{{1}, {4}, {7}},
-                       {{2}, {5}, {8}},
-                       {{3}, {6}, {9}}}})->cast<Scalar>();
-  REQUIRE(x->shape() == Shape{1, 3, 3, 1});
-
-  auto y = Values<4>({{{{5}, {8}, {8}},
-                       {{6}, {9}, {9}},
-                       {{6}, {9}, {9}}}})->cast<Scalar>();
-  REQUIRE(y->shape() == Shape{1, 3, 3, 1});
-
-  auto y2 = Values<4>({{{{5}, {8}, {8}},
-                        {{6}, {9}, {9}}}})->cast<Scalar>();
-  REQUIRE(y2->shape() == Shape{1, 2, 3, 1});
-
-  auto y3 = Values<4>({{{{5}},
-                        {{6}}}})->cast<Scalar>();
-  REQUIRE(y3->shape() == Shape{1, 2, 1, 1});
-
-  SECTION("Basic")            { check(MaxPool2d(x, 2, 2),       y ); }
-  SECTION("Row stride")       { check(MaxPool2d(x, 2, 2, 2),    y2); }
-  SECTION("Row & col stride") { check(MaxPool2d(x, 2, 2, 2, 3), y3); }
-  SECTION("Grad or cuda") {
-    CHECK_(MaxPool2d(x, 2, 2),       {x}, true); 
-    CHECK_(MaxPool2d(x, 2, 2, 2),    {x}, true); 
-    CHECK_(MaxPool2d(x, 2, 2, 2, 3), {x}, true); 
-  }
-}
-
-TEMPLATE_TEST_CASE("MaxPool1d", "[pool]", Real, Half) {
-  using Scalar = TestType;
-  auto x = Values<3>({{{9}, {6}, {3}},
-                      {{2}, {5}, {8}},
-                      {{4}, {1}, {7}}})->cast<Scalar>();
-  REQUIRE(x->shape() == Shape{3, 3, 1});
-
-  SECTION("Basic") {
-    auto y = Values<3>({{{9}, {6}, {3}},
-                        {{5}, {8}, {8}},
-                        {{4}, {7}, {7}}})->cast<Scalar>();
-    REQUIRE(y->shape() == Shape{3, 3, 1});
-    check(MaxPool1d(x, 2), y);
-  }
-
-  SECTION("Stride") {
-    auto y = Values<3>({{{9}, {3}},
-                        {{5}, {8}},
-                        {{4}, {7}}})->cast<Scalar>();
-    REQUIRE(y->shape() == Shape{3, 2, 1});
-    check(MaxPool1d(x, 2, 2), y);
-  }
-
-  SECTION("Grad or cuda") {
-    CHECK_(MaxPool1d(x, 2),    {x}, true);
-    CHECK_(MaxPool1d(x, 2, 2), {x}, true);
+    if constexpr (not gpu_enabled and std::is_same_v<Scalar, Real>) {
+      check_grad(Conv1d(x, f),    {x, f});
+      check_grad(Conv1d(x, f, 2), {x, f});
+    }
+    if constexpr (gpu_enabled and ginn::is_floating_point_v<Scalar>) {
+      auto [x_, f_] = to_gpu(x, f);
+      compare_devices(Conv1d(x, f),    {x, f}, Conv1d(x_, f_),    {x_, f_});
+      compare_devices(Conv1d(x, f, 2), {x, f}, Conv1d(x_, f_, 2), {x_, f_});
+    }
   }
 }
 

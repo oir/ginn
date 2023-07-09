@@ -23,27 +23,27 @@
 
 namespace ginn {
 
-template <typename Scalar = Real>
+template <typename Scalar = Real, DeviceKind Kind = CPU>
 class Lstm {
  public:
-  using State = std::pair<NodePtr<Scalar>, NodePtr<Scalar>>;
+  using State = std::pair<NodePtr<Scalar, Kind>, NodePtr<Scalar, Kind>>;
 
   // clang-format off
-  WeightPtr<Scalar> Wix, Wfx, Wcx, Wox,
-                    Wih, Wfh, Wch, Woh,
-                    Wic, Wfc,      Woc,
-                    bi,  bf,  bc,  bo;
+  WeightPtr<Scalar, Kind> Wix, Wfx, Wcx, Wox,
+                          Wih, Wfh, Wch, Woh,
+                          Wic, Wfc,      Woc,
+                          bi,  bf,  bc,  bo;
   // clang-format on
 
   Lstm() = default;
-  Lstm(DevPtr dev, Size dim, Size xdim) { init(dev, dim, xdim); }
+  Lstm(const DevPtr<Kind> dev, Size dim, Size xdim) { init(dev, dim, xdim); }
 
-  DevPtr dev() const {
+  DevPtr<Kind> dev() const {
     GINN_ASSERT(Wix, "Uninitialized Lstm does not have a device!");
     return Wix->dev();
   }
 
-  std::vector<WeightPtr<Scalar>> weights() {
+  std::vector<WeightPtr<Scalar, Kind>> weights() {
     // clang-format off
     return {Wix, Wfx, Wcx, Wox,
             Wih, Wfh, Wch, Woh,
@@ -53,7 +53,7 @@ class Lstm {
   };
   // clang-format on
 
-  void init(DevPtr dev, Size dim, Size xdim) {
+  void init(const DevPtr<Kind>& dev, Size dim, Size xdim) {
     for (auto& w : {&Wix, &Wfx, &Wcx, &Wox}) {
       *w = Weight<Scalar>(dev, {dim, xdim});
     }
@@ -63,7 +63,7 @@ class Lstm {
     for (auto& w : {&bi, &bf, &bc, &bo}) { *w = Weight<Scalar>(dev, {dim}); }
   }
 
-  void tie(Lstm& other) {
+  void tie(Lstm<Scalar, Kind>& other) {
     init(other.dev(), 0, 0);
     auto my_weights = weights();
     auto other_weights = other.weights();
@@ -72,8 +72,8 @@ class Lstm {
     }
   }
 
-  Lstm copy(Copy mode) {
-    Lstm rval;
+  Lstm<Scalar, Kind> copy(Copy mode) {
+    Lstm<Scalar, Kind> rval;
     rval.init(dev(), 0, 0);
     auto rval_ws = rval.weights();
     auto this_ws = weights();
@@ -88,7 +88,7 @@ class Lstm {
   }
 
   template <typename DataPtrPair>
-  State step(const NodePtr<Scalar>& x, const DataPtrPair& past) {
+  State step(const NodePtr<Scalar, Kind>& x, const DataPtrPair& past) {
     auto [h_past, c_past] = past;
 
     auto i = Affine<SigmoidOp>(Wix, x, Wih, h_past, Wic, c_past, bi);

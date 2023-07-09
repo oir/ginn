@@ -39,7 +39,7 @@ void add_or_assign(Lhs& lhs, bool accumulate, Rhs rhs) {
   }
 }
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class NonlinOp {
  public:
   virtual bool backward_requires_input() const { // failsafe default
@@ -63,7 +63,7 @@ class NonlinOp {
     return std::make_unique<F<Scalar, Kind>>(*this);                           \
   }
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class IdentityOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return false; }
@@ -85,7 +85,7 @@ class IdentityOp : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(IdentityOp)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class TanhOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return false; }
@@ -109,7 +109,7 @@ class TanhOp : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(TanhOp)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class ReluOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return false; }
@@ -132,7 +132,7 @@ class ReluOp : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(ReluOp)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class SigmoidOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return false; }
@@ -159,7 +159,7 @@ class SigmoidOp : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(SigmoidOp)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class SoftmaxOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return true; }
@@ -200,7 +200,7 @@ class SoftmaxOp : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(SoftmaxOp)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class LogOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return true; }
@@ -224,7 +224,7 @@ class LogOp : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(LogOp)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class SqrtOp : public NonlinOp<Scalar, Kind> {
  public:
   bool backward_requires_input() const override { return false; }
@@ -248,7 +248,7 @@ class SqrtOp : public NonlinOp<Scalar, Kind> {
 };
 
 // TODO: Try UnaryExpr as well and benchmark. UnaryExpr can use erf in cmath
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class Gelu2Op : public NonlinOp<Scalar, Kind> {
  private:
   using s = Raw<Scalar>; // shorthand for math
@@ -279,7 +279,7 @@ class Gelu2Op : public NonlinOp<Scalar, Kind> {
   MAKE_NONLIN_COPY(Gelu2Op)
 };
 
-template <typename Scalar, DeviceKind Kind>
+template <typename Scalar, DeviceKind Kind = CPU>
 class GeluOp : public NonlinOp<Scalar, Kind> {
  private:
   using s = Raw<Scalar>; // shorthand for math

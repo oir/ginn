@@ -16,7 +16,6 @@
 #define GINN_EIGEN_CONV_H
 
 #include <type_traits>
-#include <unsupported/Eigen/CXX11/Tensor>
 #include "helpers.h"
 
 namespace ginn {

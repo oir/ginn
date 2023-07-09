@@ -20,25 +20,26 @@
 
 namespace ginn {
 
-template <typename Scalar>
-class ProdNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class ProdNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> a_, b_;
+  NodePtr<Scalar, Kind> a_, b_;
 
   void forward_() override {
     value().resize(Shape{a_->value().rows(), b_->value().cols()});
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       value().m() = a_->value().m() * b_->value().m();
-    }
 #ifdef GINN_ENABLE_GPU
-    else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       internal::gpu_prod(value(), a_->value(), b_->value());
-    }
 #endif
+    } else {
+      GINN_THROW("Unexpected device!");
+    }
   }
 
   void backward_() override {
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       if (b_->has_grad()) {
         b_->grad().m().noalias() += a_->value().m().transpose() * grad().m();
       }
@@ -46,7 +47,7 @@ class ProdNode : public BaseDataNode<Scalar> {
         a_->grad().m().noalias() += grad().m() * b_->value().m().transpose();
       }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       if (b_->has_grad()) {
         internal::gpu_prod(b_->grad(),
                            a_->value(),
@@ -66,18 +67,18 @@ class ProdNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  ProdNode(const NodePtr<Scalar>& a, const NodePtr<Scalar>& b)
-      : BaseDataNode<Scalar>({a, b}), a_(a), b_(b) {}
+  ProdNode(const NodePtr<Scalar, Kind>& a, const NodePtr<Scalar, Kind>& b)
+      : BaseDataNode<Scalar, Kind>({a, b}), a_(a), b_(b) {}
 
   void set_ins(const std::vector<BaseNodePtr>& ins) override {
     GINN_ASSERT(ins.size() == 2);
     BaseNode::ins_ = ins;
-    a_ = dynamic_ptr_cast<Node<Scalar>>(ins[0]);
-    b_ = dynamic_ptr_cast<Node<Scalar>>(ins[1]);
+    a_ = dynamic_ptr_cast<Node<Scalar, Kind>>(ins[0]);
+    b_ = dynamic_ptr_cast<Node<Scalar, Kind>>(ins[1]);
   }
 
   std::string name() const override { return "Prod"; }
@@ -85,10 +86,10 @@ class ProdNode : public BaseDataNode<Scalar> {
 
 GINN_MAKE_SCALAR_FORWARDING_FACTORY(Prod);
 
-template <typename Scalar>
-class BatchedProdNode : public BaseDataNode<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class BatchedProdNode : public BaseDataNode<Scalar, Kind> {
  private:
-  NodePtr<Scalar> a_, b_;
+  NodePtr<Scalar, Kind> a_, b_;
 
   void forward_() override {
     auto sa = a_->shape(), sb = b_->shape();
@@ -105,18 +106,18 @@ class BatchedProdNode : public BaseDataNode<Scalar> {
     s[0] = rows;
     value().resize(s);
 
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       auto batches = b_->value().cols() / cols;
 
       for (Size i = 0; i < batches; i++) { // trivial serial loop over batch
-        Tensor<Scalar> ai, bi, vi;
+        Tensor<Scalar> ai, bi, vi;         // TODO: Can "reshaped" be used here?
         ai.map(a_->value(), {sa[0], sa[1]}, sa[0] * sa[1] * i);
         bi.map(b_->value(), {sb[0], sb[1]}, sb[0] * sb[1] * i);
         vi.map(value(), {sa[0], sb[1]}, sa[0] * sb[1] * i);
         vi.m() = ai.m() * bi.m();
       }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       internal::gpu_batched_prod(value(), a_->value(), b_->value());
 #endif
     } else {
@@ -126,7 +127,7 @@ class BatchedProdNode : public BaseDataNode<Scalar> {
 
   void backward_() override {
     auto sa = a_->shape(), sb = b_->shape();
-    if (dev()->kind() == CPU) {
+    if constexpr (Kind == CPU) {
       if (a_->has_grad() or b_->has_grad()) {
         auto batches = b_->value().cols() / sb[1];
         for (Size i = 0; i < batches; i++) { // trivial serial loop over batch
@@ -147,7 +148,7 @@ class BatchedProdNode : public BaseDataNode<Scalar> {
         }
       }
 #ifdef GINN_ENABLE_GPU
-    } else if (dev()->kind() == GPU) {
+    } else if constexpr (Kind == GPU) {
       if (a_->has_grad()) {
         internal::gpu_batched_prod(a_->grad(),
                                    grad(),
@@ -169,12 +170,13 @@ class BatchedProdNode : public BaseDataNode<Scalar> {
   }
 
  public:
-  using BaseDataNode<Scalar>::dev;
-  using BaseDataNode<Scalar>::value;
-  using BaseDataNode<Scalar>::grad;
+  using BaseDataNode<Scalar, Kind>::dev;
+  using BaseDataNode<Scalar, Kind>::value;
+  using BaseDataNode<Scalar, Kind>::grad;
 
-  BatchedProdNode(const NodePtr<Scalar>& a, const NodePtr<Scalar>& b)
-      : BaseDataNode<Scalar>({a, b}), a_(a), b_(b) {}
+  BatchedProdNode(const NodePtr<Scalar, Kind>& a,
+                  const NodePtr<Scalar, Kind>& b)
+      : BaseDataNode<Scalar, Kind>({a, b}), a_(a), b_(b) {}
 
   std::string name() const override { return "BatchedProd"; }
 };
