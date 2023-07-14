@@ -22,20 +22,20 @@
 
 namespace ginn {
 
-template <typename Scalar>
+template <typename Scalar, DeviceKind Kind>
 class Updater {
  public:
   bool guard = true;
-  virtual void update(const WeightPtr<Scalar>&) = 0;
+  virtual void update(const WeightPtr<Scalar, Kind>&) = 0;
 
-  void update(const std::vector<WeightPtr<Scalar>>& ws) {
+  void update(const std::vector<WeightPtr<Scalar, Kind>>& ws) {
     for (auto w : ws) { update(w); }
   }
 
   void update(Graph& g) {
-    std::unordered_set<WeightNode<Scalar>*> visited;
+    std::unordered_set<WeightNode<Scalar, Kind>*> visited;
     for (auto n : g.nodes()) {
-      auto w = dynamic_ptr_cast<WeightNode<Scalar>>(n);
+      auto w = dynamic_ptr_cast<WeightNode<Scalar, Kind>>(n);
       if (w and w->has_grad()) {
         if (visited.find(w.get()) == visited.end()) {
           update(w);
@@ -50,15 +50,15 @@ class Updater {
 
 namespace update {
 
-template <typename Scalar>
-class Sgd : public Updater<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Sgd : public Updater<Scalar, Kind> {
  public:
-  using Updater<Scalar>::update;
+  using Updater<Scalar, Kind>::update;
   Scalar lr, clip;
 
   Sgd(Real a_lr = 1e-1, Real a_clip = 5.) : lr(a_lr), clip(a_clip) {}
 
-  void update(const WeightPtr<Scalar>& w) override {
+  void update(const WeightPtr<Scalar, Kind>& w) override {
     if (this->guard) {
       std::lock_guard<std::mutex> l(w->access());
       update(w->value(), w->grad());
@@ -67,22 +67,22 @@ class Sgd : public Updater<Scalar> {
     }
   }
 
-  void update(Tensor<Scalar>& w, Tensor<Scalar>& d) {
+  void update(Tensor<Scalar, Kind>& w, Tensor<Scalar, Kind>& d) {
     d = d.t().cwiseMin(clip).cwiseMax(-clip);
     w += -lr * d.t();
   }
 };
 
 // TODO: Two Scalar parameters, one for weight and one for histories
-template <typename Scalar>
-class Adam : public Updater<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Adam : public Updater<Scalar, Kind> {
  public:
   struct History {
-    Tensor<Real> m, v;
+    Tensor<Real, Kind> m, v;
     Real beta_1_t, beta_2_t;
   };
 
-  using Updater<Scalar>::update;
+  using Updater<Scalar, Kind>::update;
   std::unordered_map<size_t, History> weight_histories;
   std::mutex history_access;
   // std::unordered_map<std::pair<Device, Tensor*>, Tensor> m__, v__; TODO
@@ -99,7 +99,7 @@ class Adam : public Updater<Scalar> {
   template <typename WeightPtr>
   void init(WeightPtr w) {
     GINN_ASSERT(w->value().size() > 0);
-    Tensor<Real> m(w->dev(), w->value().shape()),
+    Tensor<Real, Kind> m(w->dev(), w->value().shape()),
         v(w->dev(), w->value().shape());
     m.set_zero();
     v.set_zero();
@@ -112,7 +112,7 @@ class Adam : public Updater<Scalar> {
     for (auto& w : weights) { init(w); }
   }
 
-  void update(Tensor<Scalar>& w, Tensor<Scalar>& d, size_t id) {
+  void update(Tensor<Scalar, Kind>& w, Tensor<Scalar, Kind>& d, size_t id) {
     History* h;
     {
       std::lock_guard<std::mutex> lh(history_access);
@@ -129,21 +129,22 @@ class Adam : public Updater<Scalar> {
     // TODO: instruction that directly increments float by half?
     w += ((-lr_ * (1. / (1. - h->beta_1_t))) * m.t() /
           (eps_ + ((1. / (1. - h->beta_2_t)) * v.t()).sqrt()))
-             .template cast<Scalar>();
+             .template cast<Raw<Scalar>>();
   }
 
-  void update(const WeightPtr<Scalar>& w) override {
+  void update(const WeightPtr<Scalar, Kind>& w) override {
     if (this->guard) {
       std::lock_guard<std::mutex> l(w->access());
-      if (w->dev()->kind() == CPU and
-          !w->grad().m().array().isFinite().all()) { // TODO: GPU?
-        if (w->grad().m().array().isInf().any()) {
-          std::cerr << "Gradient has an inf!" << std::endl;
+      if constexpr (Kind == CPU) {
+        if (not w->grad().m().array().isFinite().all()) { // TODO: GPU?
+          if (w->grad().m().array().isInf().any()) {
+            std::cerr << "Gradient has an inf!" << std::endl;
+          }
+          if (Eigen::isnan(w->grad().m().array()).any()) {
+            std::cerr << "Gradient has a nan!" << std::endl;
+          }
+          throw std::domain_error("Gradient is not finite!");
         }
-        if (Eigen::isnan(w->grad().m().array()).any()) {
-          std::cerr << "Gradient has a nan!" << std::endl;
-        }
-        throw std::domain_error("Gradient is not finite!");
       }
       {
         std::lock_guard<std::mutex> lh(history_access);

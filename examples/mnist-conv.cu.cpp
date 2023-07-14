@@ -38,16 +38,18 @@
 
 using namespace ginn;
 
-DevPtr dev() {
+auto dev() {
 #ifdef GINN_ENABLE_GPU
-  if (gpus() > 0) { return gpu(); }
-#endif
+  return gpu();
+#else
   return cpu();
+#endif
 }
 
+constexpr auto Kind = decltype(dev())::element_type::device_kind;
 using Indices = std::vector<Int>;
 
-std::tuple<std::vector<DataPtr<Real>>, std::vector<Indices>>
+std::tuple<std::vector<DataPtr<Real, Kind>>, std::vector<Indices>>
 mnist_reader(const std::string& fname, Size bs = 64) {
   Matrix<Real> X, Y, tmp;
   tmp = read_csv<Matrix<Real>>(fname, ',');
@@ -59,15 +61,14 @@ mnist_reader(const std::string& fname, Size bs = 64) {
   Size n = X.cols();
   Size d = X.rows();
 
-  std::vector<DataPtr<Real>> Xs;
+  std::vector<DataPtr<Real, Kind>> Xs;
   std::vector<Indices> Ys;
 
   for (Size i = 0; i < n; i += bs) {
     Size batch_size = std::min(bs, n - i);
     auto x = FixedData(cpu(), {d, batch_size});
     x->value().m() = X.middleCols(i, batch_size);
-    x->move_to(dev());
-    Xs.push_back(x);
+    Xs.push_back(x->copy_to(dev()));
     Indices y(batch_size);
     for (Size j = 0; j < batch_size; j++) { y[j] = Y(i + j); }
     Ys.push_back(y);
@@ -137,15 +138,15 @@ int main(int argc, char** argv) {
   auto U = Weight(dev(), {dimy, img_dim * img_dim * filters});
   auto c = Weight(dev(), {dimy});
 
-  std::vector<WeightPtr<Real>> weights = {kern1, kern2, U, c};
-  ginn::init::Uniform<Real>().init(weights);
-  ginn::update::Adam<Real> updater(lr);
+  std::vector<WeightPtr<Real, Kind>> weights = {kern1, kern2, U, c};
+  ginn::init::Uniform<Real, Kind>().init(weights);
+  ginn::update::Adam<Real, Kind> updater(lr);
 
   std::vector<uint> perm(X.size());
   std::iota(perm.begin(), perm.end(), 0);
 
   // Single instance (batch)
-  auto pass = [&](DataPtr<Real> x, Indices& y, auto& acc, bool train) {
+  auto pass = [&](DataPtr<Real, Kind> x, Indices& y, auto& acc, bool train) {
     auto bs_ = x->value().size() / dimx;
     auto x_ = Reshape(x, Shape{1, dims, dims, bs_});
     auto h1c = Conv2d(x_, kern1);
@@ -159,7 +160,7 @@ int main(int argc, char** argv) {
 
     auto graph = Graph(loss);
     graph.forward();
-    acc.batched_add(argmax(y_->value(), 0).copy_to(cpu()), y);
+    acc.batched_add(argmax(y_->value(), 0).maybe_copy_to(cpu()), y);
 
     if (train) {
       graph.reset_grad();

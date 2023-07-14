@@ -151,6 +151,15 @@ auto Weight(const WeightNode<Scalar, Kind>& other) {
   return make_ptr<WeightNode<Scalar, Kind>>(other);
 }
 
+template <typename DevicePtr>
+auto Weight(const DevicePtr& dev, const Shape& s) {
+  constexpr auto Kind = DevicePtr::element_type::device_kind;
+  return make_ptr<WeightNode<Real, Kind>>(dev, s);
+}
+template <typename DevicePtr>
+auto Weight(const DevicePtr& dev, std::initializer_list<Size> shape) {
+  return Weight<Real>(dev, Shape(shape));
+}
 // template <typename Scalar = Real>
 // auto FixedWeight(DevPtr dev = cpu(), const Shape& s = {0}) {
 //   auto w = Weight<Scalar>(dev, s);

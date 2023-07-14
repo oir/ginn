@@ -43,15 +43,24 @@ endforeach
 if gpu
   fs = import('fs')
   foreach src : cuda_sources
-    exec_name = 'cuda' + src.replace('.cu.cpp', '').replace('.cu', '')
+    exec_name = 'cuda-' + src.replace('.cu.cpp', '').replace('.cu', '')
     copy_name = src.replace('.cu.cpp', '.copy.cu')
     copied_src = fs.copyfile(src, copy_name)
 
-    exe = executable(exec_name,
-                     copied_src,
-                     include_directories : incdir,
-                     dependencies : example_deps + [cuda_dep],
-                     cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])
+    if exec_name == 'cuda-mnist-conv'
+      exe = executable(exec_name,
+                      copied_src,
+                      include_directories : incdir,
+                      dependencies : example_deps + [cuda_dep],
+                      cpp_args : cpp_args + ['-DGINN_ENABLE_GPU', '-g'],
+                      cuda_args : cuda_args + ['-DGINN_ENABLE_GPU', '-G', '-O0', '-Xptxas=-O0', '-Xcompiler=-Wno-maybe-uninitialized'])
+    else
+      exe = executable(exec_name,
+                      copied_src,
+                      include_directories : incdir,
+                      dependencies : example_deps + [cuda_dep],
+                      cuda_args : cuda_args + ['-DGINN_ENABLE_GPU'])
+    endif
     examples += [exe]
   endforeach
 endif

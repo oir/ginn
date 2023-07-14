@@ -19,12 +19,12 @@
 
 namespace ginn {
 
-template <typename Scalar>
+template <typename Scalar, DeviceKind Kind>
 class Initer {
  public:
-  virtual void init(Tensor<Scalar>& w) = 0;
-  void init(const WeightPtr<Scalar>& w) { init(w->value()); }
-  void init(const std::vector<WeightPtr<Scalar>>& ws) {
+  virtual void init(Tensor<Scalar, Kind>& w) = 0;
+  void init(const WeightPtr<Scalar, Kind>& w) { init(w->value()); }
+  void init(const std::vector<WeightPtr<Scalar, Kind>>& ws) {
     for (auto w : ws) { init(w); }
   }
 
@@ -35,42 +35,42 @@ namespace init {
 
 // Initers assume node::Weight value matrix has the right size already
 
-template <typename Scalar>
-class Xavier : public Initer<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Xavier : public Initer<Scalar, Kind> {
  public:
-  using Initer<Scalar>::init;
+  using Initer<Scalar, Kind>::init;
 
   Xavier() = default;
 
-  void init(Tensor<Scalar>& w) override {
+  void init(Tensor<Scalar, Kind>& w) override {
     Size rows = w.shape2()[0];
     Size cols = w.shape2()[1];
     Real a = sqrt(6. / (0.5 * (rows + cols)));
     w.set_random();
-    w = w.t() * Scalar(a);
+    w = w.t() * Raw<Scalar>(a);
   }
 };
 
-template <typename Scalar>
-class Uniform : public Initer<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Uniform : public Initer<Scalar, Kind> {
  public:
   Scalar range;
 
-  using Initer<Scalar>::init;
+  using Initer<Scalar, Kind>::init;
 
-  template <typename RhsScalar = Scalar>
+  template <typename RhsScalar = Raw<Scalar>>
   Uniform(RhsScalar range = RhsScalar(1.)) : range(range) {}
 
-  void init(Tensor<Scalar>& w) override {
+  void init(Tensor<Scalar, Kind>& w) override {
     w.set_random();
     w = w.t() * range;
   }
 };
 
-template <typename Scalar>
-class Zero : public Initer<Scalar> {
+template <typename Scalar, DeviceKind Kind>
+class Zero : public Initer<Scalar, Kind> {
  public:
-  void init(Tensor<Scalar>& w) override { w.fill(Scalar(0)); }
+  void init(Tensor<Scalar, Kind>& w) override { w.fill(Raw<Scalar>(0)); }
 };
 
 } // end namespace init
