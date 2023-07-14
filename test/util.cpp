@@ -734,11 +734,11 @@ TEST_CASE("Basic timer", "[timer]") {
     CHECK(has(ss.str(), s));
   }
   CHECK((startswith(ss.str(),
-                   "Timing:\n"
-                   "  Name       time   #       %   relative____________\n") or
-        startswith(ss.str(),
-                   "Timing:\n"
-                   "  Name       time   #        %   relative____________\n"))
+                    "Timing:\n"
+                    "  Name       time   #       %   relative____________\n") or
+         startswith(ss.str(),
+                    "Timing:\n"
+                    "  Name       time   #        %   relative____________\n"))
 
   );
 }
