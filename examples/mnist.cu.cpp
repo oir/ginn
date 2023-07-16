@@ -35,16 +35,18 @@
 
 using namespace ginn;
 
-DevPtr dev() {
+auto dev() {
 #ifdef GINN_ENABLE_GPU
-  if (gpus() > 0) { return gpu(); }
-#endif
+  return gpu();
+#else
   return cpu();
+#endif
 }
 
+constexpr auto Kind = decltype(dev())::element_type::device_kind;
 using Indices = std::vector<Int>;
 
-std::tuple<std::vector<DataPtr<Real>>, std::vector<Indices>>
+std::tuple<std::vector<DataPtr<Real, Kind>>, std::vector<Indices>>
 mnist_reader(const std::string& fname, Size bs = 64) {
   Matrix<Real> X, Y, tmp;
   tmp = read_csv<Matrix<Real>>(fname, ',');
@@ -56,15 +58,14 @@ mnist_reader(const std::string& fname, Size bs = 64) {
   Size n = X.cols();
   Size d = X.rows();
 
-  std::vector<DataPtr<Real>> Xs;
+  std::vector<DataPtr<Real, Kind>> Xs;
   std::vector<Indices> Ys;
 
   for (Size i = 0; i < n; i += bs) {
     Size batch_size = std::min(bs, n - i);
     auto x = FixedData(cpu(), {d, batch_size});
     x->value().m() = X.middleCols(i, batch_size);
-    x->move_to(dev());
-    Xs.push_back(x);
+    Xs.push_back(x->copy_to(dev()));
     Indices y(batch_size);
     for (Size j = 0; j < batch_size; j++) { y[j] = Y(i + j); }
     Ys.push_back(y);
@@ -72,6 +73,7 @@ mnist_reader(const std::string& fname, Size bs = 64) {
 
   return {Xs, Ys};
 }
+
 
 int main(int argc, char** argv) {
   std::string train_file, test_file;
@@ -118,12 +120,12 @@ int main(int argc, char** argv) {
   auto U = Weight(dev(), {dimy, dimh});
   auto c = Weight(dev(), {dimy});
 
-  std::vector<WeightPtr<Real>> weights = {W, b, U, c};
-  init::Uniform<Real>().init(weights);
-  update::Adam<Real> updater(lr);
+  std::vector<WeightPtr<Real, Kind>> weights = {W, b, U, c};
+  init::Uniform<Real, Kind>().init(weights);
+  update::Adam<Real, Kind> updater(lr);
 
   // Single instance (batch)
-  auto pass = [&](const DataPtr<Real>& x, Indices& y, auto& acc, bool train) {
+  auto pass = [&](const DataPtr<Real, Kind>& x, Indices& y, auto& acc, bool train) {
     auto h = Affine<SigmoidOp>(W, x, b);
     auto y_ = Affine(U, h, c);
     auto loss = Sum(PickNegLogSoftmax(y_, y));

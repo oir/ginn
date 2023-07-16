@@ -31,16 +31,18 @@
 
 using namespace ginn;
 
-DevPtr dev() {
+auto dev() {
 #ifdef GINN_ENABLE_GPU
-  if (gpus() > 0) { return gpu(); }
-#endif
+  return gpu();
+#else
   return cpu();
+#endif
 }
 
+constexpr auto Kind = decltype(dev())::element_type::device_kind;
 using Indices = std::vector<Int>;
 
-std::tuple<std::vector<DataPtr<Real>>, std::vector<Indices>>
+std::tuple<std::vector<DataPtr<Real, Kind>>, std::vector<Indices>>
 mnist_reader(const std::string& fname, Size bs = 64) {
   Matrix<Real> X, Y, tmp;
   tmp = read_csv<Matrix<Real>>(fname, ',');
@@ -52,15 +54,14 @@ mnist_reader(const std::string& fname, Size bs = 64) {
   Size n = X.cols();
   Size d = X.rows();
 
-  std::vector<DataPtr<Real>> Xs;
+  std::vector<DataPtr<Real, Kind>> Xs;
   std::vector<Indices> Ys;
 
   for (Size i = 0; i < n; i += bs) {
     Size batch_size = std::min(bs, n - i);
     auto x = FixedData(cpu(), {d, batch_size});
     x->value().m() = X.middleCols(i, batch_size);
-    x->move_to(dev());
-    Xs.push_back(x);
+    Xs.push_back(x->copy_to(dev()));
     Indices y(batch_size);
     for (Size j = 0; j < batch_size; j++) { y[j] = Y(i + j); }
     Ys.push_back(y);
@@ -68,6 +69,7 @@ mnist_reader(const std::string& fname, Size bs = 64) {
 
   return {Xs, Ys};
 }
+
 
 int main(int argc, char** argv) {
   std::string train_file, test_file;
@@ -106,11 +108,11 @@ int main(int argc, char** argv) {
   auto [X, Y] = mnist_reader(train_file, bs);
   auto [Xt, Yt] = mnist_reader(test_file, bs);
 
-  LayerPtr<NodePtr<Real>(NodePtr<Real>)> model;
+  LayerPtr<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> model;
 
   for (size_t l = 0; l < layers; l++) {
     Size input_dim = (l == 0) ? dimx : dimh;
-    auto layer = AffineLayer<Real, SigmoidOp<Real>>(dev(), dimh, input_dim);
+    auto layer = AffineLayer<Real, SigmoidOp<Real, Kind>>(dev(), dimh, input_dim);
     if (l == 0) {
       model = layer;
     } else {
@@ -121,22 +123,22 @@ int main(int argc, char** argv) {
   // add output layer
   model = model | AffineLayer<Real>(dev(), dimy, dimh);
 
-  ginn::init::Uniform<Real>().init(model->weights<Real>());
-  ginn::update::Adam<Real> updater(lr);
+  ginn::init::Uniform<Real, Kind>().init(model->weights<Real, Kind>());
+  ginn::update::Adam<Real, Kind> updater(lr);
 
   // Single instance (batch)
-  auto pass = [&](DataPtr<Real> x, Indices& y, auto& acc, bool train) {
+  auto pass = [&](DataPtr<Real, Kind> x, Indices& y, auto& acc, bool train) {
     auto y_ = model->run(x);
     auto loss = Sum(PickNegLogSoftmax(y_, y));
 
     auto graph = Graph(loss);
     graph.forward();
-    acc.batched_add(argmax(y_->value(), 0).copy_to(cpu()), y);
+    acc.batched_add(argmax(y_->value(), 0).maybe_copy_to(cpu()), y);
 
     if (train) {
       graph.reset_grad();
       graph.backward(1.);
-      updater.update(model->weights<Real>());
+      updater.update(model->weights<Real, Kind>());
     }
   };
 

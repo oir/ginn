@@ -63,7 +63,7 @@ if gpu
                       include_directories : incdir,
                       dependencies : test_deps + [cuda_dep],
                       cpp_args : cpp_args + ['-DGINN_ENABLE_GPU', '-g', '-O0'],
-                      cuda_args : cuda_args + ['-DGINN_ENABLE_GPU', '-G', '-O0', '-Xptxas=-O0', '-Xcompiler=-Wno-maybe-uninitialized'])
+                      cuda_args : cuda_args + ['-DGINN_ENABLE_GPU', '-Xcompiler=-Wno-maybe-uninitialized'])
     else
       exe = executable(exec_name,
                       copied_src,

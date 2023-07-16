@@ -111,30 +111,30 @@ class DimProdNode : public DimNode {
 GINN_MAKE_FACTORY(DimProd);
 auto operator*(DimPtr a, DimPtr b) { return DimProd(a, b); }
 
-// template <typename Scalar, DeviceKind Kind>
-// class DeviceViewNode : public Node<Scalar, Kind> {
-//  private:
-//   NodePtr<Scalar, Kind> in_;
-//   DevPtr<Kind> dev_;
-//
-//  public:
-//   DeviceViewNode(NodePtr<Scalar, Kind> e, DevPtr<Kind> dev)
-//       : Node<Scalar, Kind>(std::vector<BaseNodePtr>{e}), in_(e), dev_(dev) {
-//   }
-//   DevPtr dev() const override { return dev_; }
-//
-//   const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
-//   const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
-//
-//   bool has_grad() const override { return in_->has_grad(); }
-//   void init_grad() override { in_->init_grad(); }
-//   void reset_grad() override { in_->reset_grad(); }
-//   void reset_forwarded() override { in_->reset_forwarded(); }
-//
-//   std::string name() const override { return "DeviceView"; }
-// };
-//
-// GINN_MAKE_SCALAR_FORWARDING_FACTORY(DeviceView);
+ template <typename Scalar, DeviceKind Kind>
+ class DeviceViewNode : public Node<Scalar, Kind> {
+  private:
+   NodePtr<Scalar, Kind> in_;
+   DevPtr<Kind> dev_;
+
+  public:
+   DeviceViewNode(const NodePtr<Scalar, Kind>& e, DevPtr<Kind> dev)
+       : Node<Scalar, Kind>(std::vector{e}), in_(e), dev_(std::move(dev)) {
+   }
+   DevPtr<Kind> dev() const override { return dev_; }
+
+   const Tensor<Scalar, Kind>& value() const override { return in_->value(); }
+   const Tensor<Scalar, Kind>& grad() const override { return in_->grad(); }
+
+   bool has_grad() const override { return in_->has_grad(); }
+   void init_grad() override { in_->init_grad(); }
+   void reset_grad() override { in_->reset_grad(); }
+   void reset_forwarded() override { in_->reset_forwarded(); }
+
+   std::string name() const override { return "DeviceView"; }
+ };
+
+ GINN_MAKE_SCALAR_FORWARDING_FACTORY(DeviceView);
 //
 // template <typename Scalar, DeviceKind TgtKind, DeviceKind SrcKind>
 // class DeviceTransferNode : public BaseDataNode<Scalar, SrcKind> {

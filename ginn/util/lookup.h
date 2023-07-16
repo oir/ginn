@@ -118,12 +118,12 @@ class LookupTable {
     map_ = other.map_;
     has_unk_ = other.has_unk_;
     if (has_unk_) {
-      unk_ = Weight();
+      unk_ = NodePtrType();
       unk_->tie(other.unk_);
     }
     storage_.clear();
     for (auto other_w : other.storage_) {
-      auto w = Weight();
+      auto w = NodePtrType();
       w->tie(other_w);
       storage_.push_back(w);
     }

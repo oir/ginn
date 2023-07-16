@@ -224,6 +224,19 @@ auto Affine(NonlinType nonlin, Ptr<Node> in, Args&&... args) {
       nonlin, in, std::forward<Args>(args)...);
 }
 
+template <typename Node,
+          typename NonlinType,
+          typename... Args,
+          typename = std::enable_if_t<std::is_base_of_v<
+              NonlinOp<typename Node::Scalar, Node::device_kind>,
+              NonlinType>>>
+auto Affine(std::unique_ptr<NonlinType> nonlin, Ptr<Node> in, Args&&... args) {
+  using Scalar = typename Node::Scalar;
+  const static auto Kind = Node::device_kind;
+  return make_ptr<AffineNode<Scalar, Kind>>(
+      std::move(nonlin), in, std::forward<Args>(args)...);
+}
+
 // template <typename Node,
 //           typename NonlinType,
 //           typename... Args,

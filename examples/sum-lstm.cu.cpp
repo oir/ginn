@@ -33,10 +33,12 @@
 using namespace ginn;
 
 #ifdef GINN_ENABLE_GPU
-DevPtr Dev = gpu();
+auto Dev = gpu();
 #else
-DevPtr Dev = cpu();
+auto Dev = cpu();
 #endif
+
+constexpr auto Kind = decltype(Dev)::element_type::device_kind;
 
 using Instance = std::pair<std::string, std::string>;
 using Instances = std::vector<Instance>;
@@ -142,15 +144,15 @@ int main(int argc, char** argv) {
   auto XYb = batch(generate_data(seed, ntra), bs);
   auto XYbdev = batch(generate_data(seed + 1, ndev), bs);
 
-  LookupTable<char, WeightPtr<Real>> lt(
+  LookupTable<char, WeightPtr<Real, Kind>> lt(
       {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', ';'},
       [xdim]() { return Weight(Dev, {xdim}); });
 
   IndexMap<char> outmap(
       {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ';'});
 
-  Lstm enc(Dev, hdim, xdim);
-  Lstm dec(Dev, hdim, 2 * hdim);
+  Lstm<Real, Kind> enc(Dev, hdim, xdim);
+  Lstm<Real, Kind> dec(Dev, hdim, 2 * hdim);
 
   Size labels = outmap.size();
   auto Wy = Weight(Dev, {labels, hdim});
@@ -159,8 +161,8 @@ int main(int argc, char** argv) {
   auto weights =
       enc.weights() + dec.weights() + lt.weights() + std::vector{Wy, by};
 
-  init::Xavier<Real>().init(weights);
-  update::Adam<Real> updater(1e-4);
+  init::Xavier<Real, Kind>().init(weights);
+  update::Adam<Real, Kind> updater(1e-4);
 #ifdef GINN_ENABLE_GPU
   auto device = PreallocGpu(mem);
 #else
@@ -173,13 +175,13 @@ int main(int argc, char** argv) {
                   bool print) {
     // encode
     Size bs = x.size();
-    auto h0 = Zero(device, {hdim, bs});
-    auto c0 = Zero(device, {hdim, bs});
-    auto state = Lstm<Real>::State{h0, c0};
+    auto h0 = Zero<Real>(device, {hdim, bs});
+    auto c0 = Zero<Real>(device, {hdim, bs});
+    auto state = Lstm<Real, Kind>::State{h0, c0};
     for (size_t t = 0; t < x[0].first.size(); t++) {
       std::vector<char> chars(x.size());
       for (size_t i = 0; i < x.size(); i++) { chars[i] = x[i].first[t]; }
-      std::vector<NodePtr<Real>> embeddings(chars.size());
+      std::vector<NodePtr<Real, Kind>> embeddings(chars.size());
       for (size_t i = 0; i < chars.size(); i++) {
         embeddings[i] = DeviceView(lt[chars[i]], device);
       }
@@ -188,8 +190,8 @@ int main(int argc, char** argv) {
 
     auto code = Cat(state.first, state.second);
 
-    state = Lstm<Real>::State({h0, c0});
-    std::vector<NodePtr<Real>> out_seq;
+    state = Lstm<Real, Kind>::State({h0, c0});
+    std::vector<NodePtr<Real, Kind>> out_seq;
 
     if (print) {
       std::cout << "\tRandom input:\t" << x[0].first << "\n\t      output:\t"
@@ -210,7 +212,7 @@ int main(int argc, char** argv) {
     }
     if (print) { std::cout << std::endl; }
 
-    std::vector<NodePtr<Real>> losses;
+    std::vector<NodePtr<Real, Kind>> losses;
     for (size_t t = 0; t < out_seq.size() and t < x[0].second.size(); t++) {
       std::vector<Int> yi(x.size());
       for (size_t i = 0; i < x.size(); i++) {

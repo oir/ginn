@@ -75,11 +75,11 @@ class LayerNodeBase {
  public:
   virtual std::vector<BaseNodePtr> weights_() { return {}; }
 
-  template <typename Scalar>
-  std::vector<WeightPtr<Scalar>> weights() {
-    std::vector<WeightPtr<Scalar>> rval;
+  template <typename Scalar, DeviceKind Kind>
+  std::vector<WeightPtr<Scalar, Kind>> weights() {
+    std::vector<WeightPtr<Scalar, Kind>> rval;
     for (auto w : weights_()) {
-      auto ws = dynamic_ptr_cast<WeightNode<Scalar>>(w);
+      auto ws = dynamic_ptr_cast<WeightNode<Scalar, Kind>>(w);
       if (ws) { rval.push_back(ws); }
     }
     return rval;
