@@ -34,9 +34,10 @@
 
 using namespace ginn;
 
-DevPtr Dev = cpu();
+auto Dev = cpu();
+constexpr DeviceKind Kind = CPU;
 
-using Architecture = ginn::SequenceTagger;
+using Architecture = SequenceTagger<Kind>;
 using Token = std::tuple<std::string /*word*/, std::string /*label*/>;
 using Sequence = std::vector<Token>;
 using Sequences = std::vector<Sequence>;
@@ -163,14 +164,14 @@ int main(int argc, char** argv) {
   Architecture lstm(Dev, params, cvocab, label_vocab);
 
   if (not eval) {
-    init::Xavier<Real>().init(lstm.weights());
+    init::Xavier<Real, Kind>().init(lstm.weights());
 
     std::cout << "Loading word vectors..." << std::flush;
     lstm.load_wvecs(wvecname, wvocab);
     std::cout << " Done." << std::endl;
   }
 
-  update::Adam<Real> updater(lr);
+  update::Adam<Real, Kind> updater(lr);
 
   std::vector<Architecture> lstms;
   for (size_t i = 0; i < num_threads; i++) {
@@ -190,10 +191,10 @@ int main(int argc, char** argv) {
       y.push_back(label);
     }
 
-    NodePtrs<Real> predictions = lstm_.score_words(x, mode);
+    NodePtrs<Real, Kind> predictions = lstm_.score_words(x, mode);
 
     if (mode == Mode::Training) {
-      NodePtrs<Real> losses;
+      NodePtrs<Real, Kind> losses;
 
       for (size_t t = 0; t < T; t++) {
         auto loss = PickNegLogSoftmax(predictions[t], lstm_.label_map()[y[t]]);

@@ -28,7 +28,7 @@
 #include <ginn/node/inplace.h>
 #include <ginn/node/nlnode.h>
 #include <ginn/node/weight.h>
-//#include <ginn/util/lookup.h>
+#include <ginn/util/lookup.h>
 #include <ginn/util/util.h>
 
 #include <ginn/model/lstm.h>
@@ -37,8 +37,8 @@
 
 namespace ginn {
 
-template <typename Scalar>
-using NodePtrs = std::vector<NodePtr<Scalar>>;
+template <typename Scalar, DeviceKind Kind>
+using NodePtrs = std::vector<NodePtr<Scalar, Kind>>;
 
 //template <typename Scalar>
 //class LstmLayerNode : public LayerNode<NodePtrs<Scalar>(NodePtrs<Scalar>)> {
@@ -109,160 +109,163 @@ using NodePtrs = std::vector<NodePtr<Scalar>>;
 //
 //GINN_MAKE_TEMPLATE_LAYER_FACTORY(LstmLayer);
 //
-//template <typename Scalar>
-//class BiLstmLayerNode : public LayerNode<NodePtrs<Scalar>(NodePtrs<Scalar>)> {
-// public:
-//  using State = typename Lstm<Scalar>::State;
-//
-// private:
-//  Real drop_p_ = 0.;
-//  Size dim_;
-//  bool last_ = false;
-//  Lstm<Scalar> lstm_, rlstm_;
-//  State h0_; // gotta copy this if not constant
-//
-// public:
-//  BiLstmLayerNode() = default;
-//  BiLstmLayerNode(DevPtr dev,
-//                  Size dim,
-//                  Size xdim,
-//                  bool last = false,
-//                  Real drop_p = 0.)
-//      : drop_p_(drop_p), dim_(dim), last_(last) {
-//    init(dev, dim, xdim);
-//  }
-//  void init(DevPtr dev, Size dim, Size xdim) {
-//    lstm_.init(dev, dim, xdim);
-//    rlstm_.init(dev, dim, xdim);
-//    h0_ = {Zero(dev, {dim, 1}), Zero(dev, {dim, 1})};
-//  }
-//
-//  NodePtrs<Scalar> run(const NodePtrs<Scalar>& x) override {
-//    size_t T = x.size();
-//    auto batch_size = Dim(RankView(x.front(), 2), 1);
-//    NodePtrs<Scalar> fwd(T), bwd(T);
-//    State h_ = std::make_pair(ColBroadcast(h0_.first, batch_size),
-//                              ColBroadcast(h0_.second, batch_size));
-//
-//    auto loop = [&](auto& l, int begin, int end, int incr, auto& res) {
-//      auto state = h_;
-//      for (int t = begin; t != end; t += incr) {
-//        state = l.step(x[t], state);
-//        res[t] = state.first;
-//      }
-//    };
-//
-//    loop(lstm_, 0, T, 1, fwd);
-//    loop(rlstm_, T - 1, -1, -1, bwd);
-//
-//    NodePtrs<Scalar> res;
-//
-//    if (last_) {
-//      res = {Cat(fwd.back(), bwd.front())};
-//    } else {
-//      res.resize(T);
-//      for (size_t t = 0; t < T; t++) { res[t] = Cat(fwd[t], bwd[t]); }
-//    }
-//
-//    if (this->mode() == Mode::Training and drop_p_ > 0.) {
-//      auto mask = Dropout(OnesLike(res.front()), drop_p_);
-//      for (auto& e : res) { e = CwiseProd(mask, e); }
-//    }
-//
-//    return res;
-//  }
-//
-//  std::vector<BaseNodePtr> weights_() override {
-//    return base_cast(lstm_.weights() + rlstm_.weights());
-//  }
-//
-//  LayerPtr<NodePtrs<Scalar>(NodePtrs<Scalar>)> copy(Copy mode) override {
-//    auto rval = std::make_shared<BiLstmLayerNode<Scalar>>();
-//    rval->drop_p_ = drop_p_;
-//    rval->dim_ = dim_;
-//    rval->last_ = last_;
-//    rval->lstm_ = lstm_.copy(mode);
-//    rval->rlstm_ = rlstm_.copy(mode);
-//    rval->h0_ = {Zero<Scalar>(lstm_.dev(), {dim_, 1}),
-//                 Zero<Scalar>(lstm_.dev(), {dim_, 1})};
-//    return rval;
-//  }
-//};
-//
-//GINN_MAKE_TEMPLATE_LAYER_FACTORY(BiLstmLayer);
-//
-//template <typename T>
-//T lowercase(const T& x) {
-//  return x;
-//}
-//
-//template <>
-//char lowercase(const char& x) {
-//  return ::tolower(x);
-//}
-//
-//template <>
-//std::string lowercase(const std::string& x) {
-//  auto x_ = x;
-//  std::transform(x_.begin(), x_.end(), x_.begin(), ::tolower);
-//  return x_;
-//}
-//
-//template <typename Func>
-//class LookupLayerNode : public LayerNode<Func> {
-// public:
-//  using InputType = typename FunctionTraits<Func>::arg_t;
-//  using OutputType = typename FunctionTraits<Func>::result_t;
-//  using Set = std::unordered_set<InputType>;
-//
-// private:
-//  DevPtr dev_ = nullptr;
-//  Size dim_;    // embedding dimension
-//  Real drop_p_; // word(vector)-dropout rate to randomly replace with unk
-//  bool lowercased_ = false; // only used for Key == std::string or char
-//
-// public:
-//  LookupTable<InputType, OutputType> table;
-//  // static_assert(
-//  //    std::is_convertible_v<NodePtrType, OutputType>,
-//  //    "LookupLayer expects NodePtrType to be convertible to the output
-//  //    type!");
-//
-//  LookupLayerNode() = default;
-//  LookupLayerNode(DevPtr dev, Size dim, Real drop_p = 0., const Set& vocab = {})
-//      : dev_(dev),
-//        dim_(dim),
-//        drop_p_(drop_p),
-//        table(
-//            vocab,
-//            [=]() { return Weight(dev_, {dim_}); },
-//            true) {}
-//
-//  LayerPtr<Func> copy(Copy mode) override {
-//    auto rval = std::make_shared<LookupLayerNode<Func>>();
-//    rval->dev_ = this->dev_;
-//    rval->dim_ = this->dim_;
-//    rval->drop_p_ = this->drop_p_;
-//    rval->table = this->table.copy(mode);
-//    rval->lowercased_ = this->lowercased_;
-//    return rval;
-//  }
-//
-//  OutputType run(const InputType& x) override {
-//    if (this->mode() == Mode::Training) {
-//      bool drop = (Real(rand()) / RAND_MAX < drop_p_); // TODO
-//      return drop ? table.unk() : table[lowercased_ ? lowercase(x) : x];
-//    }
-//    return table[lowercased_ ? lowercase(x) : x];
-//  }
-//
-//  std::vector<BaseNodePtr> weights_() override {
-//    return base_cast(table.weights());
-//  }
-//};
-//
-//GINN_MAKE_TEMPLATE_LAYER_FACTORY(LookupLayer);
-//
+template <typename Scalar, DeviceKind Kind>
+class BiLstmLayerNode : public LayerNode<NodePtrs<Scalar, Kind>(NodePtrs<Scalar, Kind>)> {
+ public:
+  using State = typename Lstm<Scalar, Kind>::State;
+
+ private:
+  Real drop_p_ = 0.;
+  Size dim_;
+  bool last_ = false;
+  Lstm<Scalar, Kind> lstm_, rlstm_;
+  State h0_; // gotta copy this if not constant
+
+ public:
+  BiLstmLayerNode() = default;
+  BiLstmLayerNode(DevPtr<Kind> dev,
+                  Size dim,
+                  Size xdim,
+                  bool last = false,
+                  Real drop_p = 0.)
+      : drop_p_(drop_p), dim_(dim), last_(last) {
+    init(dev, dim, xdim);
+  }
+  void init(DevPtr<Kind> dev, Size dim, Size xdim) {
+    lstm_.init(dev, dim, xdim);
+    rlstm_.init(dev, dim, xdim);
+    h0_ = {Zero<Scalar>(dev, {dim, 1}), Zero<Scalar>(dev, {dim, 1})};
+  }
+
+  NodePtrs<Scalar, Kind> run(const NodePtrs<Scalar, Kind>& x) override {
+    size_t T = x.size();
+    auto batch_size = Dim(RankView(x.front(), 2), 1);
+    NodePtrs<Scalar, Kind> fwd(T), bwd(T);
+    State h_ = std::make_pair(ColBroadcast(h0_.first, batch_size),
+                              ColBroadcast(h0_.second, batch_size));
+
+    auto loop = [&](auto& l, int begin, int end, int incr, auto& res) {
+      auto state = h_;
+      for (int t = begin; t != end; t += incr) {
+        state = l.step(x[t], state);
+        res[t] = state.first;
+      }
+    };
+
+    loop(lstm_, 0, T, 1, fwd);
+    loop(rlstm_, T - 1, -1, -1, bwd);
+
+    NodePtrs<Scalar, Kind> res;
+
+    if (last_) {
+      res = {Cat(fwd.back(), bwd.front())};
+    } else {
+      res.resize(T);
+      for (size_t t = 0; t < T; t++) { res[t] = Cat(fwd[t], bwd[t]); }
+    }
+
+    if (this->mode() == Mode::Training and drop_p_ > 0.) {
+      auto mask = Dropout(OnesLike(res.front()), drop_p_);
+      for (auto& e : res) { e = CwiseProd(mask, e); }
+    }
+
+    return res;
+  }
+
+  std::vector<BaseNodePtr> weights_() override {
+    return base_cast(lstm_.weights() + rlstm_.weights());
+  }
+
+  LayerPtr<NodePtrs<Scalar, Kind>(NodePtrs<Scalar, Kind>)> copy(Copy mode) override {
+    auto rval = std::make_shared<BiLstmLayerNode<Scalar, Kind>>();
+    rval->drop_p_ = drop_p_;
+    rval->dim_ = dim_;
+    rval->last_ = last_;
+    rval->lstm_ = lstm_.copy(mode);
+    rval->rlstm_ = rlstm_.copy(mode);
+    rval->h0_ = {Zero<Scalar>(lstm_.dev(), {dim_, 1}),
+                 Zero<Scalar>(lstm_.dev(), {dim_, 1})};
+    return rval;
+  }
+};
+
+GINN_MAKE_TEMPLATE2_LAYER_FACTORY(BiLstmLayer);
+
+template <typename T>
+T lowercase(const T& x) {
+  return x;
+}
+
+template <>
+char lowercase(const char& x) {
+  return ::tolower(x);
+}
+
+template <>
+std::string lowercase(const std::string& x) {
+  auto x_ = x;
+  std::transform(x_.begin(), x_.end(), x_.begin(), ::tolower);
+  return x_;
+}
+
+template <typename Func>
+class LookupLayerNode : public LayerNode<Func> {
+ public:
+  using InputType = typename FunctionTraits<Func>::arg_t;
+  using OutputType = typename FunctionTraits<Func>::result_t;
+  using Set = std::unordered_set<InputType>;
+
+  static constexpr auto Kind = OutputType::element_type::device_kind;
+
+ private:
+  DevPtr<Kind> dev_ = nullptr;
+  Size dim_;    // embedding dimension
+  Real drop_p_; // word(vector)-dropout rate to randomly replace with unk
+  bool lowercased_ = false; // only used for Key == std::string or char
+
+ public:
+  LookupTable<InputType, OutputType> table;
+  // static_assert(
+  //    std::is_convertible_v<NodePtrType, OutputType>,
+  //    "LookupLayer expects NodePtrType to be convertible to the output
+  //    type!");
+
+  LookupLayerNode() = default;
+  LookupLayerNode(DevPtr<Kind> dev, Size dim, Real drop_p = 0., const Set& vocab = {})
+      : dev_(dev),
+        dim_(dim),
+        drop_p_(drop_p),
+        table(
+            vocab,
+            // TODO: Scalar type here needs to be extracted from OutputType
+            [=]() { return Weight(dev_, {dim_}); },
+            true) {}
+
+  LayerPtr<Func> copy(Copy mode) override {
+    auto rval = std::make_shared<LookupLayerNode<Func>>();
+    rval->dev_ = this->dev_;
+    rval->dim_ = this->dim_;
+    rval->drop_p_ = this->drop_p_;
+    rval->table = this->table.copy(mode);
+    rval->lowercased_ = this->lowercased_;
+    return rval;
+  }
+
+  OutputType run(const InputType& x) override {
+    if (this->mode() == Mode::Training) {
+      bool drop = (Real(rand()) / RAND_MAX < drop_p_); // TODO
+      return drop ? table.unk() : table[lowercased_ ? lowercase(x) : x];
+    }
+    return table[lowercased_ ? lowercase(x) : x];
+  }
+
+  std::vector<BaseNodePtr> weights_() override {
+    return base_cast(table.weights());
+  }
+};
+
+GINN_MAKE_TEMPLATE_LAYER_FACTORY(LookupLayer);
+
 template <typename Scalar, DeviceKind Kind>
 class AffineLayerNode : public LayerNode<NodePtr<Scalar, Kind>(NodePtr<Scalar, Kind>)> {
  public:
@@ -321,27 +324,27 @@ auto AffineLayer(DevicePtr dev, Nonlin nonlin, Size dim, Size xdim) {
   constexpr auto Kind = DevicePtr::element_type::device_kind;
   return std::make_shared<AffineLayerNode<Scalar, Kind>>(std::move(dev), nonlin, dim, xdim);
 }
-//
-//template <typename Scalar>
-//using NodePtrPair = std::tuple<NodePtr<Scalar>, NodePtr<Scalar>>;
-//
-//template <typename Scalar>
-//class CatLayerNode : public LayerNode<NodePtr<Scalar>(NodePtrPair<Scalar>)> {
-// public:
-//  CatLayerNode() = default;
-//
-//  LayerPtr<NodePtr<Scalar>(NodePtrPair<Scalar>)> copy(Copy) override {
-//    return std::make_shared<CatLayerNode>();
-//  }
-//
-//  NodePtr<Scalar> run(const NodePtrPair<Scalar>& xs) override {
-//    auto& [a, b] = xs;
-//    return Cat(a, b);
-//  }
-//};
-//
-//GINN_MAKE_TEMPLATE_LAYER_FACTORY(CatLayer);
-//
+
+template <typename Scalar, DeviceKind Kind>
+using NodePtrPair = std::tuple<NodePtr<Scalar, Kind>, NodePtr<Scalar, Kind>>;
+
+template <typename Scalar, DeviceKind Kind>
+class CatLayerNode : public LayerNode<NodePtr<Scalar, Kind>(NodePtrPair<Scalar, Kind>)> {
+ public:
+  CatLayerNode() = default;
+
+  LayerPtr<NodePtr<Scalar, Kind>(NodePtrPair<Scalar, Kind>)> copy(Copy) override {
+    return std::make_shared<CatLayerNode>();
+  }
+
+  NodePtr<Scalar, Kind> run(const NodePtrPair<Scalar, Kind>& xs) override {
+    auto& [a, b] = xs;
+    return Cat(a, b);
+  }
+};
+
+GINN_MAKE_TEMPLATE2_LAYER_FACTORY(CatLayer);
+
 //template <typename Scalar>
 //class LayerNormLayerNode : public LayerNode<NodePtr<Scalar>(NodePtr<Scalar>)> {
 // public:

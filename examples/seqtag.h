@@ -21,6 +21,7 @@
 
 namespace ginn {
 
+template <DeviceKind Kind>
 class SequenceTagger {
  public:
   struct Params {
@@ -44,20 +45,20 @@ class SequenceTagger {
   using CharsAndWord = std::tuple<Chars, Word>;
 
   // private:
-  DevPtr dev_;
+  DevPtr<Kind> dev_;
   Params params_;
 
-  std::shared_ptr<LookupLayerNode<WeightPtr<Real>(char)>> char_table_;
-  std::shared_ptr<LookupLayerNode<WeightPtr<Real>(Word)>> word_table_;
+  std::shared_ptr<LookupLayerNode<WeightPtr<Real, Kind>(char)>> char_table_;
+  std::shared_ptr<LookupLayerNode<WeightPtr<Real, Kind>(Word)>> word_table_;
 
-  LayerPtr<NodePtrs<Real>(Words)> model_;
+  LayerPtr<NodePtrs<Real, Kind>(Words)> model_;
 
   bool use_char_model_;
   IndexMap<std::string> label_map_;
 
  public:
-  SequenceTagger(DevPtr dev) : dev_(dev) {}
-  SequenceTagger(DevPtr dev,
+  SequenceTagger(DevPtr<Kind> dev) : dev_(dev) {}
+  SequenceTagger(DevPtr<Kind> dev,
                  Params params,
                  Set<char>& char_vocab,
                  Set<std::string>& label_vocab)
@@ -68,17 +69,17 @@ class SequenceTagger {
   void init(const Set<char>& char_vocab, const Set<std::string>& label_vocab) {
     auto& p = params_;
 
-    auto basecast = FunctionalLayer<NodePtr<Real>(WeightPtr<Real>)>(
-        [](const WeightPtr<Real> x) -> NodePtr<Real> { return x; });
+    auto basecast = FunctionalLayer<NodePtr<Real, Kind>(WeightPtr<Real, Kind>)>(
+        [](const WeightPtr<Real, Kind> x) -> NodePtr<Real, Kind> { return x; });
 
     char_table_ =
-        LookupLayer<WeightPtr<Real>(char)>(dev_, p.dim_cvec, 0.1, char_vocab);
+        LookupLayer<WeightPtr<Real, Kind>(char)>(dev_, p.dim_cvec, 0.1, char_vocab);
     auto ctr_char_table = Containerwise<std::vector>(char_table_ | basecast);
 
-    LayerPtr<NodePtrs<Real>(NodePtrs<Real>)> char_model;
+    LayerPtr<NodePtrs<Real, Kind>(NodePtrs<Real, Kind>)> char_model;
     if (p.dim_char_lstm > 0 and p.dim_cvec > 0) {
       char_model =
-          BiLstmLayer<Real>(dev_, p.dim_char_lstm, p.dim_cvec, true, 0.1);
+          BiLstmLayer<Real, Kind>(dev_, p.dim_char_lstm, p.dim_cvec, true, 0.1);
       use_char_model_ = true;
     } else {
       p.dim_char_lstm = p.dim_cvec = 0;
@@ -86,12 +87,12 @@ class SequenceTagger {
     }
 
     word_table_ =
-        LookupLayer<WeightPtr<Real>(Word)>(dev_, p.dim_wvec, p.word_drop_p);
+        LookupLayer<WeightPtr<Real, Kind>(Word)>(dev_, p.dim_wvec, p.word_drop_p);
 
-    LayerPtr<NodePtrs<Real>(NodePtrs<Real>)> word_model;
+    LayerPtr<NodePtrs<Real, Kind>(NodePtrs<Real, Kind>)> word_model;
     for (size_t l = 0; l < p.layers; l++) {
       Size in_dim = (l == 0) ? p.dim_wvec + 2 * p.dim_char_lstm : 2 * p.dim;
-      auto lstm = BiLstmLayer<Real>(dev_, p.dim, in_dim, false, p.drop_p);
+      auto lstm = BiLstmLayer<Real, Kind>(dev_, p.dim, in_dim, false, p.drop_p);
       if (l == 0) {
         word_model = lstm;
       } else {
@@ -101,21 +102,21 @@ class SequenceTagger {
     word_model = word_model | Containerwise<std::vector>(
                                   AffineLayer<Real>(dev_, p.dim_y, 2 * p.dim));
 
-    LayerPtr<NodePtr<Real>(Word)> word_repr;
+    LayerPtr<NodePtr<Real, Kind>(Word)> word_repr;
     if (use_char_model_) {
       auto extract_chars = FunctionalLayer<CharsAndWord(std::string)>(
           [](const Word& word) -> CharsAndWord {
             return {Chars(word.begin(), word.end()), word};
           });
-      auto item = FunctionalLayer<NodePtr<Real>(NodePtrs<Real>)>(
-          [](const NodePtrs<Real>& in) {
+      auto item = FunctionalLayer<NodePtr<Real, Kind>(NodePtrs<Real, Kind>)>(
+          [](const NodePtrs<Real, Kind>& in) {
             GINN_ASSERT(in.size() == 1);
             return in[0];
           });
 
       word_repr = extract_chars |
                   ((ctr_char_table | char_model | item), word_table_) |
-                  CatLayer<Real>();
+                  CatLayer<Real, Kind>();
     } else {
       word_repr = word_table_ | basecast;
     }
@@ -146,8 +147,8 @@ class SequenceTagger {
 
   const auto& label_map() const { return label_map_; }
 
-  std::vector<WeightPtr<Real>> weights() const {
-    return model_->weights<Real>();
+  std::vector<WeightPtr<Real, Kind>> weights() const {
+    return model_->template weights<Real, Kind>();
   }
 
   void save(const std::string& fname, size_t precision = 6) {
@@ -218,7 +219,7 @@ class SequenceTagger {
     for (auto w : weights()) { w->value().load(in); }
   };
 
-  NodePtrs<Real> score_words(const std::vector<std::string>& x, Mode mode) {
+  NodePtrs<Real, Kind> score_words(const std::vector<std::string>& x, Mode mode) {
     model_->set_mode(mode);
     return model_->run(x);
   }

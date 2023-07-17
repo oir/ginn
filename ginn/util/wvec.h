@@ -27,9 +27,9 @@ namespace ginn {
 namespace util {
 
 // TODO: add expected dimensionality for sanity checking
-template <typename Scalar>
-void load_wvecs(LookupTable<std::string, WeightPtr<Scalar>>& table,
-                DevPtr dev,
+template <typename Scalar, DeviceKind Kind>
+void load_wvecs(LookupTable<std::string, WeightPtr<Scalar, Kind>>& table,
+                DevPtr<Kind> dev,
                 const std::string& fname,
                 const std::unordered_set<std::string>& vocab,
                 bool fixed = false,
@@ -39,14 +39,11 @@ void load_wvecs(LookupTable<std::string, WeightPtr<Scalar>>& table,
     auto v = split(line);
     std::string w = v[0];
     if (vocab.find(w) != vocab.end()) {
-      if (fixed) {
-        table.insert(w, FixedWeight<Scalar>(cpu(), {Size(v.size()) - 1}));
-      } else {
-        table.insert(w, Weight<Scalar>(cpu(), {Size(v.size()) - 1}));
-      }
+      auto we = Weight<Scalar>(cpu(), {Size(v.size()) - 1});
+      if (fixed) { we->set_has_grad(false); } 
       for (size_t i = 0; i < v.size() - 1; i++)
-        table[w]->value().v()(i) = Scalar(std::stod(v[i + 1]));
-      table[w]->move_to(dev);
+        we->value().v()(i) = Scalar(std::stod(v[i + 1]));
+      table[w] = we->copy_to(dev);
     }
     count++;
 

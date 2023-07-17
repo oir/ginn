@@ -85,22 +85,30 @@ class WeightNode : public Node<Scalar, Kind> {
 
   void reset_forwarded() override {}
 
-  template <DeviceKind OtherKind>
-  auto copy_to(const DevPtr<OtherKind>& to) {
+  template <typename DevicePtr>
+  auto copy_to(const DevicePtr& to) {
+    const static auto OtherKind = DevicePtr::element_type::device_kind;
     auto copy = make_ptr<WeightNode<Scalar, OtherKind>>();
     copy->value() = this->value().copy_to(to);
     copy->grad() = this->grad().copy_to(to);
+    copy->set_has_grad(this->has_grad());
+    return copy;
   }
 
   // Tie this weight to other. value() is shared but grad() is not.
   void tie(const Ptr<WeightNode>& other) {
+    constexpr static auto OtherKind = WeightNode::device_kind;
+    static_assert(Kind == OtherKind, "Cannot tie weights of different kind devices!");
+
     if (other) {
       id_ = other->id_;
       fx_ = other->fx_;
-      dfx_.move_to(fx_->dev());
+      dfx_ = dfx_.copy_to(fx_->dev());
       dfx_ = other->dfx_;
       access_ = other->access_;
       this->has_grad_ = other->has_grad_;
+    } else {
+      GINN_THROW("Attempt to tie to null weight!");
     }
   }
 

@@ -192,10 +192,10 @@ auto Constant(DevicePtr dev, const Shape& shape, ValScalar val) {
   return x;
 }
 
-// template <typename Scalar, typename InScalar>
-// auto ConstantLike(NodePtr<InScalar> x, Scalar val) {
-//  return make_ptr<ConstantLikeNode<Scalar>>(x, val);
-//}
+ template <typename Scalar, typename InScalar, DeviceKind Kind, typename ValScalar>
+ auto ConstantLike(NodePtr<InScalar, Kind> x, ValScalar val) {
+  return make_ptr<ConstantLikeNode<Scalar, Kind>>(std::move(x), Raw<Scalar>(val));
+}
 
 template <typename Scalar, typename DevicePtr>
 auto Zero(DevicePtr dev, const Shape& s) {
@@ -216,10 +216,10 @@ auto Ones(DevicePtr dev, const Shape& s) {
   return Constant<Real>(dev, s, 1);
 }
 
-// template <typename Scalar>
-// auto OnesLike(NodePtr<Scalar> x) {
-//  return ConstantLike<Scalar>(x, 1);
-//}
+ template <typename Scalar, DeviceKind Kind>
+ auto OnesLike(NodePtr<Scalar, Kind> x) {
+  return ConstantLike<Scalar>(x, 1);
+}
 
 template <typename Scalar, typename DevicePtr>
 auto Random(DevicePtr dev, const Shape& shape) {

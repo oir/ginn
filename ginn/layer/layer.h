@@ -124,6 +124,12 @@ class LayerNode<Out(In)> : public LayerNodeBase {
     return std::make_shared<f##Node<Func>>(std::forward<Args>(args)...);       \
   }
 
+#define GINN_MAKE_TEMPLATE2_LAYER_FACTORY(f)                                    \
+  template <typename Scalar, DeviceKind Kind, typename... Args>                                   \
+  auto f(Args&&... args) {                                                     \
+    return std::make_shared<f##Node<Scalar, Kind>>(std::forward<Args>(args)...);       \
+  }
+
 // Abstract class for layers that are made up of other (children) layers,
 // such as composition (stacking) of two layers.
 template <typename Func>

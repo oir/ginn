@@ -52,6 +52,35 @@ auto operator<(const Ptr<Left>& a, const Ptr<Right>& b) {
   return LessThan(a, b);
 }
 
+template <typename InScalar, DeviceKind Kind>
+class GreaterThanNode : public BaseDataNode<bool, Kind> {
+ private:
+  NodePtr<InScalar, Kind> l_, r_;
+
+  void forward_() override {
+    value().resize(l_->value().shape());
+    value() = (l_->value().t() > r_->value().t());
+  }
+
+ public:
+  using BaseDataNode<bool, Kind>::value;
+
+  bool has_grad() const override { return false; }
+
+  GreaterThanNode(const NodePtr<InScalar, Kind>& l,
+                  const NodePtr<InScalar, Kind>& r)
+      : BaseDataNode<bool, Kind>(std::vector{l, r}), l_(l), r_(r) {}
+
+  std::string name() const override { return "GreaterThan"; }
+};
+
+GINN_MAKE_SCALAR_FORWARDING_FACTORY(GreaterThan);
+
+template <typename Left, typename Right>
+auto operator>(const Ptr<Left>& a, const Ptr<Right>& b) {
+  return GreaterThan(a, b);
+}
+
 } // namespace ginn
 
 #endif
