@@ -130,6 +130,9 @@ class LayerNode<Out(In)> : public LayerNodeBase {
     return std::make_shared<f##Node<Scalar, Kind>>(std::forward<Args>(args)...);       \
   }
 
+//TODO: There has to be another factory maker that extracts the Kind from a DevPtr arg.
+//  E.g. for BiLstmLayer or LayerNormLayer.
+
 // Abstract class for layers that are made up of other (children) layers,
 // such as composition (stacking) of two layers.
 template <typename Func>

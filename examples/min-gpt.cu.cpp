@@ -53,6 +53,12 @@
 #include <string_view>
 #include <unordered_set>
 
+#ifdef GINN_ENABLE_GPU
+constexpr auto Kind = ginn::GPU;
+#else
+constexpr auto Kind = ginn::CPU;
+#endif
+
 namespace ginn {
 
 /// ---
@@ -72,9 +78,9 @@ struct Config {
 /// such as `AffineLayer` or `DropoutLayer`, therefore it is convenient to have
 /// it derive from a `CombinedLayer` type.
 struct CausalSelfAttentionLayerNode
-    : public CombinedLayerNode<NodePtr<Real>(NodePtr<Real>)> {
-  std::shared_ptr<AffineLayerNode<Real>> key, query, value, proj;
-  std::shared_ptr<DropoutLayerNode<Real>> attn_drop, resid_drop;
+    : public CombinedLayerNode<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> {
+  std::shared_ptr<AffineLayerNode<Real, Kind>> key, query, value, proj;
+  std::shared_ptr<DropoutLayerNode<Real, Kind>> attn_drop, resid_drop;
 
   Size n_head, hidden_dim;
 
@@ -90,7 +96,7 @@ struct CausalSelfAttentionLayerNode
   /// of attention heads, $B$ is the batch size and $T$ is the length across
   /// time.
 
-  NodePtr<Real> run(const NodePtr<Real>& x) override {
+  NodePtr<Real, Kind> run(const NodePtr<Real, Kind>& x) override {
     auto nh = Dim(n_head);
     auto hs = Dim(hidden_dim / n_head);
     auto B = Dim(x, 1);
@@ -105,7 +111,7 @@ struct CausalSelfAttentionLayerNode
     /// - $K: T \times hs \times B \times nh$
     /// - $Q: hs \times T \times B \times nh$
     /// - $V: hs \times T \times B \times nh$
-    auto rearrange = [&](NodePtr<Real> x, const std::vector<Size>& perm) {
+    auto rearrange = [&](NodePtr<Real, Kind> x, const std::vector<Size>& perm) {
       return Permute(Reshape(x, {hs, nh, B, T}), perm);
     };
     auto k = rearrange(key->run(x), {3, 0, 2, 1});   // T, hs, B, nh
@@ -121,7 +127,7 @@ struct CausalSelfAttentionLayerNode
     Real scale = 1. / ::sqrt(Real(hs->value()));
     // TODO: there is -inf in the result. See if putting scale inside
     //   BatchedProd fixes it.
-    NodePtr<Real> att = InPlaceProdScalar(BatchedProd(k, q), scale);
+    NodePtr<Real, Kind> att = InPlaceProdScalar(BatchedProd(k, q), scale);
 
     /// Note that `att` is now $T \times T \times B \times nh$.
     ///
@@ -154,7 +160,7 @@ struct CausalSelfAttentionLayerNode
     /// that (1) first dim is $|h|$ again which matches the expected input
     /// dimensionality for the affine map and (2) resulting `y` is rank three,
     /// similarly to the original input `x`.
-    NodePtr<Real> y = BatchedProd(v, att); // hs,T,nh,B
+    NodePtr<Real, Kind> y = BatchedProd(v, att); // hs,T,nh,B
     y = Permute(Reshape(y, {hs, T, B, nh}),
                 std::vector<Size>{0, 3, 2, 1}); // hs,nh,B,T
     y = proj->run(Reshape(y, {Dim(hidden_dim), B, T}));
@@ -175,7 +181,7 @@ struct CausalSelfAttentionLayerNode
   /// pointers easily to the underlying type.
 
   CausalSelfAttentionLayerNode() = default;
-  CausalSelfAttentionLayerNode(DevPtr dev, const Config& params)
+  CausalSelfAttentionLayerNode(DevPtr<Kind> dev, const Config& params)
       : n_head(params.n_head), hidden_dim(params.hidden_dim) {
     GINN_ASSERT(hidden_dim % n_head == 0,
                 "Hidden dims must be a multiple of number of heads!");
@@ -183,13 +189,13 @@ struct CausalSelfAttentionLayerNode
     query = AffineLayer<Real>(dev, hidden_dim, params.hidden_dim);
     value = AffineLayer<Real>(dev, hidden_dim, params.hidden_dim);
     proj = AffineLayer<Real>(dev, hidden_dim, hidden_dim);
-    attn_drop = DropoutLayer<Real>(params.attn_drop_p);
-    resid_drop = DropoutLayer<Real>(params.resid_drop_p, /*inplace*/ true);
+    attn_drop = DropoutLayer<Real, Kind>(params.attn_drop_p);
+    resid_drop = DropoutLayer<Real, Kind>(params.resid_drop_p, /*inplace*/ true);
   }
   CausalSelfAttentionLayerNode(const CausalSelfAttentionLayerNode&) =
       default; // TODO
 
-  LayerPtr<NodePtr<Real>(NodePtr<Real>)> copy(Copy) override {
+  LayerPtr<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> copy(Copy) override {
     return nullptr;
   } // TODO
 };
@@ -206,10 +212,10 @@ GINN_MAKE_LAYER_FACTORY(CausalSelfAttentionLayer);
 /// We will define `mlp` as a composite layer made up of other layers, hence it
 /// is declared as the base type `LayerPtr<NodePtr(NodePtr)>`, which can contain
 /// any derived concrete layer taking in a `NodePtr` and returning a `NodePtr`.
-struct BlockLayerNode : CombinedLayerNode<NodePtr<Real>(NodePtr<Real>)> {
-  std::shared_ptr<LayerNormLayerNode<Real>> ln1, ln2;
+struct BlockLayerNode : CombinedLayerNode<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> {
+  std::shared_ptr<LayerNormLayerNode<Real, Kind>> ln1, ln2;
   std::shared_ptr<CausalSelfAttentionLayerNode> attn;
-  LayerPtr<NodePtr<Real>(NodePtr<Real>)> mlp;
+  LayerPtr<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> mlp;
 
   Size hidden_dim;
 
@@ -224,12 +230,12 @@ struct BlockLayerNode : CombinedLayerNode<NodePtr<Real>(NodePtr<Real>)> {
   /// layer norm preceding them, `ln1` and `ln2` respectively. Furthermore, we
   /// have residual connections skipping over each of these components, those
   /// are implemented with addition, `y = y + ...`, etc.
-  NodePtr<Real> run(const NodePtr<Real>& x) override {
+  NodePtr<Real, Kind> run(const NodePtr<Real, Kind>& x) override {
     auto C = Dim(hidden_dim);
     auto B = Dim(x, 1);
     auto T = Dim(x, 2);
 
-    NodePtr<Real> y = x;
+    NodePtr<Real, Kind> y = x;
     y = y + attn->run(ln1->run(y));
     y = y + Reshape(mlp->run(Reshape(ln2->run(y), {C, B * T})), {C, B, T});
     return y;
@@ -248,15 +254,15 @@ struct BlockLayerNode : CombinedLayerNode<NodePtr<Real>(NodePtr<Real>)> {
   /// We compose `mlp` as successive applications of affine (with gelu
   /// nonlinearity), another affine, and dropout layers.
   BlockLayerNode() = default;
-  BlockLayerNode(DevPtr dev, const Config& params)
-      : ln1(LayerNormLayer<Real>(dev, params.hidden_dim)),
-        ln2(LayerNormLayer<Real>(dev, params.hidden_dim)),
+  BlockLayerNode(DevPtr<Kind> dev, const Config& params)
+      : ln1(LayerNormLayer<Real, Kind>(dev, params.hidden_dim)),
+        ln2(LayerNormLayer<Real, Kind>(dev, params.hidden_dim)),
         attn(CausalSelfAttentionLayer(dev, params)),
         hidden_dim(params.hidden_dim) {
     mlp = AffineLayer<Real>(
-              dev, GeluOp<Real>(), 4 * params.hidden_dim, params.hidden_dim) |
+              dev, GeluOp<Real, Kind>(), 4 * params.hidden_dim, params.hidden_dim) |
           AffineLayer<Real>(dev, params.hidden_dim, 4 * params.hidden_dim) |
-          DropoutLayer<Real>(params.resid_drop_p, /*inplace*/ true);
+          DropoutLayer<Real, Kind>(params.resid_drop_p, /*inplace*/ true);
   }
 
   /// ---
@@ -265,7 +271,7 @@ struct BlockLayerNode : CombinedLayerNode<NodePtr<Real>(NodePtr<Real>)> {
   /// we won't need them. And define the factory function.
   BlockLayerNode(const BlockLayerNode&) = default; // TODO;
 
-  LayerPtr<NodePtr<Real>(NodePtr<Real>)> copy(Copy) override {
+  LayerPtr<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> copy(Copy) override {
     return nullptr;
   } // TODO
 };
@@ -284,28 +290,28 @@ GINN_MAKE_LAYER_FACTORY(BlockLayer);
 /// Constructor starts with a `DropoutLayer`, then adds `n_layer`-many
 /// `BlockLayer`s on top of that. Finally, there is a `LayerNormLayer` and an
 /// `AffineLayer` which will compute the pre-softmax logits as the output layer.
-struct GptLayerNode : CombinedLayerNode<NodePtr<Real>(NodePtr<Real>)> {
-  LayerPtr<NodePtr<Real>(NodePtr<Real>)> blocks;
+struct GptLayerNode : CombinedLayerNode<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> {
+  LayerPtr<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> blocks;
 
   std::vector<ConstLayerBasePtr> children() const override { return {blocks}; }
 
   GptLayerNode() = default;
-  GptLayerNode(DevPtr dev, const Config& params) {
-    blocks = DropoutLayer<Real>(params.embd_drop_p);
+  GptLayerNode(DevPtr<Kind> dev, const Config& params) {
+    blocks = DropoutLayer<Real, Kind>(params.embd_drop_p);
     for (Size i = 0; i < params.n_layer; i++) {
       blocks = blocks | BlockLayer(dev, params);
     }
     blocks = blocks |
-             LayerNormLayer<Real>(dev, params.hidden_dim, /*inplace*/ true) |
+             LayerNormLayer<Real, Kind>(dev, params.hidden_dim, /*inplace*/ true) |
              AffineLayer<Real>(dev, params.vocab_size, params.hidden_dim);
   }
   GptLayerNode(const GptLayerNode&) = default; // TODO
 
-  LayerPtr<NodePtr<Real>(NodePtr<Real>)> copy(Copy) override {
+  LayerPtr<NodePtr<Real, Kind>(NodePtr<Real, Kind>)> copy(Copy) override {
     return nullptr;
   } // TODO
 
-  NodePtr<Real> run(const NodePtr<Real>& x) override { return blocks->run(x); }
+  NodePtr<Real, Kind> run(const NodePtr<Real, Kind>& x) override { return blocks->run(x); }
 };
 
 GINN_MAKE_LAYER_FACTORY(GptLayer);
@@ -324,9 +330,9 @@ GINN_MAKE_LAYER_FACTORY(GptLayer);
 /// for such a class.
 struct GptModel {
   IndexMap<char> chars;
-  std::unordered_map<char, WeightPtr<Real>> embedding_table;
-  std::vector<WeightPtr<Real>> pos_embedding_table;
-  DevPtr scratch_;
+  std::unordered_map<char, WeightPtr<Real, Kind>> embedding_table;
+  std::vector<WeightPtr<Real, Kind>> pos_embedding_table;
+  DevPtr<Kind> scratch_;
   decltype(GptLayer()) l;
 
   /// ---
@@ -335,24 +341,24 @@ struct GptModel {
   /// Weights themselves are initialized using Xavier initialization. Being more
   /// clever about initialization (e.g. zero biases or centering layer-norm
   /// multiplier at one) is left for future work.
-  GptModel(DevPtr dev,
-           DevPtr scratch,
+  GptModel(DevPtr<Kind> dev,
+           DevPtr<Kind> scratch,
            Config params,
            IndexMap<char> cmap,
            Size len)
       : chars(std::move(cmap)), pos_embedding_table(len), scratch_(scratch) {
     for (auto c : chars.keys()) {
       embedding_table[c] = Weight(dev, {params.hidden_dim});
-      init::Xavier<Real>().init(embedding_table[c]);
+      init::Xavier<Real, Kind>().init(embedding_table[c]);
     }
     for (auto& w : pos_embedding_table) {
       w = Weight(dev, {params.hidden_dim});
-      init::Xavier<Real>().init(w);
+      init::Xavier<Real, Kind>().init(w);
     }
 
     l = GptLayer(dev, params);
-    init::Xavier<Real>().init(
-        l->weights<Real>()); // TODO: init weights more carefully
+    init::Xavier<Real, Kind>().init(
+        l->weights<Real, Kind>()); // TODO: init weights more carefully
   }
 
   /// ---
@@ -360,10 +366,10 @@ struct GptModel {
   /// `weights()` is a convenience method that returns every weight for easy
   /// iteration over them.
   auto weights() {
-    std::vector<WeightPtr<Real>> ws;
+    std::vector<WeightPtr<Real, Kind>> ws;
     for (auto& p : embedding_table) { ws.push_back(p.second); }
     for (auto& w : pos_embedding_table) { ws.push_back(w); }
-    ws += l->weights<Real>();
+    ws += l->weights<Real, Kind>();
     return ws;
   }
 
@@ -372,10 +378,10 @@ struct GptModel {
   /// In `run()` method we define the core logic that takes in a batch of raw
   /// text and computes the overall Gpt encoding, all the way up to the logits
   /// for each timestep.
-  std::vector<std::vector<NodePtr<Real>>> embeddings_;
-  std::vector<std::vector<NodePtr<Real>>> pos_embeddings_;
+  std::vector<std::vector<NodePtr<Real, Kind>>> embeddings_;
+  std::vector<std::vector<NodePtr<Real, Kind>>> pos_embeddings_;
 
-  NodePtr<Real> run(const std::vector<std::string_view>& input) {
+  NodePtr<Real, Kind> run(const std::vector<std::string_view>& input) {
     Size batch_size = input.size();
     Size len = input.front().size(); // assuming each has the same len
 
@@ -432,7 +438,7 @@ struct GptModel {
   /// addition to `input`, we have a notion of a gold `label` to compute the
   /// loss with. Since we will be using a language modeling objective, labels
   /// will be in the same index space as input: chars.
-  NodePtr<Real> loss(const std::vector<std::string_view>& input,
+  NodePtr<Real, Kind> loss(const std::vector<std::string_view>& input,
                      const std::vector<std::string_view>& label) {
     Size batch_size = input.size();
     Size len = input.front().size(); // assuming each has the same len
@@ -459,8 +465,8 @@ struct GptModel {
     /// Finally, we can move `labels` to the same device as `y` (likely gpu),
     /// compute the loss as mean log probability assigned to the true class, and
     /// return it.
-    labels->move_to(y->dev());
-    return Mean(PickNegLogSoftmax(y, labels));
+    auto labels_ = labels->copy_to(y->dev());
+    return Mean(PickNegLogSoftmax(y, labels_));
   }
 
   /// ---
@@ -529,7 +535,7 @@ int main() {
   DevPtr dev = gpu();
   auto scratch = PreallocGpu(24000000000L);
 #else
-  DevPtr dev = cpu();
+  auto dev = cpu();
   auto scratch = PreallocCpu(24000000000L);
 #endif
 
@@ -566,7 +572,7 @@ int main() {
   size_t num_iters = 500;
 
   GptModel model(dev, scratch, params, chars, len);
-  update::Adam<Real> updater(6e-4);
+  update::Adam<Real, Kind> updater(6e-4);
 
   /// ---
   ///
@@ -658,7 +664,7 @@ int main() {
 
 TEST_CASE("Gradcheck") {
   using namespace ginn;
-  DevPtr dev = cpu();
+  auto dev = cpu();
 
   // Don't forget to enable GINN_DOUBLE_PRECISION
   std::string data = "First Citizen:\n"

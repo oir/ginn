@@ -345,88 +345,88 @@ class CatLayerNode : public LayerNode<NodePtr<Scalar, Kind>(NodePtrPair<Scalar, 
 
 GINN_MAKE_TEMPLATE2_LAYER_FACTORY(CatLayer);
 
-//template <typename Scalar>
-//class LayerNormLayerNode : public LayerNode<NodePtr<Scalar>(NodePtr<Scalar>)> {
-// public:
-//  WeightPtr<Scalar> gamma = nullptr, beta = nullptr;
-//  bool inplace_ = false;
-//
-//  std::vector<BaseNodePtr> weights_() override {
-//    if (gamma) {
-//      GINN_ASSERT(beta);
-//      return {gamma, beta};
-//    }
-//    GINN_ASSERT(not beta);
-//    return {};
-//  }
-//
-//  NodePtr<Scalar> run(const NodePtr<Scalar>& x) override {
-//    NodePtr<Scalar> ln;
-//    if (inplace_) {
-//      ln = InPlaceLayerNorm(x);
-//    } else {
-//      ln = LayerNorm(x);
-//    }
-//    if (gamma) {
-//      GINN_ASSERT(beta);
-//      return CwiseProdAdd(ln, gamma, beta, 1.);
-//    } else {
-//      GINN_ASSERT(not beta);
-//      return ln;
-//    }
-//  }
-//
-//  void init(DevPtr dev, Size dim) {
-//    gamma = Weight(dev, {dim});
-//    beta = Weight(dev, {dim});
-//  }
-//
-//  LayerNormLayerNode() = default;
-//  LayerNormLayerNode(DevPtr dev, Size dim, bool inplace = false)
-//      : inplace_(inplace) {
-//    init(dev, dim);
-//  }
-//  LayerNormLayerNode(const LayerNormLayerNode& other) {
-//    if (other.gamma) { gamma = Weight(*other.gamma); }
-//    if (other.beta) { beta = Weight(*other.beta); }
-//  }
-//
-//  LayerPtr<NodePtr<Scalar>(NodePtr<Scalar>)> copy(Copy mode) override {
-//    auto rval = std::make_shared<LayerNormLayerNode<Scalar>>();
-//    if (gamma) { rval->gamma = gamma->copy(mode); }
-//    if (beta) { rval->beta = beta->copy(mode); }
-//    return rval;
-//  }
-//};
-//
-//GINN_MAKE_TEMPLATE_LAYER_FACTORY(LayerNormLayer);
-//
-//template <typename Scalar>
-//class DropoutLayerNode : public LayerNode<NodePtr<Scalar>(NodePtr<Scalar>)> {
-// private:
-//  Real drop_p_ = 0;
-//  bool inplace_ = false;
-//
-// public:
-//  NodePtr<Scalar> run(const NodePtr<Scalar>& x) override {
-//    if (this->mode() == Mode::Training) {
-//      if (inplace_) { return InPlaceDropout(x, drop_p_); }
-//      return Dropout(x, drop_p_);
-//    }
-//    return x;
-//  }
-//
-//  DropoutLayerNode() = default;
-//  DropoutLayerNode(Real drop_p, bool inplace = false)
-//      : drop_p_(drop_p), inplace_(inplace) {}
-//  DropoutLayerNode(const DropoutLayerNode& other) = default;
-//
-//  LayerPtr<NodePtr<Scalar>(NodePtr<Scalar>)> copy(Copy /*mode*/) override {
-//    return std::make_shared<DropoutLayerNode<Scalar>>(drop_p_, inplace_);
-//  }
-//};
-//
-//GINN_MAKE_TEMPLATE_LAYER_FACTORY(DropoutLayer);
+template <typename Scalar, DeviceKind Kind>
+class LayerNormLayerNode : public LayerNode<NodePtr<Scalar, Kind>(NodePtr<Scalar, Kind>)> {
+ public:
+  WeightPtr<Scalar, Kind> gamma = nullptr, beta = nullptr;
+  bool inplace_ = false;
+
+  std::vector<BaseNodePtr> weights_() override {
+    if (gamma) {
+      GINN_ASSERT(beta);
+      return {gamma, beta};
+    }
+    GINN_ASSERT(not beta);
+    return {};
+  }
+
+  NodePtr<Scalar, Kind> run(const NodePtr<Scalar, Kind>& x) override {
+    NodePtr<Scalar, Kind> ln;
+    if (inplace_) {
+      ln = InPlaceLayerNorm(x);
+    } else {
+      ln = LayerNorm(x);
+    }
+    if (gamma) {
+      GINN_ASSERT(beta);
+      return CwiseProdAdd(ln, gamma, beta, 1.);
+    } else {
+      GINN_ASSERT(not beta);
+      return ln;
+    }
+  }
+
+  void init(DevPtr<Kind> dev, Size dim) {
+    gamma = Weight(dev, {dim});
+    beta = Weight(dev, {dim});
+  }
+
+  LayerNormLayerNode() = default;
+  LayerNormLayerNode(DevPtr<Kind> dev, Size dim, bool inplace = false)
+      : inplace_(inplace) {
+    init(dev, dim);
+  }
+  LayerNormLayerNode(const LayerNormLayerNode& other) {
+    if (other.gamma) { gamma = Weight(*other.gamma); }
+    if (other.beta) { beta = Weight(*other.beta); }
+  }
+
+  LayerPtr<NodePtr<Scalar, Kind>(NodePtr<Scalar, Kind>)> copy(Copy mode) override {
+    auto rval = std::make_shared<LayerNormLayerNode<Scalar, Kind>>();
+    if (gamma) { rval->gamma = gamma->copy(mode); }
+    if (beta) { rval->beta = beta->copy(mode); }
+    return rval;
+  }
+};
+
+GINN_MAKE_TEMPLATE2_LAYER_FACTORY(LayerNormLayer);
+
+template <typename Scalar, DeviceKind Kind>
+class DropoutLayerNode : public LayerNode<NodePtr<Scalar, Kind>(NodePtr<Scalar, Kind>)> {
+ private:
+  Real drop_p_ = 0;
+  bool inplace_ = false;
+
+ public:
+  NodePtr<Scalar, Kind> run(const NodePtr<Scalar, Kind>& x) override {
+    if (this->mode() == Mode::Training) {
+      if (inplace_) { return InPlaceDropout(x, drop_p_); }
+      return Dropout(x, drop_p_);
+    }
+    return x;
+  }
+
+  DropoutLayerNode() = default;
+  DropoutLayerNode(Real drop_p, bool inplace = false)
+      : drop_p_(drop_p), inplace_(inplace) {}
+  DropoutLayerNode(const DropoutLayerNode& other) = default;
+
+  LayerPtr<NodePtr<Scalar, Kind>(NodePtr<Scalar, Kind>)> copy(Copy /*mode*/) override {
+    return std::make_shared<DropoutLayerNode<Scalar, Kind>>(drop_p_, inplace_);
+  }
+};
+
+GINN_MAKE_TEMPLATE2_LAYER_FACTORY(DropoutLayer);
 
 } // namespace ginn
 
