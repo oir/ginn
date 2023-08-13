@@ -154,7 +154,7 @@ class SpanF1 : public Metric<std::vector<std::string>> {
  public:
   const std::string all = "all";
   std::unordered_set<std::string> tags{all};
-  std::unordered_map<std::string, size_t> pred_counts, tru_counts, match_counts;
+  std::unordered_map<std::string, size_t> pred_counts, tru_counts, match_counts{{all, 0}};
 
   typedef std::pair<Real, Real> Span;
 
@@ -171,6 +171,7 @@ class SpanF1 : public Metric<std::vector<std::string>> {
         if (seq[left][0] == 'B' or seq[left][0] == 'I') {
           std::string tag = seq[left].substr(2, seq[left].size());
           tags.insert(tag);
+          match_counts[tag];
 
           for (right = left + 1; right <= seq.size(); right++) {
             if (right == seq.size() or

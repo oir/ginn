@@ -100,6 +100,8 @@ class LookupTable {
 
   LookupTable& operator=(LookupTable&& other) = default;
 
+  bool has_unk() { return has_unk_; }
+
   NodePtrType& unk() {
     GINN_ASSERT(has_unk_);
     return unk_;

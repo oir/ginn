@@ -18,6 +18,7 @@
 #include <ginn/layer/common.h>
 #include <ginn/util/indexmap.h>
 #include <ginn/util/wvec.h>
+#include <ginn/util/tensorio.h>
 
 namespace ginn {
 

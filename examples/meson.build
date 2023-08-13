@@ -1,7 +1,7 @@
 sources = [
   'mnist-conv.cu.cpp',
   'mnist-layers.cu.cpp',
-  'sstb-treelstm.cu.cpp',
+  #'sstb-treelstm.cu.cpp',
   'bench.cu.cpp',
   'lstm-tag.cpp',
   'min-gpt.cu.cpp',
