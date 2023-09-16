@@ -12,7 +12,7 @@ sources = [
 cuda_sources = [
   'mnist-conv.cu.cpp',
   'mnist-layers.cu.cpp',
-  'sstb-treelstm.cu.cpp',
+  #'sstb-treelstm.cu.cpp',
   'bench.cu.cpp',
   'min-gpt.cu.cpp',
   'mnist.cu.cpp',
